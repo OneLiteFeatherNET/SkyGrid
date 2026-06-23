@@ -1,0 +1,24 @@
+name: Feature Request
+description: Suggest an idea for GridWFC
+labels: ["status: needs triage", "type: feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Please search existing issues to avoid duplicates.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you would like.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have considered

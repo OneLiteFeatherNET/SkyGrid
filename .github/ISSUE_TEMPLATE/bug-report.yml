@@ -1,0 +1,46 @@
+name: Bug Report
+description: Report a generation, command, or compatibility bug in GridWFC
+labels: ["status: needs triage", "type: bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please search existing issues first and make sure you run the latest version.
+  - type: input
+    id: gridwfc-version
+    attributes:
+      label: GridWFC version
+    validations:
+      required: true
+  - type: input
+    id: server-version
+    attributes:
+      label: Server version (output of /version)
+    validations:
+      required: true
+  - type: dropdown
+    id: algorithm
+    attributes:
+      label: Active algorithm
+      options: ["skygrid", "noise_skygrid", "wfc"]
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug and the steps to reproduce it.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / generator.json
+      description: Paste server logs and your generator.json. This is automatically formatted into code.
+      render: text
