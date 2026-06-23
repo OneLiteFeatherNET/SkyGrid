@@ -3,6 +3,7 @@ package net.onelitefeather.gridwfc.adapter.in.paper;
 import net.onelitefeather.gridwfc.core.algorithm.TerrainAlgorithm;
 import net.onelitefeather.gridwfc.core.port.in.GenerateRegionUseCase;
 import net.onelitefeather.gridwfc.core.port.in.TerrainAlgorithmProvider;
+import jakarta.inject.Inject;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -26,6 +27,7 @@ public final class HexagonalChunkGenerator extends ChunkGenerator {
     private final GenerateRegionUseCase region;
     private final MaterialResolver materials = new MaterialResolver(Material.STONE);
 
+    @Inject
     public HexagonalChunkGenerator(TerrainAlgorithmProvider algorithms, GenerateRegionUseCase region) {
         this.algorithms = algorithms;
         this.region = region;

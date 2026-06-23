@@ -1,6 +1,7 @@
 package net.onelitefeather.gridwfc.adapter.in.command;
 
 import net.onelitefeather.gridwfc.core.port.in.RuleAdminUseCase;
+import jakarta.inject.Inject;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -27,6 +28,7 @@ public final class WfcCommand implements CommandExecutor, TabCompleter {
 
     private final RuleAdminUseCase admin;
 
+    @Inject
     public WfcCommand(RuleAdminUseCase admin) {
         this.admin = admin;
     }
