@@ -44,8 +44,8 @@ dependencyResolutionManagement {
             library("jakarta-inject", "jakarta.inject", "jakarta.inject-api").versionRef("jakartaInject")
 
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit")
-            library("junit-launcher", "org.junit.platform", "junit-platform-launcher").withoutVersion()
-            library("mockbukkit", "org.mockbukkit.mockbukkit", "mockbukkit-v1.21").versionRef("mockbukkit")
+            library("junit-launcher", "org.junit.platform", "junit-platform-launcher").version("1.11.3")
+            library("mockbukkit", "org.mockbukkit.mockbukkit", "mockbukkit-v26.1.2").versionRef("mockbukkit")
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito")
             library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj")
 

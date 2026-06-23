@@ -25,6 +25,8 @@ dependencies {
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
+    // Paper API is compileOnly for main, so tests need it explicitly (MockBukkit does not export it).
+    testImplementation(libs.paper.api)
     testImplementation(libs.mockbukkit)
     testImplementation(libs.mockito.core)
     testImplementation(libs.assertj.core)
