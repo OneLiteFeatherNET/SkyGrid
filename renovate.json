@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>OneLiteFeatherNET/renovate:default(OneLiteFeatherNET/gridwfc-maintainers)",
+    "github>OneLiteFeatherNET/renovate:default(OneLiteFeatherNET/skygrid-ng-maintainers)",
     "github>OneLiteFeatherNET/renovate:paper"
   ]
 }

@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a generation, command, or compatibility bug in GridWFC
+description: Report a generation, command, or compatibility bug in SkyGrid-ng
 labels: ["status: needs triage", "type: bug"]
 body:
   - type: markdown
@@ -7,9 +7,9 @@ body:
       value: |
         Thanks for reporting a bug. Please search existing issues first and make sure you run the latest version.
   - type: input
-    id: gridwfc-version
+    id: skygridng-version
     attributes:
-      label: GridWFC version
+      label: SkyGrid-ng version
     validations:
       required: true
   - type: input

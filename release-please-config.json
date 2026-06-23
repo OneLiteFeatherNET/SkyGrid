@@ -6,7 +6,7 @@
   "pull-request-header": "",
   "packages": {
     ".": {
-      "package-name": "grid-wfc",
+      "package-name": "skygrid-ng",
       "release-type": "java",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [

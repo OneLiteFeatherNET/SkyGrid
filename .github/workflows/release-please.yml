@@ -32,6 +32,6 @@ jobs:
     with:
       java-version: "25"
       tag-name: ${{ needs.release-please.outputs.tag_name }}
-      project-name: "GridWFC"
+      project-name: "SkyGrid-ng"
       project-version: ${{ needs.release-please.outputs.version }}
     secrets: inherit
