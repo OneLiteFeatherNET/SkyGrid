@@ -1,11 +1,11 @@
 # Releasing and CI/CD
 
-This document describes how GridWFC manages Actions, releases, and project tracking. It is the
+This document describes how SkyGrid-ng manages Actions, releases, and project tracking. It is the
 go forward standard for the repository.
 
 ## Overview
 
-GridWFC uses **Conventional Commits** plus **release-please** for fully automated, low touch
+SkyGrid-ng uses **Conventional Commits** plus **release-please** for fully automated, low touch
 releases, and publishes to **Modrinth** and **Hangar** with a **CycloneDX** SBOM for supply chain
 tracking. This mirrors the newest OneLiteFeather setup (Otis) and the publishing targets of the
 plugin projects (AntiRedstoneClock-Remastered).
@@ -63,7 +63,7 @@ Set these as organization secrets so every OneLiteFeather plugin inherits them.
 
 - [ ] Create the Modrinth project, set its id in `build.gradle.kts` (`modrinth.projectId`).
 - [ ] Create the Hangar project, set its slug in `build.gradle.kts` (`hangarPublish ... id`).
-- [ ] Create the GitHub teams `gridwfc-maintainers` and ensure `core-team` exists (CODEOWNERS).
+- [ ] Create the GitHub teams `skygrid-ng-maintainers` and ensure `core-team` exists (CODEOWNERS).
 - [ ] Add the repository to the OneLiteFeather Renovate config and a GitHub Project board.
 - [ ] Configure Crowdin for `messages/Bundle_en.properties`.
 - [ ] Add branch protection on `main`: require `build-pr` checks and one CODEOWNER review.

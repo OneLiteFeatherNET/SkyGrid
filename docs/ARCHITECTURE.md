@@ -51,17 +51,17 @@ The translators to the outside world. Bukkit, Gson, and Adventure live here only
 
 - `adapter/in/paper/` `HexagonalChunkGenerator` and `MaterialPopulator` call the use cases;
   `MaterialResolver` maps names to `Material`.
-- `adapter/in/command/` `WfcCommand` calls `RuleAdminUseCase`; `Messages` builds translatable
+- `adapter/in/command/` `SkyGridCommand` calls `RuleAdminUseCase`; `Messages` builds translatable
   components.
 - `adapter/out/json/` `JsonRuleRepository` (plus `GeneratorConfigDto`) implements `RuleRepository`
   via Gson (Factory: JSON to domain).
 
 ### Composition Root (`bootstrap/`)
-`GridWfcPlugin` builds a Guice object graph (`Stage.PRODUCTION`) from the modules in
+`SkyGridNgPlugin` builds a Guice object graph (`Stage.PRODUCTION`) from the modules in
 `bootstrap/injection/` (`PlatformModule`, `RepositoryModule`, `GeneratorModule`) and connects
 adapters to ports. The core carries no injection annotations: its services are constructed in the
 modules' `@Provides` methods, so the core stays framework free while the wiring is Guice managed.
-Adapters (`HexagonalChunkGenerator`, `WfcCommand`) use constructor `@Inject`. `bootstrap/I18n`
+Adapters (`HexagonalChunkGenerator`, `SkyGridCommand`) use constructor `@Inject`. `bootstrap/I18n`
 registers the Adventure translation store. Swapping an adapter changes a module binding, not the
 core.
 
@@ -85,7 +85,7 @@ Adding an algorithm: one class implementing `TerrainAlgorithm` plus one branch i
 | Flyweight | `TileType`, `BlockWeight` | one shared instance per type |
 | Observer | `RuleState` listeners | cache invalidation and algorithm rebuild |
 | Memento | immutable `GeneratorConfig` + undo stack | in game undo |
-| Command | `WfcCommand` subcommands | encapsulate runtime operations |
+| Command | `SkyGridCommand` subcommands | encapsulate runtime operations |
 
 ## Determinism and seamless WFC
 

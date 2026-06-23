@@ -1,4 +1,4 @@
-# GridWFC: User Stories
+# SkyGrid-ng: User Stories
 
 Functional requirements for the finalized project, written from the perspective of the
 people who use it. Format: As a ROLE, I want GOAL, so that BENEFIT. Each story lists
@@ -41,7 +41,7 @@ pick WFC terrain, classic SkyGrid, or clustered SkyGrid for a world.
 ### B2: Switch algorithm in game
 As a **server admin**, I want to switch the active algorithm at runtime, so that I can
 experiment without editing files.
-- `/wfc algorithm <id>` changes the active algorithm.
+- `/skygrid algorithm <id>` changes the active algorithm.
 - New chunks use the new algorithm; the change is reversible with undo.
 
 ### B3: Faster seed based generation
@@ -61,7 +61,7 @@ keep the coherent "grid era" terrain option.
 ### C2: In game rule editing
 As a **server admin**, I want to edit WFC weights and neighbor rules in game, so that I can
 tune terrain live.
-- `/wfc weight`, `/wfc allow`, `/wfc disallow`, `/wfc undo`, `/wfc reload`, `/wfc save`.
+- `/skygrid weight`, `/skygrid allow`, `/skygrid disallow`, `/skygrid undo`, `/skygrid reload`, `/skygrid save`.
 - Changes apply immediately to newly generated chunks.
 
 ## Epic D: Internationalization

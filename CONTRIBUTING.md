@@ -1,6 +1,6 @@
-# Contributing to GridWFC
+# Contributing to SkyGrid-ng
 
-Thanks for helping out. GridWFC follows the OneLiteFeather engineering conventions so that
+Thanks for helping out. SkyGrid-ng follows the OneLiteFeather engineering conventions so that
 maintenance stays cheap and releases stay automatic.
 
 ## Branch and PR model

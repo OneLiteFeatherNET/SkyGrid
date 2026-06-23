@@ -1,40 +1,40 @@
 # Admin and Owner Guide
 
-Everything a server owner can configure in GridWFC, plus tuning advice for large SkyGrid servers
+Everything a server owner can configure in SkyGrid-ng, plus tuning advice for large SkyGrid servers
 (around 100 players).
 
 ## Installing and creating a world
 
-1. Drop `grid-wfc.jar` into `plugins/` and start the server once. This writes
-   `plugins/GridWFC/generator.json`.
+1. Drop `skygrid-ng.jar` into `plugins/` and start the server once. This writes
+   `plugins/SkyGrid-ng/generator.json`.
 2. Tell the server to use the generator for a world, in `bukkit.yml`:
 
    ```yaml
    worlds:
      skygrid:
-       generator: GridWFC
+       generator: SkyGrid-ng
    ```
 
-   Or with a multiworld manager, pass the generator id `GridWFC` when creating the world.
+   Or with a multiworld manager, pass the generator id `SkyGrid-ng` when creating the world.
 3. Restart or load the world. The End environment is not supported as a void generator target.
 
 ## Commands
 
-Permission node: `gridwfc.admin` (default: operators). All messages are localized to the
+Permission node: `skygridng.admin` (default: operators). All messages are localized to the
 player's client language.
 
 | Command | Description |
 |---------|-------------|
-| `/wfc algorithm [id]` | Show or switch the active algorithm (`wfc`, `skygrid`, `noise_skygrid`). |
-| `/wfc skyweight <material> <value>` | Set a SkyGrid block weight (adds the material if absent). |
-| `/wfc list` | List WFC tiles. |
-| `/wfc info <tile>` | Show details of a WFC tile. |
-| `/wfc weight <tile> <value>` | Change a WFC tile weight. |
-| `/wfc allow <a> <b>` | Allow a WFC neighborship. |
-| `/wfc disallow <a> <b>` | Remove a WFC neighborship. |
-| `/wfc undo` | Revert the last change. |
-| `/wfc reload` | Reload `generator.json`, clear caches. |
-| `/wfc save` | Write the current state back to `generator.json`. |
+| `/skygrid algorithm [id]` | Show or switch the active algorithm (`wfc`, `skygrid`, `noise_skygrid`). |
+| `/skygrid skyweight <material> <value>` | Set a SkyGrid block weight (adds the material if absent). |
+| `/skygrid list` | List WFC tiles. |
+| `/skygrid info <tile>` | Show details of a WFC tile. |
+| `/skygrid weight <tile> <value>` | Change a WFC tile weight. |
+| `/skygrid allow <a> <b>` | Allow a WFC neighborship. |
+| `/skygrid disallow <a> <b>` | Remove a WFC neighborship. |
+| `/skygrid undo` | Revert the last change. |
+| `/skygrid reload` | Reload `generator.json`, clear caches. |
+| `/skygrid save` | Write the current state back to `generator.json`. |
 
 Runtime changes affect newly generated chunks only. Switching the algorithm changes the terrain
 shape (void vs solid), so recreate the world after switching rather than mixing styles.

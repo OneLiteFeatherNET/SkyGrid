@@ -1,6 +1,6 @@
 # Five Year Maintenance Strategy
 
-A plan to keep GridWFC healthy and cheap to maintain as an open source OneLiteFeather project.
+A plan to keep SkyGrid-ng healthy and cheap to maintain as an open source OneLiteFeather project.
 The guiding principle is automation first: humans review and decide, machines build, release, and
 update.
 
@@ -34,7 +34,7 @@ update.
   plugins share it.
 
 ### Year 3: ecosystem and API
-- Stable public API module (`grid-wfc-api`) so other plugins can register block tables, custom
+- Stable public API module (`skygrid-ng-api`) so other plugins can register block tables, custom
   algorithms, or post processors. Keep it a separate published artifact.
 - WorldGuard / region plugin awareness if demand exists (the AntiRedstoneClock multi version
   support modules are the template for optional integrations).
@@ -68,7 +68,7 @@ update.
 
 ## Bus factor and governance
 
-- CODEOWNERS requires review from `gridwfc-maintainers`; `core-team` owns `.github`.
+- CODEOWNERS requires review from `skygrid-ng-maintainers`; `core-team` owns `.github`.
 - All decisions of consequence (license, breaking changes, new platforms) are recorded in an ADR
   style note under `docs/decisions/` (to be started in year 1).
 - Issues and the project board are the single source of truth; no private backlog.

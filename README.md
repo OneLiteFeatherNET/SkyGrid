@@ -1,12 +1,12 @@
-# GridWFC
+# SkyGrid-ng
 
 A chunk generator plugin for Paper 26.1 that revives the classic **SkyGrid** and also ships an
 adjacency based **Wave Function Collapse** surface generator. Pure Java 25, hexagonal
-architecture, i18n through Adventure, JSON configuration, switchable at runtime via `/wfc`.
+architecture, i18n through Adventure, JSON configuration, switchable at runtime via `/skygrid`.
 
 ## Algorithms
 
-Selected by `algorithm` in `generator.json`, switchable in game with `/wfc algorithm <id>`:
+Selected by `algorithm` in `generator.json`, switchable in game with `/skygrid algorithm <id>`:
 
 - **`skygrid`** (default): classic SkyGrid. One block on every grid point (grid length `spacing`,
   default 4), air between, floating in the void. Each cell is sampled independently from a
@@ -21,14 +21,14 @@ All algorithms are seed based and deterministic.
 
 ## Quick start
 
-1. Put `grid-wfc.jar` in `plugins/` and start the server once to generate
-   `plugins/GridWFC/generator.json`.
+1. Put `skygrid-ng.jar` in `plugins/` and start the server once to generate
+   `plugins/SkyGrid-ng/generator.json`.
 2. Add a world using the generator in `bukkit.yml`:
 
    ```yaml
    worlds:
      skygrid:
-       generator: GridWFC
+       generator: SkyGrid-ng
    ```
 
 3. Load the world and play. See [docs/ADMIN.md](docs/ADMIN.md) for all settings, commands, and
@@ -41,7 +41,7 @@ All algorithms are seed based and deterministic.
 ./gradlew runServer    # start a Paper 26.1 test server
 ```
 
-The shaded plugin jar is at `build/libs/grid-wfc.jar`.
+The shaded plugin jar is at `build/libs/skygrid-ng.jar`.
 
 ## Documentation
 
@@ -60,4 +60,4 @@ release-please and published to Modrinth and Hangar.
 
 ## License
 
-GridWFC is licensed under the GNU Affero General Public License v3.0. See [LICENSE](LICENSE).
+SkyGrid-ng is licensed under the GNU Affero General Public License v3.0. See [LICENSE](LICENSE).
