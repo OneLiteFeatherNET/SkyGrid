@@ -1,0 +1,109 @@
+name: Reusable - Gradle Plugin Publish
+
+# Proposed addition to the OneLiteFeatherNET/workflows repository.
+# Publishes a Paper plugin to Modrinth and Hangar, attaches the jar to the GitHub release,
+# and uploads a CycloneDX SBOM to Dependency-Track. Mirrors the publishing that
+# AntiRedstoneClock-Remastered does, but as a shared workflow so every plugin reuses it.
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: "JDK version to use"
+        required: false
+        type: string
+        default: "25"
+      java-distribution:
+        description: "JDK distribution (temurin, zulu, ...)"
+        required: false
+        type: string
+        default: "temurin"
+      runs-on:
+        description: "Runner image"
+        required: false
+        type: string
+        default: "ubuntu-latest"
+      build-task:
+        description: "Gradle task(s) for the build step"
+        required: false
+        type: string
+        default: "clean build"
+      publish-task:
+        description: "Gradle task(s) that publish to Modrinth and Hangar and build the SBOM"
+        required: false
+        type: string
+        default: "modrinth publishAllPublicationsToHangar cyclonedxBom"
+      tag-name:
+        description: "Release tag to attach the built jar to"
+        required: true
+        type: string
+      project-name:
+        description: "Project name used for the Dependency-Track project"
+        required: true
+        type: string
+      project-version:
+        description: "Released version (used for Dependency-Track)"
+        required: true
+        type: string
+      sbom-path:
+        description: "Path to the generated CycloneDX SBOM"
+        required: false
+        type: string
+        default: "build/reports/cyclonedx/bom.xml"
+      validate-wrapper:
+        description: "Validate the Gradle wrapper before building"
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      MODRINTH_TOKEN:
+        required: false
+      HANGAR_API_TOKEN:
+        required: false
+      DEPENDENCYTRACK_HOSTNAME:
+        required: false
+      DEPENDENCYTRACK_APIKEY:
+        required: false
+
+jobs:
+  publish:
+    name: Build and publish plugin
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+      HANGAR_API_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
+      DTRACK_HOST: ${{ secrets.DEPENDENCYTRACK_HOSTNAME }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Validate Gradle wrapper
+        if: ${{ inputs.validate-wrapper }}
+        uses: gradle/actions/wrapper-validation@v6
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Build and publish
+        run: ./gradlew ${{ inputs.build-task }} ${{ inputs.publish-task }}
+      - name: Attach jar to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag-name }}
+          files: build/libs/*.jar
+      - name: Upload SBOM to Dependency-Track
+        if: ${{ env.DTRACK_HOST != '' }}
+        uses: DependencyTrack/gh-upload-sbom@v3
+        with:
+          serverhostname: ${{ secrets.DEPENDENCYTRACK_HOSTNAME }}
+          apikey: ${{ secrets.DEPENDENCYTRACK_APIKEY }}
+          projectname: ${{ inputs.project-name }}
+          projectversion: ${{ inputs.project-version }}
+          projecttags: "bukkit,paper,plugin"
+          bomfilename: ${{ inputs.sbom-path }}
+          autocreate: true
