@@ -53,7 +53,7 @@ public final class SkyGridNgPlugin extends JavaPlugin {
             command.setExecutor(executor);
             command.setTabCompleter(executor);
         } else {
-            getLogger().warning("Command 'wfc' is not registered in plugin.yml.");
+            getLogger().warning("Command 'skygrid' is not registered in plugin.yml.");
         }
 
         getLogger().info("SkyGrid-ng enabled. World generator: \"SkyGrid-ng\". Algorithm: " + algorithm + ".");
