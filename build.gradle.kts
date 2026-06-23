@@ -49,7 +49,7 @@ tasks {
     shadowJar {
         archiveClassifier.set("")
         // Relocate Gson so it cannot clash with other plugins on the server classpath.
-        relocate("com.google.gson", "net.onelitefeather.gridwfc.libs.gson")
+        relocate("com.google.gson", "net.onelitefeather.skygridng.libs.gson")
     }
 
     build {
@@ -63,24 +63,24 @@ tasks {
 
 // Generates plugin.yml from the build (de.eldoria.plugin-yml.bukkit).
 bukkit {
-    main = "net.onelitefeather.gridwfc.bootstrap.GridWfcPlugin"
+    main = "net.onelitefeather.skygridng.bootstrap.SkyGridNgPlugin"
     apiVersion = "1.21"
-    name = "GridWFC"
+    name = "SkyGrid-ng"
     version = project.version.toString()
     description = "SkyGrid and WFC chunk generator for Paper (Java 25, JSON config, in game admin, i18n)."
     authors = listOf("TheMeinerLP", "OneLiteFeatherNET")
-    website = "https://github.com/OneLiteFeatherNET/GridWFC"
+    website = "https://github.com/OneLiteFeatherNET/SkyGrid-ng"
 
     commands {
-        register("wfc") {
+        register("skygrid") {
             description = "Manages the generator configuration at runtime."
-            usage = "/wfc help"
-            permission = "gridwfc.admin"
+            usage = "/skygrid help"
+            permission = "skygridng.admin"
         }
     }
 
     permissions {
-        register("gridwfc.admin") {
+        register("skygridng.admin") {
             description = "Allows managing the generator configuration."
         }
     }
@@ -105,7 +105,7 @@ hangarPublish {
         version = project.version.toString()
         channel = "Release"
         // Hangar project slug, set after creating the project on hangar.papermc.io.
-        id = "GridWFC"
+        id = "SkyGrid-ng"
         apiKey = providers.environmentVariable("HANGAR_API_TOKEN")
         platforms {
             paper {

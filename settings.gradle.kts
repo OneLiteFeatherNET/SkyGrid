@@ -1,4 +1,4 @@
-rootProject.name = "grid-wfc"
+rootProject.name = "skygrid-ng"
 
 pluginManagement {
     repositories {
