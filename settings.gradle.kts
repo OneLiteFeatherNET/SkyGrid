@@ -21,6 +21,8 @@ dependencyResolutionManagement {
             version("paper", "26.1.2.build.+")  // keep the build segment
             version("java", "25")               // Paper 26.1 requires Java 25
             version("gson", "2.11.0")
+            version("guice", "7.0.0")
+            version("jakartaInject", "2.0.1")
 
             version("shadow", "9.4.2")
             version("runPaper", "3.0.2")
@@ -38,6 +40,8 @@ dependencyResolutionManagement {
             // ----- Libraries -----
             library("paper-api", "io.papermc.paper", "paper-api").versionRef("paper")
             library("gson", "com.google.code.gson", "gson").versionRef("gson")
+            library("guice", "com.google.inject", "guice").versionRef("guice")
+            library("jakarta-inject", "jakarta.inject", "jakarta.inject-api").versionRef("jakartaInject")
 
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit")
             library("junit-launcher", "org.junit.platform", "junit-platform-launcher").withoutVersion()

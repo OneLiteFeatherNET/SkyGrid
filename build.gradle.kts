@@ -20,6 +20,8 @@ val supportedMinecraftVersions = listOf("26.1")
 dependencies {
     compileOnly(libs.paper.api)
     implementation(libs.gson)
+    implementation(libs.guice)
+    implementation(libs.jakarta.inject)
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
