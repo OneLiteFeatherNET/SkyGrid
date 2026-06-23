@@ -21,11 +21,13 @@ commit (feat/fix) -> push to main -> release-please opens a Release PR
 | Workflow | Trigger | What it does |
 |----------|---------|--------------|
 | `build-pr.yml` | pull_request | Reuses `OneLiteFeatherNET/workflows/gradle-build-pr.yml`: builds on Linux/Windows/macOS, runs tests, publishes test and coverage reports. |
-| `release-please.yml` | push to `main` | Runs release-please. On a merged Release PR it tags, creates the GitHub release, then the `publish` job uploads to Modrinth and Hangar and the SBOM to Dependency-Track. |
+| `release-please.yml` | push to `main` | Runs release-please. On a merged Release PR it tags and creates the GitHub release, then calls the shared `OneLiteFeatherNET/workflows/gradle-plugin-publish.yml` to upload to Modrinth and Hangar, attach the jar, and send the SBOM to Dependency-Track. |
 | `close-invalid-prs.yml` | pull_request_target | Reuses the org workflow to close PRs opened from `main`. |
 
 We reuse the central `OneLiteFeatherNET/workflows` repository wherever possible so pipeline
-maintenance happens once for all projects.
+maintenance happens once for all projects. Plugin publishing uses the shared
+`gradle-plugin-publish.yml` workflow (proposed in `docs/org-workflows/`); only the Modrinth and
+Hangar coordinates stay per project in `build.gradle.kts`.
 
 ## release-please
 

@@ -57,8 +57,13 @@ The translators to the outside world. Bukkit, Gson, and Adventure live here only
   via Gson (Factory: JSON to domain).
 
 ### Composition Root (`bootstrap/`)
-`GridWfcPlugin` is the only place that wires everything. Swapping an adapter changes only this
-file. `bootstrap/I18n` registers the Adventure translation store.
+`GridWfcPlugin` builds a Guice object graph (`Stage.PRODUCTION`) from the modules in
+`bootstrap/injection/` (`PlatformModule`, `RepositoryModule`, `GeneratorModule`) and connects
+adapters to ports. The core carries no injection annotations: its services are constructed in the
+modules' `@Provides` methods, so the core stays framework free while the wiring is Guice managed.
+Adapters (`HexagonalChunkGenerator`, `WfcCommand`) use constructor `@Inject`. `bootstrap/I18n`
+registers the Adventure translation store. Swapping an adapter changes a module binding, not the
+core.
 
 ## Switchable algorithms
 
