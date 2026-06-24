@@ -1,3 +1,4 @@
+import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 import xyz.jpenilla.runpaper.task.RunServer
 
 plugins {
@@ -68,6 +69,8 @@ bukkit {
     main = "net.onelitefeather.skygridng.bootstrap.SkyGridNgPlugin"
     apiVersion = "1.21"
     name = "SkyGrid-ng"
+    // World generators must exist before worlds are loaded, so enable at server startup.
+    load = BukkitPluginDescription.PluginLoadOrder.STARTUP
     version = project.version.toString()
     description = "SkyGrid and WFC chunk generator for Paper (Java 25, JSON config, in game admin, i18n)."
     authors = listOf("TheMeinerLP", "OneLiteFeatherNET")
@@ -95,7 +98,7 @@ modrinth {
     projectId = "REPLACE_WITH_MODRINTH_PROJECT_ID"
     versionNumber = project.version.toString()
     versionType = "release"
-    uploadFile = tasks.shadowJar
+    uploadFile.set(tasks.shadowJar)
     gameVersions.addAll(supportedMinecraftVersions)
     loaders.addAll("paper", "purpur")
     syncBodyFrom = provider { rootProject.file("README.md").readText() }
@@ -119,8 +122,9 @@ hangarPublish {
 }
 
 // ----- Supply chain: CycloneDX SBOM (org.cyclonedx.bom) -----
-// Produces build/reports/cyclonedx/bom.xml, uploaded to Dependency-Track in CI.
-tasks.cyclonedxBom {
-    setIncludeConfigs(listOf("runtimeClasspath"))
-    setOutputFormat("xml")
+// CycloneDX 3.x moved per-project options to the cyclonedxDirectBom task and removed the
+// set*/get* accessors and the outputFormat/destination properties. The aggregate cyclonedxBom
+// task still writes build/reports/cyclonedx/bom.{xml,json}, which CI uploads to Dependency-Track.
+tasks.cyclonedxDirectBom {
+    includeConfigs = listOf("runtimeClasspath")
 }
