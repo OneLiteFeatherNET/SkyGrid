@@ -16,18 +16,50 @@ description: >
 Gradle Kotlin DSL, Java 25 toolchain, Paper 26.1. Shaded plugin jar via the Shadow plugin. Releases
 are automated by release-please from the commit history.
 
+## Multi-module layout
+
+The build is grouped under category folders (see the `hexagonal-architecture` skill for the
+responsibilities and the dependency arrows):
+
+- `api`, `ports`, `core`: framework-free `java-library` modules, no platform plugins.
+- `adapters/generator`, `adapters/command`, `adapters/json`: the Bukkit/Gson adapter libraries.
+- `platforms/common`: the shared Bukkit composition root, a library (no platform plugins).
+- `platforms/paper`: the public Paper distribution. Applies shadow, plugin-yml, run-paper, and all
+  publishing (Modrinth, Hangar, CycloneDX). Produces `skygrid-ng-<version>.jar`.
+- `platforms/paper-olf`: the OLF network distribution. Applies shadow and plugin-yml only. Produces
+  `skygrid-ng-olf-<version>.jar`.
+- `verification`: ArchUnit architecture tests only (no production code). Depends on every production
+  module and enforces the hexagonal rules at build time. See the `hexagonal-architecture` skill.
+
+`platforms/paper` and `platforms/paper-olf` are siblings: both depend on `platforms/common`, neither
+depends on the other.
+
+The root `build.gradle.kts` is pure aggregation: it sets `group` for all projects and the shared
+`version`. The version is read from `gradle.properties` and stripped of the trailing
+`# x-release-please-version` marker comment (`substringBefore("#").trim()`) so the jar name and the
+publish metadata stay clean. Never put production code or platform plugins in the root build.
+
+Shared build config (Java 25 toolchain, UTF-8, JUnit platform) lives in the `skygrid.java-conventions`
+precompiled script plugin in `buildSrc`, which every module applies. `buildSrc` cannot read the
+inline version catalog, so the Java version is a literal there: keep it in sync with the catalog.
+
 ## Version catalog (inline)
 
 The version catalog is defined inline in `settings.gradle.kts` (not a `libs.versions.toml`), matching
-the OLF convention. Add or bump versions and library aliases there, then reference them as
-`libs.<alias>` in `build.gradle.kts`. Renovate keeps versions current using the OLF presets in
-`renovate.json`.
+the OLF convention. It is shared automatically with every subproject, so reference entries as
+`libs.<alias>` in each module's `build.gradle.kts`. The inline catalog is NOT visible to `buildSrc`
+(see above). Add or bump versions and library aliases in `settings.gradle.kts`; Renovate keeps
+versions current using the OLF presets in `renovate.json`.
 
 ## Shadow and relocation
 
-The plugin jar shades Gson and relocates it to `net.onelitefeather.skygridng.libs.gson` to avoid
+Shadow is applied in the distribution modules only (`platforms/paper` and `platforms/paper-olf`).
+Each shaded jar shades Gson and relocates it to `net.onelitefeather.skygridng.libs.gson` to avoid
 clashing with the server or other plugins. Keep any shaded library relocated under
-`net.onelitefeather.skygridng.libs.*`. The Modrinth and Hangar uploads use `tasks.shadowJar`.
+`net.onelitefeather.skygridng.libs.*`. Each distribution depends on `platforms/common`, which exposes
+the whole object graph (adapters, core, ports, api, Guice) with the `api` configuration, so shadow
+bundles everything transitively into a self-contained jar. The Modrinth and Hangar uploads use
+`platforms/paper`'s `tasks.shadowJar`.
 
 ## plugin-yml
 
@@ -40,12 +72,15 @@ import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 load = BukkitPluginDescription.PluginLoadOrder.STARTUP
 ```
 
-The command is `skygrid`, the permission is `skygridng.admin`, the main class is
-`...bootstrap.SkyGridNgPlugin`, and the display name is `SkyGrid-ng`.
+The command is `skygrid`, the permission is `skygridng.admin`. The main class is
+`...platforms.common.SkyGridNgPlugin` for `platforms/paper` (display name `SkyGrid-ng`) and
+`...platforms.olf.OlfNetworkPlugin` for `platforms/paper-olf` (display name `SkyGrid-ng-OLF`), the
+latter extending the former. Both `bukkit { }` blocks keep `load = STARTUP`. The OLF distribution has
+no Modrinth/Hangar config on purpose, so its OLF-only mechanics never reach the public registries.
 
 ## Publishing
 
-Three pieces, configured in `build.gradle.kts`, run by the reusable org workflow in CI:
+Three pieces, configured in `platforms/paper/build.gradle.kts`, run by the reusable org workflow in CI:
 
 - Modrinth via `com.modrinth.minotaur`: `uploadFile.set(tasks.shadowJar)`. Project id is a
   placeholder until the Modrinth project exists.
@@ -85,9 +120,22 @@ Publishing happens in the release-please workflow after a release PR merges. It 
 OLF org workflow. See `references/publishing.md` for the workflow tags, the placeholders to fill
 before the first publish, and the Dependency-Track path.
 
+### CI artifact paths after the multi-module split (verify before the first release)
+
+The reusable org workflows (`gradle-build-pr.yml`, `gradle-plugin-publish.yml`) were written for a
+single-module build and the reference copy attaches `build/libs/*.jar` from the repository root. The
+shaded jars now live in `platforms/paper/build/libs/` and `platforms/paper-olf/build/libs/`, so the root
+`build/libs/` is empty. Before the first real release, confirm the reusable workflow globs
+`**/build/libs/*.jar` (or pin a workflow version that does), or adjust the release artifact path,
+otherwise the GitHub release attachment step finds no jar. The Modrinth/Hangar tasks themselves are
+fine because they run `:platforms:paper:modrinth` / `:platforms:paper:hangarPublish` against the module.
+
 ## Local testing
 
-Run a test server with `./gradlew runServer` (runPaper). It creates a `run/` directory which is
-gitignored, so never commit it. A full build is `./gradlew build`; tests are `./gradlew test`. The
-pure core also compiles standalone, see the `hexagonal-architecture` skill `compile-core.sh` for a
-fast check without resolving plugins.
+Run a test server with `./gradlew :platforms:paper:runServer` (runPaper). run-paper is applied only in
+`platforms/paper`, because the run-task build service cannot be registered by two modules at once. It
+creates a `run/` directory which is gitignored, so never commit it. A full build across all modules is
+`./gradlew build`; tests are `./gradlew test`. Run one module's tests with `./gradlew :core:test`
+and a single test with `./gradlew :core:test --tests "...ClassName"`. The framework-free
+modules (api + core) also compile standalone, see the `hexagonal-architecture` skill `compile-core.sh`
+for a fast check without resolving plugins.

@@ -1,0 +1,81 @@
+{
+  "algorithm": "skygrid",
+  "wfc": {
+    "settings": {
+      "cellSize": 4,
+      "regionSize": 16,
+      "surfaceY": 64,
+      "maxSolverAttempts": 8,
+      "fallbackTileId": "grass",
+      "allowSelf": true
+    },
+    "tiles": [
+      { "id": "deep_water", "weight": 3.0, "neutral": false, "surface": "minecraft:water", "fill": "minecraft:sand", "liquid": true, "features": [] },
+      { "id": "water", "weight": 6.0, "neutral": true, "surface": "minecraft:water", "fill": "minecraft:sand", "liquid": true, "features": [] },
+      { "id": "sand", "weight": 4.0, "neutral": true, "surface": "minecraft:sand", "fill": "minecraft:sand", "liquid": false, "features": [] },
+      {
+        "id": "sugarcane", "weight": 2.5, "neutral": false, "surface": "minecraft:grass_block", "fill": "minecraft:dirt", "liquid": false,
+        "features": [
+          { "material": "minecraft:sugar_cane", "requiresLiquidNeighbor": true, "requiresGroundBlock": "", "probability": 0.5, "minHeight": 1, "maxHeight": 3 }
+        ]
+      },
+      { "id": "grass", "weight": 10.0, "neutral": true, "surface": "minecraft:grass_block", "fill": "minecraft:dirt", "liquid": false, "features": [] },
+      {
+        "id": "flowers", "weight": 3.0, "neutral": false, "surface": "minecraft:grass_block", "fill": "minecraft:dirt", "liquid": false,
+        "features": [
+          { "material": "minecraft:poppy", "requiresLiquidNeighbor": false, "requiresGroundBlock": "minecraft:grass_block", "probability": 0.45, "minHeight": 1, "maxHeight": 1 }
+        ]
+      },
+      {
+        "id": "cactus", "weight": 2.0, "neutral": false, "surface": "minecraft:sand", "fill": "minecraft:sand", "liquid": false,
+        "features": [
+          { "material": "minecraft:cactus", "requiresLiquidNeighbor": false, "requiresGroundBlock": "minecraft:sand", "probability": 0.25, "minHeight": 1, "maxHeight": 3 }
+        ]
+      },
+      { "id": "dirt", "weight": 2.0, "neutral": false, "surface": "minecraft:coarse_dirt", "fill": "minecraft:dirt", "liquid": false, "features": [] }
+    ],
+    "allowed": [
+      ["deep_water", "water"],
+      ["water", "sand"],
+      ["water", "sugarcane"],
+      ["sand", "grass"],
+      ["sand", "cactus"],
+      ["sand", "sugarcane"],
+      ["sand", "dirt"],
+      ["sugarcane", "grass"],
+      ["cactus", "dirt"],
+      ["grass", "flowers"],
+      ["grass", "dirt"],
+      ["flowers", "dirt"]
+    ]
+  },
+  "skygrid": {
+    "spacing": 4,
+    "minY": -48,
+    "maxY": 120,
+    "noiseScale": 0.03,
+    "blocks": [
+      { "material": "minecraft:stone", "weight": 28.0 },
+      { "material": "minecraft:dirt", "weight": 18.0 },
+      { "material": "minecraft:grass_block", "weight": 14.0 },
+      { "material": "minecraft:oak_log", "weight": 8.0 },
+      { "material": "minecraft:oak_leaves", "weight": 6.0 },
+      { "material": "minecraft:sand", "weight": 7.0 },
+      { "material": "minecraft:gravel", "weight": 5.0 },
+      { "material": "minecraft:coal_ore", "weight": 5.0 },
+      { "material": "minecraft:iron_ore", "weight": 4.0 },
+      { "material": "minecraft:copper_ore", "weight": 3.0 },
+      { "material": "minecraft:gold_ore", "weight": 2.0 },
+      { "material": "minecraft:redstone_ore", "weight": 2.0 },
+      { "material": "minecraft:lapis_ore", "weight": 1.5 },
+      { "material": "minecraft:diamond_ore", "weight": 1.0 },
+      { "material": "minecraft:obsidian", "weight": 1.5 },
+      { "material": "minecraft:water", "weight": 3.0 },
+      { "material": "minecraft:lava", "weight": 1.5 },
+      { "material": "minecraft:moss_block", "weight": 2.0 },
+      { "material": "minecraft:bookshelf", "weight": 1.0 },
+      { "material": "minecraft:chest", "weight": 1.5 },
+      { "material": "minecraft:spawner", "weight": 0.6 }
+    ]
+  }
+}

@@ -1,0 +1,68 @@
+package net.onelitefeather.skygridng.core.service;
+
+import net.onelitefeather.skygridng.api.SkyGridApi;
+import net.onelitefeather.skygridng.api.model.GeneratorConfig;
+import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
+import net.onelitefeather.skygridng.ports.out.RuleRepository;
+import net.onelitefeather.skygridng.core.state.RuleState;
+import net.onelitefeather.skygridng.testutil.Fixtures;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * White-box tests for the public API facade. It must read through to the admin use case without
+ * exposing any mutation, so the same snapshot the admin owns is what callers observe.
+ */
+class SkyGridApiServiceTest {
+
+    private static final class InMemoryRepository implements RuleRepository {
+        private GeneratorConfig stored = Fixtures.config("skygrid");
+
+        @Override
+        public GeneratorConfig load() {
+            return stored;
+        }
+
+        @Override
+        public void save(GeneratorConfig config) {
+            stored = config;
+        }
+    }
+
+    private RuleAdminUseCase admin;
+    private SkyGridApi api;
+
+    @BeforeEach
+    void setUp() {
+        RuleRepository repository = new InMemoryRepository();
+        RuleState state = new RuleState(repository.load(), 8);
+        admin = new RuleAdminService(state, repository);
+        api = new SkyGridApiService(admin);
+    }
+
+    @Test
+    @DisplayName("the facade reads through to the admin use case")
+    void readsThroughToAdmin() {
+        assertThat(api.algorithm()).isEqualTo(admin.algorithm());
+        assertThat(api.configuration()).isEqualTo(admin.current());
+        assertThat(api.tileIds()).isEqualTo(admin.tileIds());
+    }
+
+    @Test
+    @DisplayName("a known tile resolves and an unknown one is empty")
+    void resolvesTiles() {
+        String knownId = admin.tileIds().getFirst();
+
+        assertThat(api.tile(knownId)).contains(admin.tile(knownId).orElseThrow());
+        assertThat(api.tile("does_not_exist")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("the api version is exposed")
+    void exposesApiVersion() {
+        assertThat(api.apiVersion()).isEqualTo(SkyGridApi.API_VERSION);
+    }
+}

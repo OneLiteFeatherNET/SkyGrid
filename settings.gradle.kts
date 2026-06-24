@@ -1,5 +1,16 @@
 rootProject.name = "skygrid-ng"
 
+include(":api")
+include(":ports")
+include(":core")
+include(":adapters:generator")
+include(":adapters:command")
+include(":adapters:json")
+include(":platforms:common")
+include(":platforms:paper")
+include(":platforms:paper-olf")
+include(":verification")
+
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -36,6 +47,7 @@ dependencyResolutionManagement {
             version("mockbukkit", "4.+")
             version("mockito", "5.14.2")
             version("assertj", "3.27.7")
+            version("archunit", "1.4.2")
 
             // ----- Libraries -----
             library("paper-api", "io.papermc.paper", "paper-api").versionRef("paper")
@@ -48,6 +60,7 @@ dependencyResolutionManagement {
             library("mockbukkit", "org.mockbukkit.mockbukkit", "mockbukkit-v26.1.2").versionRef("mockbukkit")
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito")
             library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj")
+            library("archunit-junit5", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
 
             // ----- Plugins -----
             plugin("shadow", "com.gradleup.shadow").versionRef("shadow")

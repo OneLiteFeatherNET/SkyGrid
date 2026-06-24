@@ -37,11 +37,14 @@ All algorithms are seed based and deterministic.
 ## Build
 
 ```bash
-./gradlew build        # compile and run the core tests
-./gradlew runServer    # start a Paper 26.1 test server
+./gradlew build                    # compile and test every module
+./gradlew :platforms:paper:runServer # start a Paper 26.1 test server
 ```
 
-The shaded plugin jar is at `build/libs/skygrid-ng.jar`.
+The shaded plugin jar is at `platforms/paper/build/libs/skygrid-ng-<version>.jar`. The OneLiteFeather
+network distribution is `platforms/paper-olf/build/libs/skygrid-ng-olf-<version>.jar`. SkyGrid-ng is a
+multi-module project (`api`, `ports`, `core`, `adapters/*`, `platforms/*`); see
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Documentation
 

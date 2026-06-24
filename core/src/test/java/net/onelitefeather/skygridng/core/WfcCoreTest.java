@@ -1,0 +1,146 @@
+package net.onelitefeather.skygridng.core;
+
+import net.onelitefeather.skygridng.core.algorithm.IndependentSkyGridAlgorithm;
+import net.onelitefeather.skygridng.core.algorithm.NoiseSkyGridAlgorithm;
+import net.onelitefeather.skygridng.ports.algorithm.TerrainAlgorithm;
+import net.onelitefeather.skygridng.api.model.BlockId;
+import net.onelitefeather.skygridng.api.model.AllowedPair;
+import net.onelitefeather.skygridng.api.model.BlockWeight;
+import net.onelitefeather.skygridng.api.model.GenerationSettings;
+import net.onelitefeather.skygridng.api.model.GeneratorConfig;
+import net.onelitefeather.skygridng.api.model.RuleSet;
+import net.onelitefeather.skygridng.api.model.SkyGridConfig;
+import net.onelitefeather.skygridng.api.model.TileType;
+import net.onelitefeather.skygridng.core.service.AlgorithmService;
+import net.onelitefeather.skygridng.core.service.RegionGenerationService;
+import net.onelitefeather.skygridng.core.solver.ShannonEntropyHeuristic;
+import net.onelitefeather.skygridng.core.solver.WeightedRandomCollapse;
+import net.onelitefeather.skygridng.core.solver.WfcSolver;
+import net.onelitefeather.skygridng.core.state.RuleState;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Set;
+import java.util.TreeMap;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Proves the hexagonal payoff: the core is fully testable without a server. Covers the retained
+ * WFC algorithm and both new SkyGrid algorithms.
+ */
+class WfcCoreTest {
+
+    private static final long SEED = 987654321L;
+
+    private static BlockId mc(String value) {
+        return BlockId.of("minecraft:" + value);
+    }
+
+    private RuleSet wfc() {
+        List<TileType> tiles = List.of(
+                new TileType("water", 6.0, true, mc("water"), mc("sand"), true, List.of()),
+                new TileType("sand", 4.0, true, mc("sand"), mc("sand"), false, List.of()),
+                new TileType("grass", 10.0, true, mc("grass_block"), mc("dirt"), false, List.of()),
+                new TileType("cactus", 2.0, false, mc("sand"), mc("sand"), false, List.of()));
+        Set<AllowedPair> allowed = Set.of(
+                new AllowedPair("water", "sand"),
+                new AllowedPair("sand", "grass"),
+                new AllowedPair("sand", "cactus"),
+                new AllowedPair("grass", "cactus"));
+        return new RuleSet(tiles, allowed, new GenerationSettings(4, 8, 64, 8, "grass", true));
+    }
+
+    private SkyGridConfig sky() {
+        List<BlockWeight> blocks = List.of(
+                new BlockWeight(mc("stone"), 30), new BlockWeight(mc("dirt"), 20),
+                new BlockWeight(mc("grass_block"), 15), new BlockWeight(mc("oak_log"), 10),
+                new BlockWeight(mc("sand"), 8), new BlockWeight(mc("water"), 5),
+                new BlockWeight(mc("iron_ore"), 4), new BlockWeight(mc("chest"), 2));
+        return new SkyGridConfig(4, 0, 64, 0.03, blocks);
+    }
+
+    private GeneratorConfig config(String algorithm) {
+        return new GeneratorConfig(algorithm, wfc(), sky());
+    }
+
+    private RegionGenerationService region(RuleState state) {
+        return new RegionGenerationService(state, new WfcSolver(new ShannonEntropyHeuristic(), new WeightedRandomCollapse()));
+    }
+
+    private TreeMap<Integer, BlockId> column(TerrainAlgorithm algorithm, int x, int z) {
+        TreeMap<Integer, BlockId> out = new TreeMap<>();
+        algorithm.generateColumn(SEED, x, z, 0, 64, out::put);
+        return out;
+    }
+
+    @Test
+    void wfcNeighborsRespectAdjacency() {
+        RegionGenerationService region = region(new RuleState(config("wfc"), 4));
+        RuleSet rules = wfc();
+        for (int cx = -8; cx <= 8; cx++) {
+            for (int cz = -8; cz <= 8; cz++) {
+                String here = region.tileAt(SEED, cx, cz).id();
+                String east = region.tileAt(SEED, cx + 1, cz).id();
+                String south = region.tileAt(SEED, cx, cz + 1).id();
+                assertTrue(compatible(rules, here, east), here + " next to " + east);
+                assertTrue(compatible(rules, here, south), here + " next to " + south);
+            }
+        }
+    }
+
+    @Test
+    void factorySelectsAlgorithmByConfig() {
+        RuleState state = new RuleState(config("wfc"), 4);
+        AlgorithmService algorithms = new AlgorithmService(state, region(state));
+        assertEquals("wfc", algorithms.current().id());
+        state.apply(config("skygrid"));
+        assertEquals("skygrid", algorithms.current().id());
+        state.apply(config("noise_skygrid"));
+        assertEquals("noise_skygrid", algorithms.current().id());
+    }
+
+    @Test
+    void independentSkyGridIsSparseAndDeterministic() {
+        TerrainAlgorithm sky = new IndependentSkyGridAlgorithm(sky());
+        assertTrue(column(sky, 1, 2).isEmpty(), "off-grid column must be void");
+        TreeMap<Integer, BlockId> onGrid = column(sky, 8, 12);
+        assertEquals(17, onGrid.size(), "y = 0..64 step 4 means 17 blocks");
+        assertTrue(onGrid.keySet().stream().allMatch(y -> y % 4 == 0), "blocks only on grid lines");
+        assertEquals(onGrid, column(sky, 8, 12), "must be deterministic");
+    }
+
+    @Test
+    void noiseSkyGridClustersMoreThanIndependent() {
+        double independent = neighborSameFraction(new IndependentSkyGridAlgorithm(sky()));
+        double noise = neighborSameFraction(new NoiseSkyGridAlgorithm(sky()));
+        assertTrue(noise > independent, "value noise should cluster: " + noise + " vs " + independent);
+    }
+
+    private double neighborSameFraction(TerrainAlgorithm algorithm) {
+        int same = 0;
+        int total = 0;
+        for (int gx = 0; gx < 20; gx++) {
+            for (int gz = 0; gz < 20; gz++) {
+                TreeMap<Integer, BlockId> column = column(algorithm, gx * 4, gz * 4);
+                List<Integer> ys = List.copyOf(column.keySet());
+                for (int i = 0; i + 1 < ys.size(); i++) {
+                    total++;
+                    if (column.get(ys.get(i)).equals(column.get(ys.get(i + 1)))) {
+                        same++;
+                    }
+                }
+            }
+        }
+        return total == 0 ? 0 : (double) same / total;
+    }
+
+    private boolean compatible(RuleSet rules, String a, String b) {
+        if (a.equals(b)) {
+            return rules.settings().allowSelf();
+        }
+        return rules.allowed().stream()
+                .anyMatch(p -> (p.a().equals(a) && p.b().equals(b)) || (p.a().equals(b) && p.b().equals(a)));
+    }
+}
