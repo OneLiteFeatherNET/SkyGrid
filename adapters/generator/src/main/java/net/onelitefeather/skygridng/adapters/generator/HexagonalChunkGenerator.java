@@ -1,12 +1,17 @@
 package net.onelitefeather.skygridng.adapters.generator;
 
+import net.onelitefeather.skygridng.api.model.RuleCatalog;
 import net.onelitefeather.skygridng.ports.algorithm.TerrainAlgorithm;
+import net.onelitefeather.skygridng.ports.in.Biomes;
 import net.onelitefeather.skygridng.ports.in.GenerateRegionUseCase;
-import net.onelitefeather.skygridng.ports.in.TerrainAlgorithmProvider;
+import net.onelitefeather.skygridng.ports.in.SkyGridDecorations;
+import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 import jakarta.inject.Inject;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
+import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.generator.WorldInfo;
@@ -23,14 +28,26 @@ import java.util.Random;
  */
 public final class HexagonalChunkGenerator extends ChunkGenerator {
 
-    private final TerrainAlgorithmProvider algorithms;
+    private final TerrainAlgorithms algorithms;
     private final GenerateRegionUseCase region;
-    private final MaterialResolver materials = new MaterialResolver(Material.STONE);
+    private final SkyGridDecorations decorations;
+    private final Biomes biomes;
+    private final RuleResolver rules;
+    private final BiomeResolver biomeResolver = new BiomeResolver(Biome.PLAINS);
 
     @Inject
-    public HexagonalChunkGenerator(TerrainAlgorithmProvider algorithms, GenerateRegionUseCase region) {
+    public HexagonalChunkGenerator(TerrainAlgorithms algorithms, GenerateRegionUseCase region,
+                                   SkyGridDecorations decorations, Biomes biomes, RuleCatalog ruleCatalog) {
         this.algorithms = algorithms;
         this.region = region;
+        this.decorations = decorations;
+        this.biomes = biomes;
+        this.rules = new RuleResolver(ruleCatalog, Material.STONE);
+    }
+
+    @Override
+    public BiomeProvider getDefaultBiomeProvider(WorldInfo worldInfo) {
+        return new SkyGridBiomeProvider(biomes, biomeResolver);
     }
 
     @Override
@@ -78,7 +95,7 @@ public final class HexagonalChunkGenerator extends ChunkGenerator {
                 final int lz = z;
                 algorithm.generateColumn(seed, globalX, globalZ, minY, maxY, (y, material) -> {
                     if (y >= minY && y <= maxY) {
-                        chunkData.setBlock(lx, y, lz, materials.resolve(material));
+                        chunkData.setBlock(lx, y, lz, rules.blockData(material));
                     }
                 });
             }
@@ -88,7 +105,10 @@ public final class HexagonalChunkGenerator extends ChunkGenerator {
     @Override
     public List<BlockPopulator> getDefaultPopulators(World world) {
         if (algorithms.current().usesWfcDecorations()) {
-            return List.of(new MaterialPopulator(region, materials));
+            return List.of(new MaterialPopulator(region, rules));
+        }
+        if (decorations.active() || !rules.decorations().isEmpty()) {
+            return List.of(new SkyGridDecorationPopulator(decorations, rules));
         }
         return List.of();
     }

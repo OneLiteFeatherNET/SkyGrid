@@ -55,7 +55,8 @@ them.
 
 ## Anti patterns to reject
 
-- Importing `org.bukkit.*`, Gson, Guice, or Adventure into any `core` class.
+- Importing `org.bukkit.*`, Gson, Guice, or `net.kyori.adventure.platform` into any `core` class
+  (plain Adventure text, `net.kyori.adventure`, is allowed).
 - Calling a service implementation from an adapter instead of the port interface.
 - Renaming the WFC method names (`WfcSolver`, `WfcSurfaceAlgorithm`, id `wfc`) as if they were
   project branding. They describe the algorithm and stay.

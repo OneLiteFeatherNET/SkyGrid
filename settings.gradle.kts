@@ -5,7 +5,8 @@ include(":ports")
 include(":core")
 include(":adapters:generator")
 include(":adapters:command")
-include(":adapters:json")
+include(":adapters:config")
+include(":adapters:spawn")
 include(":platforms:common")
 include(":platforms:paper")
 include(":platforms:paper-olf")
@@ -31,7 +32,9 @@ dependencyResolutionManagement {
             // ----- Versions (verify before the first build) -----
             version("paper", "26.1.2.build.+")  // keep the build segment
             version("java", "25")               // Paper 26.1 requires Java 25
-            version("gson", "2.11.0")
+            version("jackson", "2.22.0")        // config databinding: JSON/YAML/TOML (relocated in the shaded jar)
+            version("jsonSchemaGen", "4.38.0")  // victools; generates the editor schema (Jackson 2.x line)
+            version("adventure", "4.24.0")      // platform-neutral text API; matches Paper 26.1's adventure-bom
             version("guice", "7.0.0")
             version("jakartaInject", "2.0.1")
 
@@ -51,7 +54,12 @@ dependencyResolutionManagement {
 
             // ----- Libraries -----
             library("paper-api", "io.papermc.paper", "paper-api").versionRef("paper")
-            library("gson", "com.google.code.gson", "gson").versionRef("gson")
+            library("jackson-databind", "com.fasterxml.jackson.core", "jackson-databind").versionRef("jackson")
+            library("jackson-yaml", "com.fasterxml.jackson.dataformat", "jackson-dataformat-yaml").versionRef("jackson")
+            library("jackson-toml", "com.fasterxml.jackson.dataformat", "jackson-dataformat-toml").versionRef("jackson")
+            library("jsonschema-generator", "com.github.victools", "jsonschema-generator").versionRef("jsonSchemaGen")
+            library("jsonschema-module-jackson", "com.github.victools", "jsonschema-module-jackson").versionRef("jsonSchemaGen")
+            library("adventure-api", "net.kyori", "adventure-api").versionRef("adventure")
             library("guice", "com.google.inject", "guice").versionRef("guice")
             library("jakarta-inject", "jakarta.inject", "jakarta.inject-api").versionRef("jakartaInject")
 

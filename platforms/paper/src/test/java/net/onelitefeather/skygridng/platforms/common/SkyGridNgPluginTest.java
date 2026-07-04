@@ -33,13 +33,14 @@ class SkyGridNgPluginTest {
     }
 
     @Test
-    @DisplayName("the plugin enables, registers /skygrid and writes generator.json")
+    @DisplayName("the plugin enables, registers /skygrid and writes config.yml")
     void enablesAndWires() {
         SkyGridNgPlugin plugin = MockBukkit.load(SkyGridNgPlugin.class);
 
         assertThat(plugin.isEnabled()).isTrue();
         assertThat(plugin.getCommand("skygrid")).isNotNull();
-        assertThat(new File(plugin.getDataFolder(), "generator.json")).exists();
+        assertThat(new File(plugin.getDataFolder(), "config.yml")).exists();
+        assertThat(new File(plugin.getDataFolder(), "presets/classic.yml")).exists();
     }
 
     @Test

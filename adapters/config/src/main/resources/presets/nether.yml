@@ -1,0 +1,46 @@
+# Nether: a hostile nether-themed grid (netherrack, blackstone, crimson/warped, ancient debris)
+# with nether mobs and biomes, and a netherrack starter platform.
+extends: classic
+algorithm: skygrid
+blocks:
+  - { material: minecraft:netherrack, weight: 28.0 }
+  - { material: minecraft:blackstone, weight: 10.0 }
+  - { material: minecraft:basalt, weight: 8.0 }
+  - { material: minecraft:soul_soil, weight: 6.0 }
+  - { material: minecraft:soul_sand, weight: 5.0 }
+  - { material: minecraft:nether_bricks, weight: 6.0 }
+  - { material: minecraft:nether_gold_ore, weight: 4.0 }
+  - { material: minecraft:nether_quartz_ore, weight: 4.0 }
+  - { material: minecraft:glowstone, weight: 3.0 }
+  - { material: minecraft:magma_block, weight: 3.0 }
+  - { material: minecraft:crimson_stem, weight: 4.0 }
+  - { material: minecraft:crimson_nylium, weight: 3.0 }
+  - { material: minecraft:warped_stem, weight: 4.0 }
+  - { material: minecraft:warped_nylium, weight: 3.0 }
+  - { material: minecraft:gilded_blackstone, weight: 1.0 }
+  - { material: minecraft:ancient_debris, weight: 0.5 }
+  - { material: minecraft:chest, weight: 1.5 }
+  - { material: minecraft:spawner, weight: 0.8 }
+  - { material: minecraft:lava, weight: 3.0 }
+chestLoot:
+  - { material: minecraft:chests/nether_bridge, weight: 4.0 }
+  - { material: minecraft:chests/bastion_treasure, weight: 1.0 }
+spawnerMobs:
+  - { material: minecraft:blaze, weight: 3.0 }
+  - { material: minecraft:wither_skeleton, weight: 2.0 }
+  - { material: minecraft:piglin, weight: 3.0 }
+  - { material: minecraft:hoglin, weight: 2.0 }
+  - { material: minecraft:magma_cube, weight: 2.0 }
+biomes:
+  - minecraft:nether_wastes
+  - minecraft:crimson_forest
+  - minecraft:warped_forest
+  - minecraft:soul_sand_valley
+  - minecraft:basalt_deltas
+spawn:
+  spread: true
+  spacing: 512
+  platformY: 64
+  platformBlock: minecraft:netherrack
+  platformRadius: 2
+  villager: false

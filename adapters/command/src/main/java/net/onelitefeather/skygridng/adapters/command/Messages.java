@@ -103,4 +103,20 @@ final class Messages {
     static Component skyWeightSet(String material, double value) {
         return key("skyweight.set", material, value);
     }
+
+    static Component presetList(String names, String active) {
+        return key("preset.list", names, active);
+    }
+
+    static Component presetSet(String name) {
+        return key("preset.set", name);
+    }
+
+    static Component presetUnknown(String name) {
+        return key("preset.unknown", name);
+    }
+
+    static Component worldList(String worlds) {
+        return key("world.list", worlds);
+    }
 }

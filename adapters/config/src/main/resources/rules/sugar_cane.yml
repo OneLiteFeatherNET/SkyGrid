@@ -1,0 +1,13 @@
+# Per-block rule for sugar cane, grown as a decoration column.
+# It stands on sand and is watered by a contained still-water source boxed into a neighbor cell, so no
+# water ever flows into the void (sand cannot be waterlogged, so "source" is the right water mode here;
+# "waterlogged" only fits a support block that can actually hold water). Placed update-free
+# (physics: none) so the support and water checks never break it off.
+block: minecraft:sugar_cane
+physics: none
+placement:
+  requiresGround: minecraft:sand
+  water: source
+  minHeight: 1
+  maxHeight: 3
+  probability: 0.04

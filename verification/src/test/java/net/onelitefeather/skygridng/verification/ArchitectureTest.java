@@ -24,7 +24,12 @@ class ArchitectureTest {
     private static final String ADAPTERS = "net.onelitefeather.skygridng.adapters..";
     private static final String PLATFORMS = "net.onelitefeather.skygridng.platforms..";
 
-    /** Packages no platform-neutral layer may ever depend on. */
+    /**
+     * Packages no platform-neutral layer may ever depend on. Adventure (net.kyori.adventure) is
+     * deliberately NOT here: it is a cross-platform text API every supported platform ships, so the
+     * api, ports, and core may use it. Only its platform-specific bindings
+     * (net.kyori.adventure.platform, which wrap Bukkit/BungeeCord/etc.) stay banned.
+     */
     private static final String[] PLATFORM_AND_FRAMEWORK_PACKAGES = {
             "org.bukkit..",
             "io.papermc..",
@@ -32,7 +37,7 @@ class ArchitectureTest {
             "com.google.gson..",
             "com.google.inject..",
             "jakarta.inject..",
-            "net.kyori..",
+            "net.kyori.adventure.platform..",
     };
 
     @ArchTest
@@ -40,7 +45,9 @@ class ArchitectureTest {
             noClasses().that().resideInAnyPackage(API, PORTS, CORE)
                     .should().dependOnClassesThat().resideInAnyPackage(PLATFORM_AND_FRAMEWORK_PACKAGES)
                     .because("the api, ports, and core must stay platform-neutral so other platforms "
-                            + "(Fabric, Forge, Sponge) can reuse them; resolve blocks via BlockId in an adapter");
+                            + "(Fabric, Forge, Sponge) can reuse them; resolve blocks via BlockId in an "
+                            + "adapter. Adventure text is allowed (it is cross-platform), its platform "
+                            + "bindings are not");
 
     @ArchTest
     static final ArchRule adaptersDependOnPortsAndApiOnlyNotCore =

@@ -3,38 +3,37 @@ package net.onelitefeather.skygridng.platforms.common.injection;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import jakarta.inject.Singleton;
-import net.onelitefeather.skygridng.adapters.json.JsonRuleRepository;
+import net.onelitefeather.skygridng.adapters.config.BundledDefaults;
+import net.onelitefeather.skygridng.adapters.config.JacksonPresetRepository;
+import net.onelitefeather.skygridng.adapters.config.JacksonRuleRepository;
+import net.onelitefeather.skygridng.ports.out.PresetRepository;
 import net.onelitefeather.skygridng.ports.out.RuleRepository;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 /**
- * Binds the out port {@link RuleRepository} to its JSON adapter.
+ * Binds the out ports {@link PresetRepository} and {@link RuleRepository} to their Jackson adapters.
  *
- * The bundled default config is read here so the core never touches the plugin jar.
+ * The config is split three ways: a {@code config.<ext>} selector, a {@code presets/} directory (one
+ * file per preset) and a {@code rules/} directory (one file per block). On first run the adapters seed
+ * their defaults from the bundled resources they read through {@link BundledDefaults}, which here is
+ * backed by the plugin jar ({@code JavaPlugin.getResource}) so the core never touches the jar. JSON,
+ * YAML and TOML are all accepted; the format is chosen per file from its extension.
  */
 public final class RepositoryModule extends AbstractModule {
 
     @Provides
     @Singleton
-    RuleRepository provideRuleRepository(JavaPlugin plugin, Path dataFolder) {
-        Path file = dataFolder.resolve("generator.json");
-        return new JsonRuleRepository(file, defaultConfigJson(plugin));
+    PresetRepository providePresetRepository(JavaPlugin plugin, Path dataFolder) {
+        BundledDefaults defaults = plugin::getResource;
+        return new JacksonPresetRepository(dataFolder, defaults);
     }
 
-    private String defaultConfigJson(JavaPlugin plugin) {
-        try (InputStream in = plugin.getResource("generator.json")) {
-            if (in == null) {
-                throw new IllegalStateException("generator.json not found in plugin jar");
-            }
-            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Could not read bundled generator.json", e);
-        }
+    @Provides
+    @Singleton
+    RuleRepository provideRuleRepository(JavaPlugin plugin, Path dataFolder) {
+        BundledDefaults defaults = plugin::getResource;
+        return new JacksonRuleRepository(dataFolder, defaults);
     }
 }

@@ -14,7 +14,7 @@ import java.util.List;
  * @param surface  surface block
  * @param fill     block below the surface
  * @param liquid   true if the surface is a liquid column up to sea level
- * @param features optional decorations (sugar cane, cactus, flowers, ...)
+ * @param features optional decorations: plants, loot chests, spawners ({@link Decoration})
  */
 public record TileType(
         String id,
@@ -23,7 +23,7 @@ public record TileType(
         BlockId surface,
         BlockId fill,
         boolean liquid,
-        List<FeatureSpec> features
+        List<Decoration> features
 ) {
     public TileType {
         if (id == null || id.isBlank()) {

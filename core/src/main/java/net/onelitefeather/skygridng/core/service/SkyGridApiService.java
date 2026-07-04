@@ -1,5 +1,6 @@
 package net.onelitefeather.skygridng.core.service;
 
+import net.kyori.adventure.text.Component;
 import net.onelitefeather.skygridng.api.SkyGridApi;
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
 import net.onelitefeather.skygridng.api.model.TileType;
@@ -39,5 +40,16 @@ public final class SkyGridApiService implements SkyGridApi {
     @Override
     public Optional<TileType> tile(String id) {
         return admin.tile(id);
+    }
+
+    @Override
+    public Component describe() {
+        // A translatable summary built here in the core, proving the platform-neutral layer can speak
+        // Adventure directly: the platform's i18n renders the key per viewer locale.
+        return Component.translatable(
+                "skygridng.api.summary",
+                Component.text(admin.algorithm()),
+                Component.text(admin.tileIds().size()),
+                Component.text(admin.current().skygrid().spacing()));
     }
 }

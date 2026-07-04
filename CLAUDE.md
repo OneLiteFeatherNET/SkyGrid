@@ -17,13 +17,15 @@ the skills under `.claude/skills/`. Read the matching skill before doing the wor
 - Never use em dashes anywhere (not in code, docs, or commits). Use a comma, colon, parentheses,
   or a period instead.
 - The dependency direction is one way: `platforms -> adapters -> ports -> api`, and `core -> ports
-  -> api`. The `api`, `ports`, and `core` modules must never import Bukkit, Gson, Guice,
-  jakarta.inject, or Adventure; the adapters must never import `core`. If an edit would break either,
-  the design is wrong. See the `hexagonal-architecture` skill.
+  -> api`. The `api`, `ports`, and `core` modules must never import Bukkit, Jackson, Guice, or
+  jakarta.inject; the adapters must never import `core`. Adventure (`net.kyori.adventure`) is allowed
+  in `api`/`ports`/`core` as a platform-neutral text API (it is `compileOnly`; the platform provides
+  it at runtime), but its platform-specific bindings (`net.kyori.adventure.platform`) are not. If an
+  edit would break either, the design is wrong. See the `hexagonal-architecture` skill.
 - Keep value types immutable (records), validate in compact constructors, and keep generation
   deterministic from the world seed.
 - The core is platform-neutral, not just Bukkit-import-free: name blocks by namespaced `BlockId`
-  (`minecraft:stone`), never a Bukkit `Material` enum name, in `api`/`ports`/`core` or `generator.json`.
+  (`minecraft:stone`), never a Bukkit `Material` enum name, in `api`/`ports`/`core` or the config files.
   Resolve to a native block only in the adapter (WorldEdit pattern; see `hexagonal-architecture`).
 
 ## Architecture map
@@ -35,19 +37,23 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
   `api.SkyGridApi` (read-only facade), `api.util.Seeds` (deterministic seed derivation). No deps.
 - `ports/` (`ports.*`, framework free): the interfaces adapters compile against. `ports.in`
   (`GenerateRegionUseCase`, `RuleAdminUseCase`, `TerrainAlgorithmProvider`), `ports.out`
-  (`RuleRepository`), `ports.algorithm` (`TerrainAlgorithm`, `ColumnSink`). Depends on `api`.
+  (`PresetRepository`, `RuleRepository`), `ports.algorithm` (`TerrainAlgorithm`, `ColumnSink`).
+  Depends on `api`.
 - `core/` (`core.*`, framework free): the domain. `algorithm` (the three terrain algorithm impls),
   `solver` (the WFC solver and strategies), `service` (use case impls, incl. `SkyGridApiService`),
   `state` (`RuleState`), `util` (`ValueNoise`, `WeightedTable`). Implements the ports; depends on
   `ports` + `api`.
-- `adapters/generator`, `adapters/command`, `adapters/json` (`adapters.*`): the Bukkit/Gson edges.
-  Each depends on `ports` + `api` only, never on `core`. `generator` (`HexagonalChunkGenerator` +
-  material), `command` (`/skygrid` + Adventure messages), `json` (Gson `RuleRepository` + the bundled
-  default `generator.json`).
+- `adapters/generator`, `adapters/command`, `adapters/config`, `adapters/spawn` (`adapters.*`): the
+  Bukkit/Jackson edges. Each depends on `ports` + `api` only, never on `core`. `generator`
+  (`HexagonalChunkGenerator`, material and per-block rule resolution to `BlockData`), `command`
+  (`/skygrid` + Adventure messages), `config` (Jackson `PresetRepository` + `RuleRepository`: the split
+  `config` selector, one file per preset under `presets/` and one per block under `rules/`, in
+  JSON/YAML/TOML, plus the victools-generated editor `schema/`), `spawn` (the spread first-join
+  listener).
 - `platforms/common` (`platforms.common.*`): the shared Bukkit composition root. `SkyGridNgPlugin`,
   `I18n`, the Guice modules (`PlatformModule`, `RepositoryModule`, `GeneratorModule`), and the message
-  bundles. Exposes the whole graph; the only place that may use Bukkit, Guice, jakarta.inject,
-  Adventure. A library (no shadow/plugin-yml).
+  bundles. Exposes the whole graph; the only place that may use Bukkit, Guice, and jakarta.inject
+  (Adventure text is allowed in every layer). A library (no shadow/plugin-yml).
 - `platforms/paper` (no package, thin): the public Paper distribution. plugin.yml + shadow +
   run-paper + publishing. Produces `skygrid-ng-<version>.jar`. Holds the bootstrap integration tests.
 - `platforms/paper-olf` (`platforms.olf.*`): the OneLiteFeather network distribution, a sibling of
@@ -79,6 +85,8 @@ and is switchable at runtime via `/skygrid algorithm <id>`.
   read `.claude/skills/build-and-release/SKILL.md`.
 - Working on what the plugin generates or its config and gameplay behavior:
   read `.claude/skills/skygrid-domain/SKILL.md`.
+- Editing the config files, presets/ or rules/ layout, the JSON/YAML/TOML formats, the JSON Schemas,
+  or the per-block state/physics/placement rules: read `.claude/skills/config-schema-and-rules/SKILL.md`.
 - Planning or reviewing a feature against its requirements:
   read `.claude/skills/user-stories/SKILL.md`.
 - Needing the why behind a structural, dependency, licensing, naming, or process choice (so you do

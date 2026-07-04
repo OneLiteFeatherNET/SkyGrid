@@ -13,7 +13,8 @@ dependencies {
     api(project(":api"))
     api(project(":adapters:generator"))
     api(project(":adapters:command"))
-    api(project(":adapters:json"))
+    api(project(":adapters:config"))
+    api(project(":adapters:spawn"))
     api(libs.guice)
     api(libs.jakarta.inject)
 }

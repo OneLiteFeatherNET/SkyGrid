@@ -1,0 +1,6 @@
+# Per-block rule for oak leaves.
+# Persistent leaves are never checked for decay, so they survive on the grid where no log is adjacent.
+block: minecraft:oak_leaves
+state:
+  persistent: true
+physics: none

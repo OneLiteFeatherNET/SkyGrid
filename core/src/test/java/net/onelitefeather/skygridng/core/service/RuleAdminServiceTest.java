@@ -1,8 +1,10 @@
 package net.onelitefeather.skygridng.core.service;
 
-import net.onelitefeather.skygridng.api.model.GeneratorConfig;
+import net.onelitefeather.skygridng.api.model.PresetCatalog;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
-import net.onelitefeather.skygridng.ports.out.RuleRepository;
+import net.onelitefeather.skygridng.core.solver.ShannonEntropyHeuristic;
+import net.onelitefeather.skygridng.core.solver.WeightedRandomCollapse;
+import net.onelitefeather.skygridng.core.solver.WfcSolver;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import net.onelitefeather.skygridng.testutil.Fixtures;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,34 +14,26 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Black-box tests for the admin use case. A simple in memory repository stands in for the JSON
- * adapter, keeping the test on the port contract.
+ * Black-box tests for the admin use case. A single-preset in memory catalog stands in for the
+ * Configurate adapter, keeping the test on the port contract. Saving flattens the edits back into
+ * the active preset.
  */
 class RuleAdminServiceTest {
 
-    /** Captures the last saved config so we can assert persistence. */
-    private static final class InMemoryRepository implements RuleRepository {
-        private GeneratorConfig stored = Fixtures.config("skygrid");
-
-        @Override
-        public GeneratorConfig load() {
-            return stored;
-        }
-
-        @Override
-        public void save(GeneratorConfig config) {
-            stored = config;
-        }
-    }
-
-    private InMemoryRepository repository;
+    private Fixtures.InMemoryPresetRepository repository;
     private RuleAdminUseCase admin;
 
     @BeforeEach
     void setUp() {
-        repository = new InMemoryRepository();
-        RuleState state = new RuleState(repository.load(), 8);
-        admin = new RuleAdminService(state, repository);
+        PresetCatalog catalog = Fixtures.presetCatalog("skygrid");
+        repository = new Fixtures.InMemoryPresetRepository(catalog);
+        RuleState state = new RuleState(PresetResolver.resolve(catalog, catalog.active()), 8);
+        PresetService presets = new PresetService(repository, state, catalog);
+        RegionGenerationService region = new RegionGenerationService(state,
+                new WfcSolver(new ShannonEntropyHeuristic(), new WeightedRandomCollapse()));
+        DefaultTerrainAlgorithms algorithms = new DefaultTerrainAlgorithms(state,
+                Fixtures.defaultAlgorithmFactories(), region);
+        admin = new RuleAdminService(state, presets, algorithms);
     }
 
     @Test
@@ -72,16 +66,16 @@ class RuleAdminServiceTest {
     void adjacencyAndSkyWeight() {
         assertThat(admin.disallow("water", "sand")).isTrue();
         assertThat(admin.allow("water", "grass")).isTrue();
-        assertThat(admin.setSkyGridWeight("STONE", 9.0)).isTrue();   // existing material
-        assertThat(admin.setSkyGridWeight("DIAMOND_BLOCK", 9.0)).isTrue(); // new material
+        assertThat(admin.setSkyGridWeight("minecraft:stone", 9.0)).isTrue();   // existing material
+        assertThat(admin.setSkyGridWeight("minecraft:diamond_block", 9.0)).isTrue(); // new material
     }
 
     @Test
-    @DisplayName("save persists to the repository and undo rolls back the last change")
+    @DisplayName("save flattens edits into the active preset and undo rolls back the last change")
     void saveAndUndo() {
         admin.setAlgorithm("wfc");
         admin.save();
-        assertThat(repository.load().algorithm()).isEqualTo("wfc");
+        assertThat(PresetResolver.resolve(repository.load(), "classic").algorithm()).isEqualTo("wfc");
 
         assertThat(admin.undo()).isTrue();
         assertThat(admin.algorithm()).isEqualTo("skygrid");

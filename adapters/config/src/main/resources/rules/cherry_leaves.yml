@@ -1,0 +1,6 @@
+# Per-block rule for cherry leaves (used by the modern preset).
+# Persistent leaves are never checked for decay, so they survive on the grid where no log is adjacent.
+block: minecraft:cherry_leaves
+state:
+  persistent: true
+physics: none

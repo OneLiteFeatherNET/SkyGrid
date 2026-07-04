@@ -29,7 +29,15 @@ tasks {
     shadowJar {
         archiveBaseName.set("skygrid-ng-olf")
         archiveClassifier.set("")
-        relocate("com.google.gson", "net.onelitefeather.skygridng.libs.gson")
+        // Relocate Jackson (and the SnakeYAML its YAML backend pulls in) so they cannot clash with
+        // the copies the server or another plugin ships. Bukkit bundles its own SnakeYAML.
+        relocate("com.fasterxml.jackson", "net.onelitefeather.skygridng.libs.jackson")
+        relocate("org.yaml.snakeyaml", "net.onelitefeather.skygridng.libs.snakeyaml")
+        // JSON Schema: victools (plus its classmate) generates the schema files for editors; relocate
+        // both so they cannot clash with the copies the server or another plugin ships.
+        relocate("com.github.victools", "net.onelitefeather.skygridng.libs.victools")
+        relocate("com.fasterxml.classmate", "net.onelitefeather.skygridng.libs.classmate")
+        mergeServiceFiles()
     }
 
     build {

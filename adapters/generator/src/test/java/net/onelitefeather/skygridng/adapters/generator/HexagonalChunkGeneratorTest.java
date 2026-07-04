@@ -1,13 +1,17 @@
 package net.onelitefeather.skygridng.adapters.generator;
 
-import net.onelitefeather.skygridng.core.service.AlgorithmService;
+import net.onelitefeather.skygridng.api.model.GeneratorConfig;
+import net.onelitefeather.skygridng.api.model.RuleCatalog;
+import net.onelitefeather.skygridng.core.service.DefaultBiomes;
+import net.onelitefeather.skygridng.core.service.DefaultSkyGridDecorations;
+import net.onelitefeather.skygridng.core.service.DefaultTerrainAlgorithms;
 import net.onelitefeather.skygridng.core.service.RegionGenerationService;
 import net.onelitefeather.skygridng.core.solver.ShannonEntropyHeuristic;
 import net.onelitefeather.skygridng.core.solver.WeightedRandomCollapse;
 import net.onelitefeather.skygridng.core.solver.WfcSolver;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import net.onelitefeather.skygridng.testutil.Fixtures;
-import org.bukkit.Material;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.generator.ChunkGenerator.ChunkData;
 import org.bukkit.generator.WorldInfo;
 import org.junit.jupiter.api.AfterEach;
@@ -18,6 +22,7 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Random;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,8 +55,9 @@ class HexagonalChunkGeneratorTest {
         RuleState state = new RuleState(Fixtures.config("skygrid"), 4);
         RegionGenerationService region = new RegionGenerationService(
                 state, new WfcSolver(new ShannonEntropyHeuristic(), new WeightedRandomCollapse()));
-        AlgorithmService algorithms = new AlgorithmService(state, region);
-        return new HexagonalChunkGenerator(algorithms, region);
+        DefaultTerrainAlgorithms algorithms = new DefaultTerrainAlgorithms(state, Fixtures.defaultAlgorithmFactories(), region);
+        return new HexagonalChunkGenerator(algorithms, region, new DefaultSkyGridDecorations(state),
+                new DefaultBiomes(state, Set.copyOf(GeneratorConfig.DEFAULT_BIOMES)), RuleCatalog.empty());
     }
 
     @Test
@@ -83,7 +89,7 @@ class HexagonalChunkGeneratorTest {
         ArgumentCaptor<Integer> y = ArgumentCaptor.forClass(Integer.class);
         ArgumentCaptor<Integer> z = ArgumentCaptor.forClass(Integer.class);
         // 4 grid columns in x times 4 in z times 16 grid heights (y = 0..60 step 4) = 256 blocks.
-        verify(data, times(256)).setBlock(x.capture(), y.capture(), z.capture(), any(Material.class));
+        verify(data, times(256)).setBlock(x.capture(), y.capture(), z.capture(), any(BlockData.class));
 
         assertThat(x.getAllValues()).allMatch(v -> v == 0 || v == 4 || v == 8 || v == 12);
         assertThat(z.getAllValues()).allMatch(v -> v == 0 || v == 4 || v == 8 || v == 12);
@@ -91,9 +97,10 @@ class HexagonalChunkGeneratorTest {
     }
 
     @Test
-    @DisplayName("the SkyGrid algorithm asks for no decoration populators")
-    void noPopulatorsForSkyGrid() {
+    @DisplayName("the classic SkyGrid uses the decoration populator when loot or mobs are configured")
+    void decorationPopulatorForSkyGrid() {
         HexagonalChunkGenerator generator = skyGridGenerator();
-        assertThat(generator.getDefaultPopulators(mock(org.bukkit.World.class))).isEmpty();
+        assertThat(generator.getDefaultPopulators(mock(org.bukkit.World.class)))
+                .singleElement().isInstanceOf(SkyGridDecorationPopulator.class);
     }
 }

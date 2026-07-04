@@ -52,14 +52,26 @@ class RecordValidationTest {
     }
 
     @Test
-    @DisplayName("FeatureSpec rejects bad heights and out of range probability")
-    void featureSpec() {
-        assertThatThrownBy(() -> new FeatureSpec(mc("cactus"), false, null, 0.5, 0, 3))
+    @DisplayName("Plant rejects bad heights and out of range probability")
+    void plant() {
+        assertThatThrownBy(() -> new Plant(mc("cactus"), false, null, 0.5, 0, 3, false))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new FeatureSpec(mc("cactus"), false, null, 0.5, 3, 1))
+        assertThatThrownBy(() -> new Plant(mc("cactus"), false, null, 0.5, 3, 1, false))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new FeatureSpec(mc("cactus"), false, null, 1.5, 1, 3))
+        assertThatThrownBy(() -> new Plant(mc("cactus"), false, null, 1.5, 1, 3, false))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("LootChest and Spawner reject null ids and out of range probability")
+    void lootChestAndSpawner() {
+        assertThatThrownBy(() -> new LootChest(null, mc("chests/x"), 0.5))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new LootChest(mc("chest"), mc("chests/x"), 1.5))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new Spawner(mc("spawner"), null, 0.5))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertDoesNotThrow(() -> new Spawner(mc("spawner"), mc("zombie"), 0.1));
     }
 
     @Test
@@ -79,13 +91,13 @@ class RecordValidationTest {
     @DisplayName("SkyGridConfig rejects bad spacing, inverted Y, bad noise scale and empty blocks")
     void skyGridConfig() {
         List<BlockWeight> ok = List.of(new BlockWeight(mc("stone"), 1));
-        assertThatThrownBy(() -> new SkyGridConfig(0, 0, 64, 0.03, ok))
+        assertThatThrownBy(() -> new SkyGridConfig(0, 0, 64, 0.03, ok, List.of(), List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SkyGridConfig(4, 10, 0, 0.03, ok))
+        assertThatThrownBy(() -> new SkyGridConfig(4, 10, 0, 0.03, ok, List.of(), List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SkyGridConfig(4, 0, 64, 0.0, ok))
+        assertThatThrownBy(() -> new SkyGridConfig(4, 0, 64, 0.0, ok, List.of(), List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SkyGridConfig(4, 0, 64, 0.03, List.of()))
+        assertThatThrownBy(() -> new SkyGridConfig(4, 0, 64, 0.03, List.of(), List.of(), List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

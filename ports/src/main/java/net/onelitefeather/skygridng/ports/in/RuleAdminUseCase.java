@@ -10,7 +10,7 @@ import java.util.Optional;
  * In port: in game administration of the configuration (called by the command adapter).
  *
  * All changes act on an immutable snapshot; undo uses the previous config as a Memento.
- * {@code save} writes through the {@code RuleRepository} out port.
+ * {@code save} flattens the edits back into the active preset and persists the catalog.
  */
 public interface RuleAdminUseCase {
 
@@ -26,10 +26,10 @@ public interface RuleAdminUseCase {
 
     Optional<TileType> tile(String id);
 
-    /** Reloads the configuration from JSON and invalidates caches (undo history is cleared). */
+    /** Reloads the preset catalog from disk, re-resolves the active preset, clears the undo history. */
     void reload();
 
-    /** Persists the current state back to the JSON file. */
+    /** Flattens the current state into the active preset and persists the catalog. */
     void save();
 
     boolean setWeight(String tileId, double weight);

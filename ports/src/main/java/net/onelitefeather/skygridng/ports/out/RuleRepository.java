@@ -1,18 +1,19 @@
 package net.onelitefeather.skygridng.ports.out;
 
-import net.onelitefeather.skygridng.api.model.GeneratorConfig;
+import net.onelitefeather.skygridng.api.model.RuleCatalog;
 
 /**
- * Out port: where the core loads the configuration from and saves it to.
+ * Out port: where the core loads the per-block rule catalog from and saves it to.
  *
- * The JSON implementation is just an adapter. A database, web, or in memory variant can be added
- * without touching the core (dependency inversion).
+ * The catalog holds one rule per block (block-data state, physics and optional placement), loaded from
+ * the {@code rules/} directory. The Jackson implementation is just an adapter; another backend can be
+ * added without touching the core.
  */
 public interface RuleRepository {
 
-    /** Loads the configuration (creates defaults if missing). */
-    GeneratorConfig load();
+    /** Loads the rule catalog (creates the bundled defaults if the {@code rules/} directory is empty). */
+    RuleCatalog load();
 
-    /** Persists the configuration. */
-    void save(GeneratorConfig config);
+    /** Persists the rule catalog (one file per block). */
+    void save(RuleCatalog catalog);
 }

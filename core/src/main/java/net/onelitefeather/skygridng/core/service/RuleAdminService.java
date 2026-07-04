@@ -4,25 +4,28 @@ import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
 import net.onelitefeather.skygridng.api.model.TileType;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
-import net.onelitefeather.skygridng.ports.out.RuleRepository;
+import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 import net.onelitefeather.skygridng.core.state.RuleState;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Implements in game administration. Validates input against the domain and delegates persistence
- * to the {@link RuleRepository} out port. Changes go through {@link RuleState}, which handles undo
- * (Memento) and cache invalidation plus algorithm rebuilds (Observer).
+ * Implements in game administration. Validates input against the domain; changes go through
+ * {@link RuleState}, which handles undo (Memento) and cache invalidation plus algorithm rebuilds
+ * (Observer). Persistence (reload and save) is delegated to {@link PresetService}, which writes the
+ * edits back into the active preset.
  */
 public final class RuleAdminService implements RuleAdminUseCase {
 
     private final RuleState state;
-    private final RuleRepository repository;
+    private final PresetService presets;
+    private final TerrainAlgorithms algorithms;
 
-    public RuleAdminService(RuleState state, RuleRepository repository) {
+    public RuleAdminService(RuleState state, PresetService presets, TerrainAlgorithms algorithms) {
         this.state = state;
-        this.repository = repository;
+        this.presets = presets;
+        this.algorithms = algorithms;
     }
 
     @Override
@@ -37,7 +40,7 @@ public final class RuleAdminService implements RuleAdminUseCase {
 
     @Override
     public boolean setAlgorithm(String algorithmId) {
-        if (!AlgorithmService.isKnown(algorithmId)) {
+        if (!algorithms.isKnown(algorithmId)) {
             return false;
         }
         state.apply(state.current().withAlgorithm(algorithmId));
@@ -56,12 +59,12 @@ public final class RuleAdminService implements RuleAdminUseCase {
 
     @Override
     public void reload() {
-        state.replace(repository.load());
+        presets.reload();
     }
 
     @Override
     public void save() {
-        repository.save(state.current());
+        presets.save();
     }
 
     @Override

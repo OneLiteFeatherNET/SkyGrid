@@ -1,5 +1,6 @@
 package net.onelitefeather.skygridng.adapters.command;
 
+import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import jakarta.inject.Inject;
 import org.bukkit.command.Command;
@@ -10,6 +11,7 @@ import org.bukkit.command.TabCompleter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * In adapter: the /skygrid command for runtime administration of the configuration.
@@ -21,16 +23,18 @@ import java.util.Locale;
 public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = List.of(
-            "list", "info", "weight", "allow", "disallow", "algorithm", "skyweight",
-            "reload", "save", "undo", "help");
+            "preset", "presets", "worlds", "list", "info", "weight", "allow", "disallow", "algorithm",
+            "skyweight", "reload", "save", "undo", "help");
 
     private static final List<String> ALGORITHMS = List.of("wfc", "skygrid", "noise_skygrid");
 
     private final RuleAdminUseCase admin;
+    private final Presets presets;
 
     @Inject
-    public SkyGridCommand(RuleAdminUseCase admin) {
+    public SkyGridCommand(RuleAdminUseCase admin, Presets presets) {
         this.admin = admin;
+        this.presets = presets;
     }
 
     @Override
@@ -45,6 +49,9 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
         }
 
         switch (args[0].toLowerCase(Locale.ROOT)) {
+            case "presets" -> sender.sendMessage(Messages.presetList(String.join(", ", presets.names()), presets.active()));
+            case "preset" -> preset(sender, args);
+            case "worlds" -> sender.sendMessage(Messages.worldList(formatWorlds()));
             case "list" -> sender.sendMessage(Messages.list(String.join(", ", admin.tileIds())));
             case "info" -> info(sender, args);
             case "weight" -> weight(sender, args);
@@ -64,6 +71,31 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             default -> sender.sendMessage(Messages.help());
         }
         return true;
+    }
+
+    private void preset(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Messages.usage("/skygrid preset <name>"));
+            return;
+        }
+        String name = args[1];
+        sender.sendMessage(presets.activate(name)
+                ? Messages.presetSet(name) : Messages.presetUnknown(name));
+    }
+
+    private String formatWorlds() {
+        Map<String, String> worlds = presets.worlds();
+        if (worlds.isEmpty()) {
+            return "(none yet)";
+        }
+        StringBuilder out = new StringBuilder();
+        worlds.forEach((world, preset) -> {
+            if (out.length() > 0) {
+                out.append(", ");
+            }
+            out.append(world).append('=').append(preset);
+        });
+        return out.toString();
     }
 
     private void info(CommandSender sender, String[] args) {
@@ -150,6 +182,7 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
         String sub = args[0].toLowerCase(Locale.ROOT);
         if (args.length == 2) {
             return switch (sub) {
+                case "preset" -> filter(presets.names(), args[1]);
                 case "info", "weight", "allow", "disallow" -> filter(admin.tileIds(), args[1]);
                 case "algorithm" -> filter(ALGORITHMS, args[1]);
                 default -> List.of();

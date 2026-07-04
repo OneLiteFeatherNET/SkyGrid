@@ -4,7 +4,7 @@ description: >
   Use whenever editing, extending, or reviewing SkyGrid-ng Java code: the core domain, ports,
   adapters, services, the Paper chunk generator, the /skygrid command, the JSON repository, or
   the Guice composition root. Enforces the hexagonal dependency rule (adapter -> port -> core),
-  keeps the core free of Bukkit, Gson, Guice, jakarta.inject, and Adventure, and provides the
+  keeps the core free of Bukkit, Gson, Guice, and jakarta.inject (Adventure text is allowed), and provides the
   recipes for adding a generation algorithm, a command subcommand, or an out adapter. Read this
   before touching any Java file so a change does not leak framework code into the core or wire a
   dependency the wrong way.
@@ -33,7 +33,9 @@ Never the other way.
 The rules below are not just convention. The `:verification` module runs ArchUnit tests
 (`ArchitectureTest`) on every build that assert: (1) `api`/`ports`/`core` depend on no
 platform/framework package (`org.bukkit`, `io.papermc`, `net.minecraft`, Gson, Guice,
-jakarta.inject, Adventure); (2) adapters never depend on `core`; (3) the layered direction holds. The
+jakarta.inject, and `net.kyori.adventure.platform`); (2) adapters never depend on `core`; (3) the
+layered direction holds. Adventure text (`net.kyori.adventure`) is allowed everywhere; only its
+platform bindings are banned. The
 module graph already blocks most violations at compile time, but ArchUnit is the net that survives
 build-file drift (add paper-api to the core and it compiles, but the framework-free rule fails). If
 you add a legitimately new layer or package, update `ArchitectureTest` in the same change.
@@ -55,7 +57,8 @@ ArchUnit in `:verification`:
   (the platform provides them at runtime); Gson is bundled by the platform.
 - `platforms/common` (`platforms.common.*`): the shared Bukkit composition root. `SkyGridNgPlugin`,
   `I18n`, the Guice modules, the message bundles. Exposes the whole graph with `api`. The only place
-  that may use Bukkit, Guice, jakarta.inject, Adventure. A library (no shadow/plugin-yml).
+  that may use Bukkit, Guice, and jakarta.inject (Adventure text is allowed in every layer). A
+  library (no shadow/plugin-yml).
 - `platforms/paper`: the public Paper distribution (thin: plugin.yml, shadow, run-paper, publishing).
   Produces `skygrid-ng-<version>.jar`. Holds the bootstrap integration tests (they need the generated
   plugin.yml).
@@ -126,6 +129,37 @@ The framework-free layers must be neutral semantically, not just syntactically. 
 
 Adding a platform (Fabric, ...) is then a new adapter that resolves `BlockId` to that platform's block
 type; `api`, `ports`, and `core` do not change. See the `core-platform-neutrality` memory.
+
+## Ports, services, and registries (naming + the no-switch rule)
+
+Ports ARE APIs - they are the typed contract for data in and out. Name a port after the domain
+capability (a noun or a use-case verb phrase), and name its implementation `Default<Port>`:
+
+- Port (in `ports/`): `TerrainAlgorithms`, `GenerateRegionUseCase`, `RuleAdminUseCase`.
+- Implementation (in `core/service`): `DefaultTerrainAlgorithms`, `RegionGenerationService` style.
+
+Avoid `-Provider`/`-Service` as an INTERFACE suffix: `AlgorithmService implements TerrainAlgorithmProvider`
+reads badly (two nouns for one concept, and `Provider` clashes with `jakarta.inject.Provider`). The
+port owns the best name; `Default` (a real adjective, unlike `Impl`) marks the standard bean and
+leaves room for `CachingTerrainAlgorithms` later.
+
+Replace a growing `switch` over ids (the old `AlgorithmService` had two parallel switches for
+`rebuild` and `isKnown`) with a `Registry<K, V>`: a small immutable `Map`-backed holder of named
+factories keyed by a namespaced id. The registry's key set is the single source of truth for "what is
+known", so `isKnown`/tab-completion/validation cannot drift. Each entry is a Factory Method (a lambda
+building a Strategy from config); the registry as a whole is an Abstract Factory over the family. Keep
+`Registry<K,V>` framework-free (`api`/`core`); do the registration in the Guice composition root with
+`MapBinder` (jakarta.inject annotations live in the adapter/service layer, never in core). Refs:
+refactoring.guru factory-method, abstract-factory, strategy. See the `generation-roadmap` memory.
+
+## Discriminated unions
+
+Model data that is "exactly one of N shapes" as a `sealed interface` permitting `record`s, consumed by
+an exhaustive `switch` with record patterns and no `default`. The compiler then forces every consumer
+to handle a new variant. Use it for the generation `Decoration` (BlockColumn|Plant|LootChest|Spawner|
+Group) and config `BlockSource` (Single|Weighted). Prefer it over the GoF Visitor when the variant set
+grows more often than the operations (it does here). Keep Strategy for runtime behavior families like
+`TerrainAlgorithm`; use sealed unions for varying-shape data. See the `generation-pipeline` skill.
 
 ## Naming
 

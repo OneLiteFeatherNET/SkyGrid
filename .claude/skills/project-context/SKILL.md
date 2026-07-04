@@ -40,8 +40,9 @@ term plan see `docs/MAINTENANCE.md`. The detailed, dated decision log is in
 - Three algorithms, not one: `wfc` was kept for coherent surface terrain; `skygrid` and
   `noise_skygrid` were added as O(1), seed based, parallel safe alternatives. Algorithms sit behind
   one port (`TerrainAlgorithm`) so a fourth can be added without touching the generator.
-- Adventure based i18n: the core stays text free; the command adapter renders
-  `Component.translatable`, and Paper renders per client locale. English and German ship.
+- Adventure based i18n: the command adapter renders `Component.translatable`, and the core may build
+  Adventure text too (for example `SkyGridApi.describe()`); Paper renders per client locale. English
+  and German ship.
 - English everywhere in code; user facing text only in translation bundles.
 - Guice DI with the composition root in `bootstrap`: the core carries no injection annotations, so it
   stays framework free while wiring is centralized.
@@ -81,4 +82,6 @@ and update. See `docs/MAINTENANCE.md` for the five year plan and version policy.
 - English for all identifiers, comments, docs, and commit messages.
 - Conventional Commits; never edit the version in `gradle.properties` by hand (release-please owns
   it).
-- Keep the core free of Bukkit, Gson, Guice, jakarta.inject, and Adventure.
+- Keep the core free of Bukkit, Gson, Guice, and jakarta.inject. Adventure text
+  (`net.kyori.adventure`) is allowed as a platform-neutral API; its platform bindings
+  (`net.kyori.adventure.platform`) are not.

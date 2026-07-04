@@ -2,16 +2,37 @@ package net.onelitefeather.skygridng.platforms.common.injection;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.multibindings.MapBinder;
 import jakarta.inject.Singleton;
 import net.onelitefeather.skygridng.api.SkyGridApi;
+import net.onelitefeather.skygridng.api.model.BiomeId;
+import net.onelitefeather.skygridng.api.model.PresetCatalog;
+import net.onelitefeather.skygridng.api.model.RuleCatalog;
+import net.onelitefeather.skygridng.core.algorithm.IndependentSkyGridAlgorithm;
+import net.onelitefeather.skygridng.core.algorithm.NoiseSkyGridAlgorithm;
+import net.onelitefeather.skygridng.core.algorithm.WfcSurfaceAlgorithm;
+import net.onelitefeather.skygridng.ports.algorithm.AlgorithmFactory;
 import net.onelitefeather.skygridng.ports.in.GenerateRegionUseCase;
+import net.onelitefeather.skygridng.ports.in.Biomes;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
-import net.onelitefeather.skygridng.ports.in.TerrainAlgorithmProvider;
+import net.onelitefeather.skygridng.ports.in.SkyGridDecorations;
+import net.onelitefeather.skygridng.ports.in.SpawnPoints;
+import net.onelitefeather.skygridng.ports.in.Presets;
+import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
+import net.onelitefeather.skygridng.ports.out.PresetRepository;
 import net.onelitefeather.skygridng.ports.out.RuleRepository;
-import net.onelitefeather.skygridng.core.service.AlgorithmService;
+import net.onelitefeather.skygridng.core.service.DefaultBiomes;
+import net.onelitefeather.skygridng.core.service.DefaultSkyGridDecorations;
+import net.onelitefeather.skygridng.core.service.DefaultTerrainAlgorithms;
+import net.onelitefeather.skygridng.core.service.PresetResolver;
+import net.onelitefeather.skygridng.core.service.PresetService;
 import net.onelitefeather.skygridng.core.service.RegionGenerationService;
+import net.onelitefeather.skygridng.core.service.SpiralSpawnService;
 import net.onelitefeather.skygridng.core.service.RuleAdminService;
 import net.onelitefeather.skygridng.core.service.SkyGridApiService;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 import net.onelitefeather.skygridng.core.solver.ShannonEntropyHeuristic;
 import net.onelitefeather.skygridng.core.solver.WeightedRandomCollapse;
 import net.onelitefeather.skygridng.core.solver.WfcSolver;
@@ -28,10 +49,49 @@ public final class GeneratorModule extends AbstractModule {
 
     private static final int UNDO_HISTORY = 20;
 
+    @Override
+    protected void configure() {
+        // The algorithm registry: one binding per algorithm, the single place new algorithms are
+        // added. A distribution could contribute its own here without touching the core catalog. The
+        // stateless SkyGrid factories are lambdas; WFC needs an injected region, so it is a class.
+        MapBinder<String, AlgorithmFactory> algorithms =
+                MapBinder.newMapBinder(binder(), String.class, AlgorithmFactory.class);
+        algorithms.addBinding(IndependentSkyGridAlgorithm.ID)
+                .toInstance((config, region) -> new IndependentSkyGridAlgorithm(config.skygrid()));
+        algorithms.addBinding(NoiseSkyGridAlgorithm.ID)
+                .toInstance((config, region) -> new NoiseSkyGridAlgorithm(config.skygrid()));
+        algorithms.addBinding(WfcSurfaceAlgorithm.ID)
+                .toInstance((config, region) -> new WfcSurfaceAlgorithm(region));
+    }
+
     @Provides
     @Singleton
-    RuleState provideRuleState(RuleRepository repository) {
-        return new RuleState(repository.load(), UNDO_HISTORY);
+    PresetCatalog provideCatalog(PresetRepository repository) {
+        return repository.load();
+    }
+
+    @Provides
+    @Singleton
+    RuleState provideRuleState(PresetCatalog catalog) {
+        return new RuleState(PresetResolver.resolve(catalog, catalog.active()), UNDO_HISTORY);
+    }
+
+    @Provides
+    @Singleton
+    RuleCatalog provideRuleCatalog(RuleRepository repository) {
+        return repository.load();
+    }
+
+    @Provides
+    @Singleton
+    PresetService providePresetService(PresetRepository repository, RuleState state, PresetCatalog catalog) {
+        return new PresetService(repository, state, catalog);
+    }
+
+    @Provides
+    @Singleton
+    Presets providePresets(PresetService service) {
+        return service;
     }
 
     @Provides
@@ -54,20 +114,52 @@ public final class GeneratorModule extends AbstractModule {
 
     @Provides
     @Singleton
-    AlgorithmService provideAlgorithmService(RuleState state, GenerateRegionUseCase region) {
-        return new AlgorithmService(state, region);
+    DefaultTerrainAlgorithms provideDefaultTerrainAlgorithms(RuleState state,
+                                                             java.util.Map<String, AlgorithmFactory> factories,
+                                                             GenerateRegionUseCase region) {
+        return new DefaultTerrainAlgorithms(state, factories, region);
     }
 
     @Provides
     @Singleton
-    TerrainAlgorithmProvider provideTerrainAlgorithmProvider(AlgorithmService service) {
-        return service;
+    TerrainAlgorithms provideTerrainAlgorithms(DefaultTerrainAlgorithms algorithms) {
+        return algorithms;
     }
 
     @Provides
     @Singleton
-    RuleAdminService provideRuleAdminService(RuleState state, RuleRepository repository) {
-        return new RuleAdminService(state, repository);
+    SkyGridDecorations provideSkyGridDecorations(RuleState state) {
+        return new DefaultSkyGridDecorations(state);
+    }
+
+    @Provides
+    @Singleton
+    Set<BiomeId> provideBiomePalette(PresetCatalog catalog) {
+        // The union of every preset's biomes, so any world's Bukkit biome provider can declare all of
+        // them up front (a world's preset, or a runtime switch, never returns an undeclared biome).
+        Set<BiomeId> union = new LinkedHashSet<>();
+        for (String name : catalog.names()) {
+            union.addAll(PresetResolver.resolve(catalog, name).biomes());
+        }
+        return union;
+    }
+
+    @Provides
+    @Singleton
+    Biomes provideBiomes(RuleState state, Set<BiomeId> palette) {
+        return new DefaultBiomes(state, palette);
+    }
+
+    @Provides
+    @Singleton
+    SpawnPoints provideSpawnPoints(RuleState state) {
+        return new SpiralSpawnService(state);
+    }
+
+    @Provides
+    @Singleton
+    RuleAdminService provideRuleAdminService(RuleState state, PresetService presets, TerrainAlgorithms algorithms) {
+        return new RuleAdminService(state, presets, algorithms);
     }
 
     @Provides

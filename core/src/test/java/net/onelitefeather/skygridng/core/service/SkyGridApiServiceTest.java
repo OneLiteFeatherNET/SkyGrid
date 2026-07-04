@@ -1,9 +1,12 @@
 package net.onelitefeather.skygridng.core.service;
 
+import net.kyori.adventure.text.TranslatableComponent;
 import net.onelitefeather.skygridng.api.SkyGridApi;
-import net.onelitefeather.skygridng.api.model.GeneratorConfig;
+import net.onelitefeather.skygridng.api.model.PresetCatalog;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
-import net.onelitefeather.skygridng.ports.out.RuleRepository;
+import net.onelitefeather.skygridng.core.solver.ShannonEntropyHeuristic;
+import net.onelitefeather.skygridng.core.solver.WeightedRandomCollapse;
+import net.onelitefeather.skygridng.core.solver.WfcSolver;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import net.onelitefeather.skygridng.testutil.Fixtures;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,28 +21,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class SkyGridApiServiceTest {
 
-    private static final class InMemoryRepository implements RuleRepository {
-        private GeneratorConfig stored = Fixtures.config("skygrid");
-
-        @Override
-        public GeneratorConfig load() {
-            return stored;
-        }
-
-        @Override
-        public void save(GeneratorConfig config) {
-            stored = config;
-        }
-    }
-
     private RuleAdminUseCase admin;
     private SkyGridApi api;
 
     @BeforeEach
     void setUp() {
-        RuleRepository repository = new InMemoryRepository();
-        RuleState state = new RuleState(repository.load(), 8);
-        admin = new RuleAdminService(state, repository);
+        PresetCatalog catalog = Fixtures.presetCatalog("skygrid");
+        Fixtures.InMemoryPresetRepository repository = new Fixtures.InMemoryPresetRepository(catalog);
+        RuleState state = new RuleState(PresetResolver.resolve(catalog, catalog.active()), 8);
+        PresetService presets = new PresetService(repository, state, catalog);
+        RegionGenerationService region = new RegionGenerationService(state,
+                new WfcSolver(new ShannonEntropyHeuristic(), new WeightedRandomCollapse()));
+        DefaultTerrainAlgorithms algorithms = new DefaultTerrainAlgorithms(state,
+                Fixtures.defaultAlgorithmFactories(), region);
+        admin = new RuleAdminService(state, presets, algorithms);
         api = new SkyGridApiService(admin);
     }
 
@@ -64,5 +59,14 @@ class SkyGridApiServiceTest {
     @DisplayName("the api version is exposed")
     void exposesApiVersion() {
         assertThat(api.apiVersion()).isEqualTo(SkyGridApi.API_VERSION);
+    }
+
+    @Test
+    @DisplayName("describe() builds a translatable Adventure summary in the core")
+    void describeIsATranslatableSummary() {
+        assertThat(api.describe()).isInstanceOfSatisfying(TranslatableComponent.class, summary -> {
+            assertThat(summary.key()).isEqualTo("skygridng.api.summary");
+            assertThat(summary.arguments()).hasSize(3); // algorithm, tile count, sky spacing
+        });
     }
 }

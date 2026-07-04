@@ -1,5 +1,6 @@
 package net.onelitefeather.skygridng.adapters.command;
 
+import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.kyori.adventure.text.Component;
 import org.bukkit.command.Command;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.when;
 class SkyGridCommandTest {
 
     private RuleAdminUseCase admin;
+    private Presets presets;
     private CommandSender sender;
     private Command command;
     private SkyGridCommand subject;
@@ -32,9 +34,10 @@ class SkyGridCommandTest {
     @BeforeEach
     void setUp() {
         admin = mock(RuleAdminUseCase.class);
+        presets = mock(Presets.class);
         sender = mock(CommandSender.class);
         command = mock(Command.class);
-        subject = new SkyGridCommand(admin);
+        subject = new SkyGridCommand(admin, presets);
     }
 
     @Test

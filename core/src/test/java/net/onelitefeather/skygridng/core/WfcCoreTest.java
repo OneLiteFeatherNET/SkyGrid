@@ -1,5 +1,6 @@
 package net.onelitefeather.skygridng.core;
 
+import net.onelitefeather.skygridng.testutil.Fixtures;
 import net.onelitefeather.skygridng.core.algorithm.IndependentSkyGridAlgorithm;
 import net.onelitefeather.skygridng.core.algorithm.NoiseSkyGridAlgorithm;
 import net.onelitefeather.skygridng.ports.algorithm.TerrainAlgorithm;
@@ -11,7 +12,7 @@ import net.onelitefeather.skygridng.api.model.GeneratorConfig;
 import net.onelitefeather.skygridng.api.model.RuleSet;
 import net.onelitefeather.skygridng.api.model.SkyGridConfig;
 import net.onelitefeather.skygridng.api.model.TileType;
-import net.onelitefeather.skygridng.core.service.AlgorithmService;
+import net.onelitefeather.skygridng.core.service.DefaultTerrainAlgorithms;
 import net.onelitefeather.skygridng.core.service.RegionGenerationService;
 import net.onelitefeather.skygridng.core.solver.ShannonEntropyHeuristic;
 import net.onelitefeather.skygridng.core.solver.WeightedRandomCollapse;
@@ -58,7 +59,7 @@ class WfcCoreTest {
                 new BlockWeight(mc("grass_block"), 15), new BlockWeight(mc("oak_log"), 10),
                 new BlockWeight(mc("sand"), 8), new BlockWeight(mc("water"), 5),
                 new BlockWeight(mc("iron_ore"), 4), new BlockWeight(mc("chest"), 2));
-        return new SkyGridConfig(4, 0, 64, 0.03, blocks);
+        return new SkyGridConfig(4, 0, 64, 0.03, blocks, List.of(), List.of());
     }
 
     private GeneratorConfig config(String algorithm) {
@@ -93,7 +94,7 @@ class WfcCoreTest {
     @Test
     void factorySelectsAlgorithmByConfig() {
         RuleState state = new RuleState(config("wfc"), 4);
-        AlgorithmService algorithms = new AlgorithmService(state, region(state));
+        DefaultTerrainAlgorithms algorithms = new DefaultTerrainAlgorithms(state, Fixtures.defaultAlgorithmFactories(), region(state));
         assertEquals("wfc", algorithms.current().id());
         state.apply(config("skygrid"));
         assertEquals("skygrid", algorithms.current().id());

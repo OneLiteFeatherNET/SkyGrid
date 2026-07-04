@@ -1,0 +1,30 @@
+# Modern: 1.21-era blocks and mobs (deepslate, copper, tuff, cherry, sculk, trial spawner, vault,
+# breeze, bogged) layered on classic with the clustering noise generator.
+extends: classic
+algorithm: noise_skygrid
+blocks:
+  - { material: minecraft:deepslate, weight: 22.0 }
+  - { material: minecraft:tuff, weight: 10.0 }
+  - { material: minecraft:calcite, weight: 4.0 }
+  - { material: minecraft:dripstone_block, weight: 3.0 }
+  - { material: minecraft:copper_ore, weight: 5.0 }
+  - { material: minecraft:copper_block, weight: 2.0 }
+  - { material: minecraft:deepslate_diamond_ore, weight: 1.0 }
+  - { material: minecraft:amethyst_block, weight: 2.0 }
+  - { material: minecraft:cherry_log, weight: 6.0 }
+  - { material: minecraft:cherry_leaves, weight: 4.0 }
+  - { material: minecraft:mangrove_log, weight: 4.0 }
+  - { material: minecraft:bamboo_block, weight: 3.0 }
+  - { material: minecraft:pale_oak_log, weight: 3.0 }
+  - { material: minecraft:sculk, weight: 2.0 }
+  - { material: minecraft:moss_block, weight: 3.0 }
+  - { material: minecraft:tuff_bricks, weight: 2.0 }
+  - { material: minecraft:chest, weight: 1.5 }
+  - { material: minecraft:trial_spawner, weight: 0.8 }
+  - { material: minecraft:vault, weight: 0.4 }
+  - { material: minecraft:water, weight: 3.0 }
+spawnerMobs:
+  - { material: minecraft:breeze, weight: 2.0 }
+  - { material: minecraft:bogged, weight: 2.0 }
+  - { material: minecraft:zombie, weight: 3.0 }
+  - { material: minecraft:enderman, weight: 1.5 }

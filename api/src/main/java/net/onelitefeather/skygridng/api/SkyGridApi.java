@@ -1,5 +1,6 @@
 package net.onelitefeather.skygridng.api;
 
+import net.kyori.adventure.text.Component;
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
 import net.onelitefeather.skygridng.api.model.TileType;
 
@@ -36,4 +37,13 @@ public interface SkyGridApi {
 
     /** The tile with the given id, or empty if none is configured. */
     Optional<TileType> tile(String id);
+
+    /**
+     * A localized, ready-to-display summary of the active generator (algorithm, tile count, sky
+     * spacing) as an Adventure {@link Component}. It is a {@code translatable} component, so it
+     * renders in the viewer's locale wherever the plugin's translations are registered. Consumers
+     * (for example an OneLiteFeather network status display) can send it straight to any audience
+     * without rebuilding the text themselves.
+     */
+    Component describe();
 }

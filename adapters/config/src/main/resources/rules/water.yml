@@ -1,0 +1,7 @@
+# Per-block rule for water.
+# Keep generated water a stable source (level 0) with no fluid update, so it never flows out and
+# floods the void around the grid.
+block: minecraft:water
+state:
+  level: 0
+physics: none

@@ -16,7 +16,8 @@ dependencies {
     testImplementation(project(":core"))
     testImplementation(project(":adapters:generator"))
     testImplementation(project(":adapters:command"))
-    testImplementation(project(":adapters:json"))
+    testImplementation(project(":adapters:config"))
+    testImplementation(project(":adapters:spawn"))
     testImplementation(project(":platforms:common"))
     testImplementation(project(":platforms:paper-olf"))
 

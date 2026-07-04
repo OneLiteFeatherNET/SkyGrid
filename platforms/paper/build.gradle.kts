@@ -33,8 +33,15 @@ tasks {
         // producing module path (platforms/paper).
         archiveBaseName.set("skygrid-ng")
         archiveClassifier.set("")
-        // Relocate Gson so it cannot clash with other plugins on the server classpath.
-        relocate("com.google.gson", "net.onelitefeather.skygridng.libs.gson")
+        // Relocate Jackson (and the SnakeYAML its YAML backend pulls in) so they cannot clash with
+        // the copies the server or another plugin ships. Bukkit bundles its own SnakeYAML.
+        relocate("com.fasterxml.jackson", "net.onelitefeather.skygridng.libs.jackson")
+        relocate("org.yaml.snakeyaml", "net.onelitefeather.skygridng.libs.snakeyaml")
+        // JSON Schema: victools (plus its classmate) generates the schema files for editors; relocate
+        // both so they cannot clash with the copies the server or another plugin ships.
+        relocate("com.github.victools", "net.onelitefeather.skygridng.libs.victools")
+        relocate("com.fasterxml.classmate", "net.onelitefeather.skygridng.libs.classmate")
+        mergeServiceFiles()
     }
 
     build {
@@ -54,7 +61,7 @@ bukkit {
     // World generators must exist before worlds are loaded, so enable at server startup.
     load = BukkitPluginDescription.PluginLoadOrder.STARTUP
     version = project.version.toString()
-    description = "SkyGrid and WFC chunk generator for Paper (Java 25, JSON config, in game admin, i18n)."
+    description = "SkyGrid and WFC chunk generator for Paper (Java 25, JSON/YAML/TOML config, in game admin, i18n)."
     authors = listOf("TheMeinerLP", "OneLiteFeatherNET")
     website = "https://github.com/OneLiteFeatherNET/SkyGrid-ng"
 

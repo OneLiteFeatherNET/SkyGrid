@@ -5,12 +5,12 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import net.onelitefeather.skygridng.adapters.command.SkyGridCommand;
-import net.onelitefeather.skygridng.adapters.generator.HexagonalChunkGenerator;
+import net.onelitefeather.skygridng.adapters.spawn.SpreadSpawnListener;
 import net.onelitefeather.skygridng.platforms.common.injection.GeneratorModule;
 import net.onelitefeather.skygridng.platforms.common.injection.PlatformModule;
 import net.onelitefeather.skygridng.platforms.common.injection.RepositoryModule;
 import net.onelitefeather.skygridng.api.SkyGridApi;
-import net.onelitefeather.skygridng.core.service.AlgorithmService;
+import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.generator.ChunkGenerator;
@@ -71,7 +71,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
         getServer().getServicesManager().register(SkyGridApi.class, api, this, ServicePriority.Normal);
 
         String algorithm = injector.getInstance(RuleState.class).current().algorithm();
-        if (!AlgorithmService.isKnown(algorithm)) {
+        if (!injector.getInstance(TerrainAlgorithms.class).isKnown(algorithm)) {
             getLogger().warning("Unknown algorithm '" + algorithm + "', falling back to WFC.");
         }
 
@@ -83,6 +83,9 @@ public class SkyGridNgPlugin extends JavaPlugin {
         } else {
             getLogger().warning("Command 'skygrid' is not registered in plugin.yml.");
         }
+
+        // Spread-spawn: first-join players are scattered onto their own platforms in our worlds.
+        getServer().getPluginManager().registerEvents(injector.getInstance(SpreadSpawnListener.class), this);
 
         getLogger().info("SkyGrid-ng enabled. World generator: \"SkyGrid-ng\". Algorithm: " + algorithm + ".");
 
@@ -108,6 +111,8 @@ public class SkyGridNgPlugin extends JavaPlugin {
 
     @Override
     public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
-        return injector.getInstance(HexagonalChunkGenerator.class);
+        // The id is the part after the colon in the generator spec (SkyGrid-ng:<preset>); it selects
+        // which preset this world generates from. A blank or unknown id falls back to the default.
+        return injector.getInstance(WorldGenerators.class).forWorld(worldName, id);
     }
 }

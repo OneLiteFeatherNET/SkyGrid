@@ -16,6 +16,9 @@ java {
 tasks.withType<JavaCompile>().configureEach {
     options.release = javaVersion
     options.encoding = "UTF-8"
+    // Keep constructor and record-component parameter names in the bytecode so reflective binders
+    // (the Jackson config adapter) can map on-disk keys to record components by name.
+    options.compilerArgs.add("-parameters")
 }
 
 tasks.withType<Test>().configureEach {
