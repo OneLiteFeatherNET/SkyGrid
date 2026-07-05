@@ -132,7 +132,8 @@ crafting table"), so that I can offer a harder, more focused survival experience
 code.
 - Challenge rules are defined in config (`challenges/`, one file per rule, JSON/YAML/TOML).
 - `/skygrid challenge list|toggle <id>` lists and toggles rules; toggling persists immediately.
-- Ships in the `platforms/paper-olf` distribution only (documented OLF-only mechanic seam).
+- Enforced by an `OlfFeature` in `platforms/common`'s `platforms.olf` package (a naming convention
+  marking OneLiteFeather-server-specific mechanics, not a separate distribution).
 
 ### I2: Goal and achievement tracking within a challenge
 As a **player**, I want visible goals within an active challenge, so that I know what I'm working

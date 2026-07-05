@@ -62,16 +62,16 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
   JSON/YAML/TOML, plus the victools-generated editor `schema/`), `spawn` (the spread first-join
   listener).
 - `platforms/common` (`platforms.common.*`): the shared Bukkit composition root. `SkyGridNgPlugin`,
-  `I18n`, the Guice modules (`PlatformModule`, `RepositoryModule`, `GeneratorModule`), and the message
-  bundles. Exposes the whole graph; the only place that may use Bukkit, Guice, and jakarta.inject
-  (Adventure text is allowed in every layer). A library (no shadow/plugin-yml).
-- `platforms/paper` (no package, thin): the public Paper distribution. plugin.yml + shadow +
+  `I18n`, the Guice modules (`PlatformModule`, `RepositoryModule`, `GeneratorModule`), the message
+  bundles, and `platforms.olf.*` (`OlfModule`, `OlfFeature`, `ChallengeModule`, `ChallengeFeature`):
+  a naming convention, not a module boundary, for mechanics specific to this OneLiteFeather (OLF)
+  server (challenges) rather than general-purpose plugin behavior. `SkyGridNgPlugin.modules()` and
+  `onExtensionEnable()`/`onExtensionDisable()` always wire and enable every bound `OlfFeature`, there
+  is no distribution without them. Exposes the whole graph; the only place that may use Bukkit,
+  Guice, and jakarta.inject (Adventure text is allowed in every layer). A library (no
+  shadow/plugin-yml).
+- `platforms/paper` (no package, thin): the single Paper distribution. plugin.yml + shadow +
   run-paper + publishing. Produces `skygrid-ng-<version>.jar`. Holds the bootstrap integration tests.
-- `platforms/paper-olf` (`platforms.olf.*`): the OneLiteFeather network distribution, a sibling of
-  `platforms/paper` (both build on `platforms/common`). `OlfNetworkPlugin` extends `SkyGridNgPlugin`,
-  adds `OlfModule`, enables every bound `OlfFeature` (the seam for OLF-only mechanics like
-  challenges). Not published, so these never reach anyone outside the OLF network. Produces
-  `skygrid-ng-olf-<version>.jar`.
 
 - `verification/`: ArchUnit tests (no production code) that enforce the dependency rule and the
   platform-neutral core at build time. Update `ArchitectureTest` if you add a layer.
@@ -113,7 +113,7 @@ and is switchable at runtime via `/skygrid algorithm <id>`.
   (append `.methodName` to run one method)
 - Run a test server: `./gradlew :platforms:paper:runServer` (creates `run/`, which is gitignored)
 - Build the shaded jar: `./gradlew :platforms:paper:shadowJar` (output
-  `platforms/paper/build/libs/skygrid-ng-<version>.jar`; the OLF jar is `:platforms:paper-olf:shadowJar`)
+  `platforms/paper/build/libs/skygrid-ng-<version>.jar`)
 - Fast core check: `.claude/skills/hexagonal-architecture/scripts/compile-core.sh` (javac on api + ports + core)
 
 ## Commits and versioning

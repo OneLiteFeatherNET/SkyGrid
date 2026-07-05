@@ -3,9 +3,9 @@ plugins {
 }
 
 // The shared Bukkit composition root: the plugin base class (SkyGridNgPlugin), i18n, and the Guice
-// modules that wire the adapters to the ports. Both distributions (paper, paper-olf) build on it, so
-// the whole object graph is exposed with the api configuration. This is a library: no shadow, no
-// plugin-yml, no publishing. Bukkit is provided by the server at runtime, hence compileOnly.
+// modules that wire the adapters to the ports. The single Paper distribution (platforms/paper) builds
+// on it, so the whole object graph is exposed with the api configuration. This is a library: no
+// shadow, no plugin-yml, no publishing. Bukkit is provided by the server at runtime, hence compileOnly.
 dependencies {
     compileOnly(libs.paper.api)
     api(project(":core"))
@@ -15,6 +15,15 @@ dependencies {
     api(project(":adapters:command"))
     api(project(":adapters:config"))
     api(project(":adapters:spawn"))
+    api(project(":adapters:challenge"))
     api(libs.guice)
     api(libs.jakarta.inject)
+
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.launcher)
+    // Paper API is compileOnly for main, so tests need it explicitly (MockBukkit does not export it).
+    testImplementation(libs.paper.api)
+    testImplementation(libs.mockbukkit)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.assertj.core)
 }

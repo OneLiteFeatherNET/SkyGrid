@@ -1,7 +1,18 @@
 package net.onelitefeather.skygridng.platforms.common;
 
+import net.onelitefeather.skygridng.adapters.challenge.NoCraftingTableListener;
+import net.onelitefeather.skygridng.adapters.challenge.NoNaturalRegenerationListener;
+import net.onelitefeather.skygridng.adapters.challenge.OneLifeListener;
 import net.onelitefeather.skygridng.adapters.generator.HexagonalChunkGenerator;
+import net.onelitefeather.skygridng.api.SkyGridApi;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.plugin.RegisteredListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,8 +26,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Black-box integration test for the composition root. MockBukkit boots a server and loads the
- * plugin, which builds the full Guice graph, registers the command and writes the default config.
- * If any wiring is wrong the plugin fails to enable and these tests fail.
+ * plugin, which builds the full Guice graph, registers the command, writes the default config, and
+ * (since {@link SkyGridNgPlugin} now folds in what used to be {@code OlfNetworkPlugin}) enables the
+ * OLF-only challenge features as well. If any wiring is wrong the plugin fails to enable and these
+ * tests fail.
  */
 class SkyGridNgPluginTest {
 
@@ -41,6 +54,7 @@ class SkyGridNgPluginTest {
         assertThat(plugin.getCommand("skygrid")).isNotNull();
         assertThat(new File(plugin.getDataFolder(), "config.yml")).exists();
         assertThat(new File(plugin.getDataFolder(), "presets/classic.yml")).exists();
+        assertThat(server.getServicesManager().load(SkyGridApi.class)).isNotNull();
     }
 
     @Test
@@ -59,5 +73,79 @@ class SkyGridNgPluginTest {
         SkyGridNgPlugin plugin = MockBukkit.load(SkyGridNgPlugin.class);
         server.getPluginManager().disablePlugin(plugin);
         assertThat(plugin.isEnabled()).isFalse();
+    }
+
+    @Test
+    @DisplayName("ChallengeFeature registers the NoCraftingTableListener with the plugin manager on enable")
+    void challengeFeatureRegistersItsListener() {
+        MockBukkit.load(SkyGridNgPlugin.class);
+
+        boolean registered = false;
+        for (RegisteredListener registration : PlayerInteractEvent.getHandlerList().getRegisteredListeners()) {
+            if (registration.getListener() instanceof NoCraftingTableListener) {
+                registered = true;
+            }
+        }
+
+        assertThat(registered).isTrue();
+    }
+
+    @Test
+    @DisplayName("disabling the plugin unregisters the NoCraftingTableListener")
+    void disableUnregistersChallengeListener() {
+        SkyGridNgPlugin plugin = MockBukkit.load(SkyGridNgPlugin.class);
+
+        server.getPluginManager().disablePlugin(plugin);
+
+        for (RegisteredListener registration : PlayerInteractEvent.getHandlerList().getRegisteredListeners()) {
+            assertThat(registration.getListener()).isNotInstanceOf(NoCraftingTableListener.class);
+        }
+    }
+
+    @Test
+    @DisplayName("ChallengeFeature registers the OneLifeListener with the plugin manager on enable")
+    void challengeFeatureRegistersOneLifeListener() {
+        MockBukkit.load(SkyGridNgPlugin.class);
+
+        assertThat(hasListenerOfType(PlayerDeathEvent.getHandlerList(), OneLifeListener.class)).isTrue();
+        assertThat(hasListenerOfType(PlayerRespawnEvent.getHandlerList(), OneLifeListener.class)).isTrue();
+        assertThat(hasListenerOfType(PlayerJoinEvent.getHandlerList(), OneLifeListener.class)).isTrue();
+    }
+
+    @Test
+    @DisplayName("ChallengeFeature registers the NoNaturalRegenerationListener with the plugin manager on enable")
+    void challengeFeatureRegistersNoNaturalRegenerationListener() {
+        MockBukkit.load(SkyGridNgPlugin.class);
+
+        assertThat(hasListenerOfType(EntityRegainHealthEvent.getHandlerList(), NoNaturalRegenerationListener.class))
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("disabling the plugin unregisters the OneLifeListener and the NoNaturalRegenerationListener")
+    void disableUnregistersOneLifeAndNoNaturalRegenerationListeners() {
+        SkyGridNgPlugin plugin = MockBukkit.load(SkyGridNgPlugin.class);
+
+        server.getPluginManager().disablePlugin(plugin);
+
+        assertThat(hasListenerOfType(PlayerDeathEvent.getHandlerList(), OneLifeListener.class)).isFalse();
+        assertThat(hasListenerOfType(PlayerRespawnEvent.getHandlerList(), OneLifeListener.class)).isFalse();
+        assertThat(hasListenerOfType(PlayerJoinEvent.getHandlerList(), OneLifeListener.class)).isFalse();
+        assertThat(hasListenerOfType(EntityRegainHealthEvent.getHandlerList(), NoNaturalRegenerationListener.class))
+                .isFalse();
+        // The LevelBorderWarningTask is a plain Runnable scheduled via runTaskTimer, not a Listener,
+        // so its cancellation is not observable through a HandlerList the way the listeners above
+        // are. MockBukkit's scheduler does not expose per-task cancellation state either, so the
+        // best honest assertion here is that disabling the plugin completed without throwing.
+        assertThat(plugin.isEnabled()).isFalse();
+    }
+
+    private static boolean hasListenerOfType(HandlerList handlerList, Class<?> type) {
+        for (RegisteredListener registration : handlerList.getRegisteredListeners()) {
+            if (type.isInstance(registration.getListener())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

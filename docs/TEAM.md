@@ -80,7 +80,7 @@ the exception, it has real work today against the existing CycloneDX pipeline.
 |---|---|
 | `devops-specialist` | Operating infrastructure beyond build/publish (test-environment automation, observability). No deployed service exists yet |
 | `devsecops-specialist` | Automates security into CI (SBOM gates, dependency-review bots, secret scanning). Real work today via CycloneDX/Dependency-Track |
-| `cloudnet-specialist` | Future CloudNet integration for `platforms/paper-olf`. No CloudNet code exists in this repo yet |
+| `cloudnet-specialist` | Future CloudNet integration for the OLF-only mechanics in `platforms/common`'s `platforms.olf` package. No CloudNet code exists in this repo yet |
 | `kubernetes-specialist` | Future container/Kubernetes deployment artifacts (Agones/Shulker style). No Docker/Kubernetes surface exists in this repo yet |
 
 ### Community

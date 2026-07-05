@@ -5,6 +5,7 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import org.bukkit.World;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,12 +36,14 @@ class LevelBorderWarningTaskTest {
     private ServerMock server;
     private WorldMock world;
     private ChallengeAdminUseCase challenges;
+    private JavaPlugin plugin;
 
     @BeforeEach
     void setUp() {
         server = MockBukkit.mock();
         world = server.addSimpleWorld("skygrid-world");
         challenges = mock(ChallengeAdminUseCase.class);
+        plugin = MockBukkit.createMockPlugin("SkyGridNg");
     }
 
     @AfterEach
@@ -49,7 +52,7 @@ class LevelBorderWarningTaskTest {
     }
 
     private LevelBorderWarningTask task(Predicate<World> appliesTo) {
-        return new LevelBorderWarningTask(challenges, appliesTo, server);
+        return new LevelBorderWarningTask(challenges, appliesTo, plugin);
     }
 
     private int radiusIn(Component message) {
@@ -122,5 +125,40 @@ class LevelBorderWarningTaskTest {
         int expectedRadius = LevelBorderWarningTask.radiusFor(7);
         assertThat(radiusIn(low.nextActionBar())).isEqualTo(expectedRadius);
         assertThat(radiusIn(high.nextActionBar())).isEqualTo(expectedRadius);
+    }
+
+    @Test
+    @DisplayName("challengeId returns the constant challenge id")
+    void challengeIdReturnsConstant() {
+        assertThat(task(w -> true).challengeId()).isEqualTo(LevelBorderWarningTask.CHALLENGE_ID);
+    }
+
+    @Test
+    @DisplayName("enable schedules a repeating task with the server scheduler")
+    void enableSchedulesRepeatingTask() {
+        LevelBorderWarningTask behavior = task(w -> true);
+
+        behavior.enable();
+
+        assertThat(server.getScheduler().getPendingTasks()).isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("disable cancels the scheduled task")
+    void disableCancelsScheduledTask() {
+        LevelBorderWarningTask behavior = task(w -> true);
+        behavior.enable();
+
+        behavior.disable();
+
+        assertThat(server.getScheduler().getPendingTasks()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("disable before enable does not throw, since no task was ever scheduled")
+    void disableBeforeEnableDoesNotThrow() {
+        LevelBorderWarningTask behavior = task(w -> true);
+
+        behavior.disable();
     }
 }
