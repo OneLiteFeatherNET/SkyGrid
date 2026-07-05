@@ -34,9 +34,9 @@ the difficulty and theme.
 
 ### B1: Choose algorithm by config
 As a **server admin**, I want to select the generation algorithm in the config, so that I can
-pick WFC terrain, classic SkyGrid, or clustered SkyGrid for a world.
-- Config key `algorithm` accepts `wfc`, `skygrid`, `noise_skygrid`.
-- An unknown value falls back to a documented default with a warning.
+pick classic SkyGrid or clustered SkyGrid for a world.
+- Config key `algorithm` accepts `skygrid`, `noise_skygrid`.
+- An unknown value falls back to a documented default (`skygrid`) with a warning.
 
 ### B2: Switch algorithm in game
 As a **server admin**, I want to switch the active algorithm at runtime, so that I can
@@ -50,19 +50,26 @@ chunk generation does not lag the server.
 - SkyGrid generation is O(1) per grid cell (no constraint propagation).
 - Generation is deterministic and parallel safe.
 
-## Epic C: WFC terrain (retained)
+## Epic C: Safe first-join spawn (spread, no starter platform)
 
-### C1: Adjacency based surface terrain
-As a **map maker**, I want the original WFC surface generator with adjacency rules, so that I
-keep the coherent "grid era" terrain option.
-- Tiles, weights, and allowed neighbor pairs are configurable.
-- Region seams are adjacency correct and seamless.
+### C1: Spread new players apart
+As a **server owner**, I want each new player assigned a distinct area on first join, so that
+players do not land on top of each other in the void.
+- New players get a spiral-outward-assigned slot, one per join, per world.
+- The assignment is a pure function of join order; the same join order always produces the
+  same sequence of slots.
+- Disabled via config (`spread: false`) falls back to a single shared spawn area.
 
-### C2: In game rule editing
-As a **server admin**, I want to edit WFC weights and neighbor rules in game, so that I can
-tune terrain live.
-- `/skygrid weight`, `/skygrid allow`, `/skygrid disallow`, `/skygrid undo`, `/skygrid reload`, `/skygrid save`.
-- Changes apply immediately to newly generated chunks.
+### C2: Land on a safe block, not a platform
+As a **server owner**, I want a new player to land standing on a real, non-damaging block near
+their assigned slot, so that first join never drops them into the void or into hazards, without
+building a permanent platform structure into the world.
+- On first join, the plugin searches near the assigned slot for a column with solid, non-hazardous
+  ground and passable space at foot and head height, and teleports the player there.
+- Search breadth is configurable (`searchRadius`, `maxAttempts`); if every attempt fails, the
+  player is placed at a fixed high point above the slot rather than the join failing.
+- No block is placed and no entity is spawned as part of this search; the world is left exactly as
+  generation produced it.
 
 ## Epic D: Internationalization
 

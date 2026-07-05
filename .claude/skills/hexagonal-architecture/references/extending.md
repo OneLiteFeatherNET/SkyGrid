@@ -5,19 +5,20 @@ stays in one layer and the Paper edge does not move.
 
 ## Add a generation algorithm
 
-The Paper chunk generator never changes; it always asks `TerrainAlgorithmProvider.current()`.
+The Paper chunk generator never changes; it always asks `TerrainAlgorithms.current()`.
 
 1. Create a class in `core/algorithm` implementing `TerrainAlgorithm`. Give it a stable
    `public static final String ID`. Implement `generateColumn(...)` by emitting `(y, materialName)`
    pairs to the `ColumnSink`. Use `Seeds` for determinism and `WeightedTable` or `ValueNoise` for
-   block choice. Set `usesWfcDecorations()` to true only if it needs the decoration populator.
-2. Register the id in `AlgorithmService`: add the construction branch in the factory and add the id
-   to `isKnown`.
+   block choice.
+2. Register an `AlgorithmFactory` for the id in the composition root's Guice `MapBinder` (read by
+   `DefaultTerrainAlgorithms`'s `Registry`, which is the single source of truth for `isKnown` and
+   `ids()`). The core does not gain a new `switch` branch.
 3. Add the id to the command tab completion list `ALGORITHMS` in `SkyGridCommand`.
-4. If the algorithm needs new config, extend `SkyGridConfig` or `RuleSet` (records, validate in the
-   compact constructor) and the JSON DTO in `adapter/out/json`.
-5. Tests: a white-box test in `core/algorithm` for the new algorithm and, if the factory changed, an
-   assertion in `AlgorithmServiceTest`. See the `testing` skill.
+4. If the algorithm needs new config, extend `SkyGridConfig` (a record, validate in the compact
+   constructor) and the config DTO in the config adapter.
+5. Tests: a white-box test in `core/algorithm` for the new algorithm and, if the registry wiring
+   changed, an assertion in `DefaultTerrainAlgorithmsTest`. See the `testing` skill.
 
 Do not add Bukkit types to the algorithm. Material names are plain strings; the adapter resolves
 them.
@@ -58,6 +59,7 @@ them.
 - Importing `org.bukkit.*`, Gson, Guice, or `net.kyori.adventure.platform` into any `core` class
   (plain Adventure text, `net.kyori.adventure`, is allowed).
 - Calling a service implementation from an adapter instead of the port interface.
-- Renaming the WFC method names (`WfcSolver`, `WfcSurfaceAlgorithm`, id `wfc`) as if they were
-  project branding. They describe the algorithm and stay.
+- Reintroducing the removed WFC method names (`WfcSolver`, `WfcSurfaceAlgorithm`, algorithm id
+  `wfc`) or a `core.solver` package. The Wave Function Collapse algorithm was removed; only `skygrid`
+  and `noise_skygrid` remain.
 - Mutating a record in place. Records are immutable; use the `with...` copy methods.

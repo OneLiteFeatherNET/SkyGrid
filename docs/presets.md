@@ -3,9 +3,9 @@
 See also: [Configuration layout](configuration.md), [Per-block rules](rules.md), [overview](README.md).
 
 A preset is a named generation profile: it decides the algorithm, the block palette, the loot, the
-mobs, the biomes, the spawn, and the Wave Function Collapse (WFC) rules for a world. Presets live one
-per file in `presets/`, and the file base name is the preset name (so `presets/classic.yml` is the
-`classic` preset). Which preset a world uses is chosen through the generator spec (see
+mobs, the biomes, and the spawn for a world. Presets live one per file in `presets/`, and the file
+base name is the preset name (so `presets/classic.yml` is the `classic` preset). Which preset a world
+uses is chosen through the generator spec (see
 [Selecting a preset per world](#selecting-a-preset-per-world)).
 
 All block, mob, loot, and biome ids are namespaced (for example `minecraft:stone`), which keeps the
@@ -31,7 +31,7 @@ append to the parent's palette.
 | Field         | Type                       | Meaning |
 |---------------|----------------------------|---------|
 | `extends`     | id or list of ids          | Parent preset(s) to inherit from. Omit for a root preset. |
-| `algorithm`   | string                     | The generation algorithm: `skygrid`, `noise_skygrid`, or `wfc`. |
+| `algorithm`   | string                     | The generation algorithm: `skygrid` or `noise_skygrid`. |
 | `spacing`     | integer                    | SkyGrid grid spacing (blocks between placed cells). |
 | `minY`        | integer                    | Lowest grid layer. |
 | `maxY`        | integer                    | Highest grid layer. |
@@ -41,7 +41,6 @@ append to the parent's palette.
 | `spawnerMobs` | list of weighted ids       | Mobs assigned to generated spawners. |
 | `biomes`      | list of biome ids          | The biome palette. |
 | `spawn`       | object                     | Spread-spawn settings (see below). |
-| `wfc`         | object                     | The full WFC rule set (used when `algorithm: wfc`). |
 
 ### Weighted entries (`blocks`, `chestLoot`, `spawnerMobs`)
 
@@ -75,73 +74,25 @@ biomes:
 
 ### `spawn`
 
-Controls the multiplayer starter spawn. Any omitted field falls back to the built-in default.
+Controls the multiplayer starter spawn. Any omitted field falls back to the built-in default. Because
+the SkyGrid algorithms leave most columns as void, there is no starter platform: instead, the adapter
+searches outward from the assigned spread-spawn slot for a safe, standable block and teleports the
+player there.
 
 ```yaml
 spawn:
   spread: true                     # give each player their own spread-out spawn
   spacing: 512                     # blocks between spread spawn points
-  platformY: 64                    # Y of the starter platform
-  platformBlock: minecraft:cobblestone
-  platformRadius: 2                # platform half-size (radius in blocks)
-  villager: true                   # place a villager on the platform
+  searchRadius: 16                 # blocks to probe around the assigned slot for a safe landing spot
+  maxAttempts: 32                  # candidate columns to try before giving up the safe-block search
 ```
-
-### `wfc`
-
-The Wave Function Collapse rule set, used only when `algorithm: wfc`. It has three parts:
-
-- `settings`: global solver settings (`cellSize`, `regionSize`, `surfaceY`, `maxSolverAttempts`,
-  `fallbackTileId`, `allowSelf`). Omitted keys keep the built-in defaults (`cellSize: 4`,
-  `regionSize: 16`, `surfaceY: 64`, `maxSolverAttempts: 8`, `fallbackTileId: grass`, `allowSelf: true`).
-- `tiles`: the macro tile types. Each tile has an `id`, a `weight`, a `neutral` flag, a `surface`
-  block, a `fill` block, a `liquid` flag, and a list of `features` (decorations). A feature is a
-  discriminated union keyed by `type`: `plant`, `loot_chest`, or `spawner`.
-- `allowed`: the pairs of tile ids that may sit next to each other, each as a two-element list.
-
-```yaml
-wfc:
-  settings:
-    cellSize: 4
-    regionSize: 16
-    surfaceY: 64
-    maxSolverAttempts: 8
-    fallbackTileId: grass
-    allowSelf: true
-  tiles:
-    - { id: water, weight: 6.0, neutral: true, surface: minecraft:water, fill: minecraft:sand, liquid: true, features: [] }
-    - id: sugarcane
-      weight: 2.5
-      neutral: false
-      surface: minecraft:grass_block
-      fill: minecraft:dirt
-      liquid: false
-      features:
-        - { type: plant, material: minecraft:sugar_cane, requiresLiquidNeighbor: false, requiresGroundBlock: "", probability: 0.5, minHeight: 1, maxHeight: 3, providesWater: true }
-    - id: dirt
-      weight: 2.0
-      neutral: false
-      surface: minecraft:coarse_dirt
-      fill: minecraft:dirt
-      liquid: false
-      features:
-        - { type: loot_chest, block: minecraft:chest, lootTable: minecraft:chests/simple_dungeon, probability: 0.12 }
-        - { type: spawner, block: minecraft:spawner, mob: minecraft:zombie, probability: 0.06 }
-  allowed:
-    - [water, sand]
-    - [sand, sugarcane]
-    - [grass, dirt]
-```
-
-The `classic` preset ships a full WFC rule set, and because every other preset extends `classic`,
-they all inherit it unless they override `wfc`.
 
 ## The three shipped presets
 
 ### `classic`
 
 The original SkyGrid and the base every other preset builds on. It is a root preset (no `extends`),
-uses the `skygrid` algorithm, and defines the full palette, loot, mobs, biomes, spawn, and WFC rules.
+uses the `skygrid` algorithm, and defines the full palette, loot, mobs, biomes, and spawn.
 
 ```yaml
 # presets/classic.yml (excerpt)
@@ -157,10 +108,8 @@ blocks:
 spawn:
   spread: true
   spacing: 512
-  platformY: 64
-  platformBlock: minecraft:cobblestone
-  platformRadius: 2
-  villager: true
+  searchRadius: 16
+  maxAttempts: 32
 ```
 
 ### `standard`
@@ -170,7 +119,7 @@ spawn:
 (breeze, bogged, and friends). It also plants a golden dandelion (`minecraft:golden_dandelion`,
 Paper 26.1's only new placeable block) as a rare flora entry, grown via the
 `rules/golden_dandelion.yml` structure-pattern rule, alongside the existing 1.21-era blocks.
-Everything else (spacing, Y range, loot, biomes, spawn, WFC) is inherited from `classic`.
+Everything else (spacing, Y range, loot, biomes, spawn) is inherited from `classic`.
 
 ```yaml
 # presets/standard.yml (excerpt)
@@ -192,8 +141,8 @@ spawnerMobs:
 
 `extends: classic`, keeps the `skygrid` algorithm, and swaps in a hostile nether theme: netherrack,
 blackstone, crimson/warped, ancient debris; nether mobs (blaze, wither skeleton, piglin, hoglin);
-nether biomes; nether loot (`chests/nether_bridge`, `chests/bastion_treasure`); and a netherrack
-starter platform with no villager.
+nether biomes; and nether loot (`chests/nether_bridge`, `chests/bastion_treasure`). Spawn settings are
+inherited from `classic`.
 
 ```yaml
 # presets/nether.yml (excerpt)
@@ -207,13 +156,6 @@ biomes:
   - minecraft:nether_wastes
   - minecraft:crimson_forest
   # ...
-spawn:
-  spread: true
-  spacing: 512
-  platformY: 64
-  platformBlock: minecraft:netherrack
-  platformRadius: 2
-  villager: false
 ```
 
 ## Selecting a preset per world

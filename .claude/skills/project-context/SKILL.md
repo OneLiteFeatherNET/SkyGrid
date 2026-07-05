@@ -37,9 +37,13 @@ term plan see `docs/MAINTENANCE.md`. The detailed, dated decision log is in
 - Java 25: records for immutable domain values, modern language features, a clean core.
 - Hexagonal architecture: the generation core depends on nothing, so it is testable without a server
   and survives Paper API churn. This is the load bearing decision; protect it.
-- Three algorithms, not one: `wfc` was kept for coherent surface terrain; `skygrid` and
-  `noise_skygrid` were added as O(1), seed based, parallel safe alternatives. Algorithms sit behind
-  one port (`TerrainAlgorithm`) so a fourth can be added without touching the generator.
+- Three algorithms, not one (amended, later removed to two): `wfc` was kept for coherent surface
+  terrain; `skygrid` and `noise_skygrid` were added as O(1), seed based, parallel safe alternatives.
+  Algorithms sit behind one port (`TerrainAlgorithm`) so another can be added without touching the
+  generator. `wfc` was later removed entirely: its solid-terrain surface area (a dedicated solver
+  package, a mandatory config section, and public API/`RuleAdminUseCase` tile-admin methods) cost
+  more to maintain than the two void-grid algorithms needed, and no shipped preset used it as its
+  primary algorithm. See `references/decision-log.md` for the dated entry.
 - Adventure based i18n: the command adapter renders `Component.translatable`, and the core may build
   Adventure text too (for example `SkyGridApi.describe()`); Paper renders per client locale. English
   and German ship.
@@ -47,26 +51,28 @@ term plan see `docs/MAINTENANCE.md`. The detailed, dated decision log is in
 - Guice DI with the composition root in `bootstrap`: the core carries no injection annotations, so it
   stays framework free while wiring is centralized.
 - AGPL-3.0 for the plugin (OneLiteFeather libraries use Apache-2.0).
-- 64 tile WFC limit: the solver domain is a 64 bit mask, so a region may have at most 64 tile types.
+- 64 tile WFC limit (historical, no longer applicable): while `wfc` existed, its solver domain was a
+  64 bit mask, so a region could have at most 64 tile types. Removed along with `wfc`.
 - Naming after the rename: project branded names are SkyGrid-ng (`SkyGridNgPlugin`, `/skygrid`,
-  permission `skygridng.admin`, i18n namespace `skygridng`). The remaining WFC names (`WfcSolver`,
-  `WfcSurfaceAlgorithm`, algorithm id `wfc`) describe the Wave Function Collapse method, not the
-  project, and stay.
+  permission `skygridng.admin`, i18n namespace `skygridng`). The WFC names (`WfcSolver`,
+  `WfcSurfaceAlgorithm`, algorithm id `wfc`) described the Wave Function Collapse method, not the
+  project; they were removed with the algorithm rather than kept as dead branding.
 
 ## Design patterns (GoF) in use
 
-Strategy (`EntropyHeuristic`, `CollapseStrategy`, `TerrainAlgorithm`), Factory (`AlgorithmService`,
-`JsonRuleRepository`), Repository (`RuleRepository`), Flyweight (shared immutable `TileType`,
-`BlockWeight`), Observer (`RuleState` listeners for cache invalidation and algorithm rebuild),
-Memento (immutable `GeneratorConfig` plus undo stack), Command (`SkyGridCommand` subcommands).
+Strategy (`TerrainAlgorithm`), Factory (`AlgorithmFactory`, the config repositories), Repository
+(`RuleRepository`, `PresetRepository`), Flyweight (shared immutable `BlockWeight`), Observer
+(`RuleState` listeners for cache invalidation and algorithm rebuild), Memento (immutable
+`GeneratorConfig` plus undo stack), Command (`SkyGridCommand` subcommands). The Wave Function
+Collapse era added a second Strategy pair (`EntropyHeuristic`, `CollapseStrategy`) and a Flyweight
+(`TileType`); both were removed with the `wfc` algorithm.
 
 ## Determinism guarantee
 
 Same world seed and coordinates always yield the same result. Seeds are derived reproducibly with
-SplitMix64 in `Seeds`. WFC region grid lines are solved first as 1D WFC with anchor endpoints, then
-2D region interiors are solved against those fixed borders, so seams are always rule conformant
-(verified: zero adjacency violations over thousands of edges, zero determinism deviations). Preserve
-this when changing generation.
+SplitMix64 in `Seeds`. Preserve this when changing generation. (While `wfc` existed, its region grid
+lines were solved first as 1D WFC with anchor endpoints, then 2D region interiors were solved against
+those fixed borders, so seams were always rule conformant; that machinery was removed with `wfc`.)
 
 ## OneLiteFeather standards
 

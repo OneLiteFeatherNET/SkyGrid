@@ -22,7 +22,7 @@ body:
     id: algorithm
     attributes:
       label: Active algorithm
-      options: ["skygrid", "noise_skygrid", "wfc"]
+      options: ["skygrid", "noise_skygrid"]
     validations:
       required: true
   - type: textarea

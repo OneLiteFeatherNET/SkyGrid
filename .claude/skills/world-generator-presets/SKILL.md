@@ -80,7 +80,7 @@ own fields win over all.
 
 ```yaml
 presets:
-  classic:  { algorithm: skygrid, blocks: [...], wfc: {...}, biomes: [...] }
+  classic:  { algorithm: skygrid, blocks: [...], spawn: {...}, biomes: [...] }
   standard: { extends: classic, blocks: [...], spawnerMobs: [...] }   # overrides only these
   hybrid:   { extends: [standard, nether] }                           # nether wins on conflicts
 active: classic

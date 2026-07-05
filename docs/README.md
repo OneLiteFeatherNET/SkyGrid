@@ -9,7 +9,7 @@ The configuration is split into three concerns:
 
 - A tiny **selector** file (`config.<ext>`) that only names the active preset.
 - A **`presets/`** directory with one file per preset. A preset is a complete generation profile
-  (algorithm, palette, mobs, biomes, spawn, WFC rules) and may inherit from other presets.
+  (algorithm, palette, loot, mobs, biomes, spawn) and may inherit from other presets.
 - A **`rules/`** directory with one file per block. A rule pins a block's data state, its physics
   behavior, and, for decorations like sugar cane, its placement conditions.
 
@@ -23,8 +23,9 @@ only changes newly generated chunks, never the seed-to-world mapping.
 
 - [Configuration layout and formats](configuration.md): the split file layout, the three formats,
   the `schema/` directory, and editor validation/autocompletion.
-- [Presets](presets.md): the preset schema, inheritance (`extends`), the three shipped presets
-  (`classic`, `standard`, `nether`), and selecting a preset per world.
+- [Presets](presets.md): the preset schema (algorithm, palette, loot, mobs, biomes, spawn),
+  inheritance (`extends`), the three shipped presets (`classic`, `standard`, `nether`), and
+  selecting a preset per world.
 - [Per-block rules](rules.md): the rule model, `state`, `physics`, `placement`, water modes, and
   worked examples from the shipped defaults.
 

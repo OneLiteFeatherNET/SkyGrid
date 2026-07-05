@@ -18,7 +18,7 @@ description: >-
 This skill owns the **config file system** (layout, formats, the DTO to record mapping) and the
 **per-block rule model** (state, physics, placement). It does not own:
 
-- what the generation values mean (block weights, WFC tiles, biomes, spawn): see `skygrid-domain`.
+- what the generation values mean (block weights, biomes, spawn): see `skygrid-domain`.
 - which preset a world uses and how presets inherit via `extends`: see `world-generator-presets`.
 - how a rule is realized as Bukkit blocks at generation time: see `generation-pipeline`.
 
@@ -141,7 +141,8 @@ the one hard invariant to remember: a boxed water `legend` entry (walls + floor 
 open top) is how the shipped `sugar_cane` rule waters sand; `state: { waterlogged: "true" }` only
 does something on a block that is genuinely waterloggable. See `docs/rules.md` for the full worked
 example and `generation-pipeline` for how `adapters/generator.StructurePlacer` realizes a pattern
-against Bukkit (`StillWater` still exists separately, for the WFC `Plant` decoration pipeline only).
+against Bukkit (`StillWater` still exists separately, for self-watering `Plant` decorations such as
+the `sugar_cane` oasis rule).
 
 ## Determinism
 
@@ -165,22 +166,22 @@ Adding a **rule field**: add a boxed field to `RuleDtos.RuleDto` or `RuleDtos.Pl
 `JacksonRuleRepository` (`toRule`/`placement` and `toDto`/`placementToDto`). Then consume it where the
 block is realized: `RuleResolver` (state/physics) or `SkyGridDecorationPopulator` (placement).
 
-Adding a **new decoration type** (a `Plant`/`LootChest`/`Spawner` sibling) is a preset-tile concern,
-not a per-block rule: extend the `ConfigDtos.DecorationDto` sealed union (a new `@JsonSubTypes.Type`
-with its `type` discriminator) and the `api.model.Decoration` union. That is generation semantics; see
-`skygrid-domain` and `generation-pipeline`.
+There is no separate decoration-type union to extend any more: the Wave Function Collapse algorithm
+and its `tiles`/`features` model were removed entirely, and `Plant` is now a standalone
+`api.model` record consumed directly by a rule's `placement.structure` (see the structure pattern
+section above), not part of any discriminated union. A new kind of grown decoration is a per-block
+rule field, not a preset-tile concern; follow "Adding a rule field" above.
 
 Regenerate the `schema/` files after any DTO change so editor validation matches the code.
 
 ## A rule applies everywhere its block is generated
 
 `RuleCatalog` is shared by every preset: a rule for `minecraft:oak_leaves` applies wherever that block
-is placed, in all three algorithms. Concretely a rule reaches the world through:
+is placed, in both remaining algorithms. Concretely a rule reaches the world through:
 
-1. the base grid (the `skygrid`/`noise_skygrid`/`wfc` surface pass, through `RuleResolver.blockData`
-   for state and `RuleResolver.physics` for updates), and
-2. both populators: `SkyGridDecorationPopulator` (classic algorithms) and the WFC populator each grow
-   the decoration rules and apply state/physics.
+1. the base grid (the `skygrid`/`noise_skygrid` surface pass, through `RuleResolver.blockData` for
+   state and `RuleResolver.physics` for updates), and
+2. `SkyGridDecorationPopulator`, which grows the decoration rules and applies state/physics.
 
 So a state or physics change is global to that block; a placement (decoration) rule is grown wherever
 the grid offers an eligible cell. An empty `RuleCatalog` reproduces plain block placement.

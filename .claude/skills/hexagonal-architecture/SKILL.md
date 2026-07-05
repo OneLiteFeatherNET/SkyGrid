@@ -85,16 +85,17 @@ The second package segment matches the module: `api.*`, `ports.*`, `core.*`, `ad
 - `api.SkyGridApi`: the public read-only facade, implemented by `core.service.SkyGridApiService` and
   registered as a Bukkit service in `platforms/common`. `api.util.Seeds`: SplitMix64 derivation
   (shared by core and the generator adapter).
-- `ports.in`: `GenerateRegionUseCase`, `RuleAdminUseCase`, `TerrainAlgorithmProvider`.
-  `ports.out`: `RuleRepository`. `ports.algorithm`: `TerrainAlgorithm` + `ColumnSink` (the seam the
-  generator adapter implements).
+- `ports.in`: `RuleAdminUseCase`, `TerrainAlgorithms`. `ports.out`: `RuleRepository`.
+  `ports.algorithm`: `TerrainAlgorithm` + `ColumnSink` (the seam the generator adapter implements) +
+  `AlgorithmFactory` (Factory Method, one per algorithm, registered by id). The `GenerateRegionUseCase`
+  port and the `core.solver` package (`WfcSolver` and its strategy interfaces) were removed along with
+  the `wfc` algorithm.
 - `core.algorithm`: `IndependentSkyGridAlgorithm` (id `skygrid`), `NoiseSkyGridAlgorithm`
-  (`noise_skygrid`), `WfcSurfaceAlgorithm` (`wfc`) - the three implementations of `TerrainAlgorithm`.
-- `core.solver`: `EntropyHeuristic`, `CollapseStrategy` (strategy interfaces), `ShannonEntropyHeuristic`,
-  `WeightedRandomCollapse`, `WfcSolver`. `core.util`: `WeightedTable`, `ValueNoise`.
+  (`noise_skygrid`) - the two implementations of `TerrainAlgorithm`. `core.util`: `WeightedTable`,
+  `ValueNoise`.
 - `core.state.RuleState`: thread safe holder, Memento (undo) plus Observer (listeners).
-- `core.service`: `RegionGenerationService`, `AlgorithmService`, `RuleAdminService`,
-  `SkyGridApiService` (the implementors of the in ports and the facade).
+- `core.service`: `DefaultTerrainAlgorithms`, `RuleAdminService`, `SkyGridApiService` (the
+  implementors of the in ports and the facade).
 - `adapters.generator`: `HexagonalChunkGenerator`, `MaterialPopulator`, `MaterialResolver`.
 - `adapters.command`: `SkyGridCommand`, `Messages` (translatable components).
 - `adapters.json`: `JsonRuleRepository`, `GeneratorConfigDto`, and the bundled default
@@ -105,8 +106,7 @@ The second package segment matches the module: `api.*`, `ports.*`, `core.*`, `ad
 
 For exact constructor and method signatures, read `references/api-surface.md` before editing. Do not
 guess signatures; the records have validating compact constructors that throw
-`IllegalArgumentException`, and several methods have non obvious contracts (for example
-`RuleSet.tileIndex` throws on an unknown id while `tileById` returns `Optional.empty`).
+`IllegalArgumentException`, and several methods have non obvious contracts.
 
 ## Platform neutrality (no Bukkit vocabulary in the core)
 
@@ -117,8 +117,8 @@ The framework-free layers must be neutral semantically, not just syntactically. 
   (`namespace` + `value`, lowercased and validated; `BlockId.of("stone")` defaults to `minecraft`).
   The canonical string form is `minecraft:stone`. NEVER use a Bukkit `Material` enum name
   ("STONE", "GRASS_BLOCK") in `api`, `ports`, `core`, or `generator.json`, and never hardcode one in
-  an algorithm (`WfcSurfaceAlgorithm` uses `BlockId` constants, not `"BEDROCK"`).
-- The model (`BlockWeight`, `TileType`, `FeatureSpec`), the `ColumnSink` port, and the weighted table
+  an algorithm (a `TerrainAlgorithm` uses `BlockId` constants, not `"BEDROCK"`).
+- The model (`BlockWeight`, `SkyGridConfig`), the `ColumnSink` port, and the weighted table
   carry `BlockId`. Resolution of a `BlockId` to a native `org.bukkit.Material` happens ONLY in
   `adapters.generator.MaterialResolver`, via `new NamespacedKey(namespace, value)` +
   `Registry.MATERIAL.get(key)` (this is the WorldEdit `BukkitAdapter` round-trip). The Gson
@@ -135,8 +135,8 @@ type; `api`, `ports`, and `core` do not change. See the `core-platform-neutralit
 Ports ARE APIs - they are the typed contract for data in and out. Name a port after the domain
 capability (a noun or a use-case verb phrase), and name its implementation `Default<Port>`:
 
-- Port (in `ports/`): `TerrainAlgorithms`, `GenerateRegionUseCase`, `RuleAdminUseCase`.
-- Implementation (in `core/service`): `DefaultTerrainAlgorithms`, `RegionGenerationService` style.
+- Port (in `ports/`): `TerrainAlgorithms`, `RuleAdminUseCase`.
+- Implementation (in `core/service`): `DefaultTerrainAlgorithms`, `RuleAdminService` style.
 
 Avoid `-Provider`/`-Service` as an INTERFACE suffix: `AlgorithmService implements TerrainAlgorithmProvider`
 reads badly (two nouns for one concept, and `Provider` clashes with `jakarta.inject.Provider`). The
@@ -164,9 +164,11 @@ grows more often than the operations (it does here). Keep Strategy for runtime b
 ## Naming
 
 The project was renamed from GridWFC to SkyGrid-ng. Project branded names use SkyGrid-ng
-(`SkyGridNgPlugin`, `/skygrid`, permission `skygridng.admin`, i18n namespace `skygridng`). The WFC
-names that remain (`WfcSolver`, `WfcSurfaceAlgorithm`, algorithm id `wfc`) describe the Wave Function
-Collapse method, not the project, and must stay. Do not rename them.
+(`SkyGridNgPlugin`, `/skygrid`, permission `skygridng.admin`, i18n namespace `skygridng`). The Wave
+Function Collapse method itself (`WfcSolver`, `WfcSurfaceAlgorithm`, algorithm id `wfc`) was later
+removed entirely (its solid-terrain and tile-admin surface area cost more than the two remaining
+void-grid algorithms needed); do not reintroduce those names or reuse `wfc` as an algorithm id. See
+the `project-context` skill's decision log for the removal rationale.
 
 ## Adding things
 
@@ -174,7 +176,8 @@ The common extensions (a new algorithm, a new command subcommand, a new out adap
 fixed recipe. Read `references/extending.md` and follow it step by step. The short version:
 
 - New algorithm: add one class in `core.algorithm` implementing `ports.algorithm.TerrainAlgorithm`,
-  add its id to `AlgorithmService` (factory plus `isKnown`) and to the command tab completion. The
+  register an `AlgorithmFactory` for its id in the composition root's `MapBinder` (read by
+  `DefaultTerrainAlgorithms`'s registry), and add the id to the command tab completion. The
   generator adapter never changes.
 - New out adapter: implement the existing `ports.out` interface (in a new or existing adapter
   module), bind it in `RepositoryModule`. The core does not change.

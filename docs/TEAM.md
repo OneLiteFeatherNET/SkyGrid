@@ -55,7 +55,7 @@ frameworks. See Epic F there for the current player engagement hypotheses.
 |---|---|
 | `game-designer` | Core loop, mechanics, progression, difficulty curve (MDA framework) |
 | `player-psychology-designer` | Player motivation and engagement (Self-Determination Theory, Octalysis, Bartle types, flow); guards against dark patterns |
-| `domain-config-specialist` | `generator.yaml`/`generator.conf` schema, presets, block tables, WFC tiles: encodes decisions others make |
+| `domain-config-specialist` | `generator.yaml`/`generator.conf` schema, presets, block tables: encodes decisions others make |
 | `narrative-worldbuilding-designer` | Preset theming, flavor text, biome-to-theme coherence |
 | `accessibility-designer` | Color-vision-safe block choices, comfort/difficulty preset variants, non-color-only feedback (Epic G) |
 | `technical-artist` | Particle/sound polish on vanilla assets, future resource pack scoping. Thin scope today by design, no custom assets exist yet |

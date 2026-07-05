@@ -1,9 +1,9 @@
 ---
 name: skygrid-domain
 description: >
-  Use whenever working on what SkyGrid-ng generates or how it behaves in game: the three algorithms
-  (skygrid, noise_skygrid, wfc), the generator.json config, weighted block tables, WFC tiles and
-  adjacency rules, decorations, world setup, or the SkyGrid gameplay caveats and performance. It
+  Use whenever working on what SkyGrid-ng generates or how it behaves in game: the two algorithms
+  (skygrid, noise_skygrid), the generator.json config, weighted block tables, decorations, world
+  setup, the safe first-join spawn search, or the SkyGrid gameplay caveats and performance. It
   explains the SkyGrid concept (SethBling 2012), why each algorithm exists, and the exact config
   semantics and defaults, so a generation change matches the intended behavior instead of guessing.
   Read this before changing generation logic, config defaults, the block table, or before advising a
@@ -21,12 +21,13 @@ and tuning advice, see `docs/ADMIN.md`.
 SkyGrid is a classic Minecraft world type from SethBling (2012): the world is empty (void) except
 for single blocks placed on a regular 3D grid, usually every 4 blocks. You hop between floating
 blocks and survive from whatever the grid gives you. SkyGrid-ng revives that and adds a clustered
-variant and keeps the older adjacency based surface generator.
+variant.
 
-## The three algorithms
+## The two algorithms
 
-Selected by `algorithm` in `generator.json`, switchable in game with `/skygrid algorithm <id>`. All
+Selected by `algorithm` in `generator.json`, switchable in game with `/skygrid algorithm <id>`. Both
 are seed based and deterministic: the same world seed and coordinates always produce the same result.
+An unrecognized configured id falls back to `skygrid` with a warning.
 
 - `skygrid` (default, `IndependentSkyGridAlgorithm`): the classic. One block on every grid point
   (grid length `spacing`, default 4), air between, floating in the void. Each grid cell is sampled
@@ -36,20 +37,18 @@ are seed based and deterministic: the same world seed and coordinates always pro
   based value noise field instead of an independent roll, so similar blocks cluster into veins and
   themed regions. Still O(1) per cell. `noiseScale` controls cluster size (smaller means larger
   clusters).
-- `wfc` (`WfcSurfaceAlgorithm`): the retained adjacency constrained surface generator. Solid ground
-  whose surface tile comes from a Wave Function Collapse region solver with configurable tiles,
-  weights, and allowed neighbor pairs. Regions are seamless (adjacency correct at seams). This is the
-  only algorithm that produces solid terrain rather than a sparse void grid, and the only one that
-  uses the decoration populator.
 
-The two SkyGrid algorithms were added as fast, seed based alternatives to WFC; WFC was kept for the
-coherent surface terrain option. Switching algorithm changes the terrain shape (void vs solid), so a
-world should be recreated after switching rather than mixing styles.
+Both algorithms produce the same sparse void grid shape, only the block choice differs, so switching
+between them does not require recreating the world the way switching terrain shape would.
+
+The Wave Function Collapse adjacency constrained surface generator (`wfc`, `WfcSurfaceAlgorithm`) was
+removed: its solid-terrain and tile-admin surface area (a dedicated solver package, a mandatory
+config section, and public API/`RuleAdminUseCase` tile methods) cost more to maintain than the two
+void-grid algorithms needed. See `project-context` (decision log) for the removal rationale.
 
 ## generator.json config
 
-Top level: `algorithm` is `skygrid`, `noise_skygrid`, or `wfc`. The file also always carries both a
-`skygrid` and a `wfc` section so switching never needs new config.
+Top level: `algorithm` is `skygrid` or `noise_skygrid`.
 
 `skygrid` section (used by `skygrid` and `noise_skygrid`), shipped defaults:
 
@@ -62,12 +61,18 @@ Top level: `algorithm` is `skygrid`, `noise_skygrid`, or `wfc`. The file also al
   bare `stone` defaults to the `minecraft` namespace. Unknown ids fall back to a safe block (no
   crash). The adapter resolves the id to a native block (see the `core-platform-neutrality` memory).
 
-`wfc` section: `settings` (`cellSize`, `regionSize`, `surfaceY`, `maxSolverAttempts`,
-`fallbackTileId` which must be self compatible, `allowSelf`), `tiles[]` (`id`, `weight`, `neutral`,
-`surface`, `fill`, `liquid`, `features[]`), and `allowed[]` neighbor pairs as `["idA","idB"]`. A WFC
-tile decoration (`features[]`) has `material`, `requiresLiquidNeighbor`, `requiresGroundBlock`,
-`probability`, `minHeight`, `maxHeight`. Hard limit: at most 64 WFC tile types, because the solver
-domain is a 64 bit mask.
+## Safe first-join spawn
+
+A `spawn` section (`spread`, `spacing`, `searchRadius`, `maxAttempts`) controls where a player lands
+on first join, independent of the terrain algorithm. `spread: true` (default) assigns each new player
+the next slot in an outward spiral, `spacing` blocks apart, so players do not land on top of each
+other; a pure function of join order, so the same join order always produces the same slot sequence.
+`spread: false` falls back to a single shared spawn area. Either way, first join then searches near
+the assigned slot (breadth controlled by `searchRadius` and `maxAttempts`) for a column with solid,
+non-hazardous ground and passable space at foot and head height, and teleports the player there; if
+every attempt fails, the player is placed at a fixed high point above the slot instead of failing the
+join. No block is placed and no entity is spawned as part of this search, so it works the same way
+regardless of which terrain algorithm generated the column.
 
 ## Gameplay caveats
 

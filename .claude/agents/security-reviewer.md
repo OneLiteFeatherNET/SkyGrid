@@ -12,13 +12,14 @@ to apply it.
 
 What to check, in priority order:
 
-1. **Unbounded resource use in generation.** The WFC solver and terrain algorithms must terminate
-   and stay bounded per chunk regardless of world seed or player-chosen coordinates; a malicious or
-   pathological seed/region must not allow a player to cause excessive CPU/memory work server side
-   (a chunk-generation denial of service is the single most plausible attack against this plugin).
-2. **Command authorization.** Every `/skygrid` admin subcommand (`weight`, `allow`, `disallow`,
-   `undo`, `reload`, `save`, `algorithm`) must check the appropriate Bukkit permission before
-   acting; a regular player must never reach an admin code path.
+1. **Unbounded resource use in generation.** The terrain algorithms and the first-join safe-spawn
+   location search must terminate and stay bounded per chunk/attempt regardless of world seed or
+   player-chosen coordinates; a malicious or pathological seed/region must not allow a player to
+   cause excessive CPU/memory work server side (a chunk-generation denial of service is the single
+   most plausible attack against this plugin).
+2. **Command authorization.** Every `/skygrid` admin subcommand (`skyweight`, `undo`, `reload`,
+   `save`, `algorithm`) must check the appropriate Bukkit permission before acting; a regular
+   player must never reach an admin code path.
 3. **Untrusted/malformed config input.** `generator.yaml`/`generator.conf` parsing and preset
    `extends` chains must reject cycles, unknown values, and malformed input safely (a documented
    fallback or a clear error), never a hang or a crash. This is `domain-config-specialist`'s

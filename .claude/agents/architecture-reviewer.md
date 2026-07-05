@@ -24,7 +24,7 @@ What to check, in priority order:
 4. **Determinism and immutability**: value types are records validated in compact constructors;
    generation must stay derivable from the world seed alone.
 5. **CONTRIBUTING conventions**: Conventional Commit type/scope on the PR title (scopes: `skygrid,
-   noise, wfc, core, command, i18n, config, build, ci`), English-only identifiers/comments/docs, no
+   noise, spawn, core, command, i18n, config, build, ci`), English-only identifiers/comments/docs, no
    em dashes anywhere, no hand-edited non-source i18n bundles.
 
 Workflow:
