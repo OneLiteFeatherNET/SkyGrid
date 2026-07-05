@@ -17,7 +17,6 @@ update.
 ## Year by year
 
 ### Year 1: foundation and adoption
-- Ship 1.0 on Modrinth and Hangar; finalize Modrinth/Hangar project ids and secrets.
 - Add MockBukkit integration tests for the adapter layer (generation, command, populator).
 - Add SkyGrid loot tables and configurable spawner types (most requested gap vs the classic map).
 - Establish a release cadence: ship whenever the Release PR has meaningful changes, at least

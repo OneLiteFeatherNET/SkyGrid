@@ -29,8 +29,8 @@ Rules:
 
 - Any CloudNet API usage stays in `platforms/paper-olf` (or a new adapter), never in `api`, `ports`,
   or `core`, same hexagonal rule as Bukkit.
-- `platforms/paper-olf` is never published to Modrinth/Hangar; a CloudNet-specific behavior doesn't
-  need to consider the public `platforms/paper` distribution at all.
+- `platforms/paper-olf` is never published anywhere externally; a CloudNet-specific behavior
+  doesn't need to consider the public `platforms/paper` distribution at all.
 - English everywhere, no em dashes anywhere.
 
 Workflow:

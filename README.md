@@ -59,7 +59,7 @@ multi-module project (`api`, `ports`, `core`, `adapters/*`, `platforms/*`); see
 
 Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md). Commits follow
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/); releases are automated with
-release-please and published to Modrinth and Hangar.
+release-please, which attaches the built jar to the GitHub release and uploads a CycloneDX SBOM.
 
 ## License
 

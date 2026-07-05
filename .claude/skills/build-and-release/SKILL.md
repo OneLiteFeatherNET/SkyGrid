@@ -2,13 +2,13 @@
 name: build-and-release
 description: >
   Use whenever changing the Gradle build, dependencies, the version catalog, plugin-yml,
-  publishing (Modrinth, Hangar, CycloneDX SBOM), CI workflows under .github/, or cutting a
-  release of SkyGrid-ng. Captures the inline version catalog, the shadow relocation, the
-  load=STARTUP requirement for a world generator plugin, the CycloneDX 3.x API (per project
-  config moved to cyclonedxDirectBom), Modrinth/Hangar publishing, release-please plus
-  Conventional Commits, the reusable OneLiteFeather org workflows, and how to test locally with
-  runServer. Read this before editing build.gradle.kts, settings.gradle.kts, gradle.properties,
-  or anything under .github/, so a change does not silently break configuration or publishing.
+  publishing (CycloneDX SBOM), CI workflows under .github/, or cutting a release of SkyGrid-ng.
+  Captures the inline version catalog, the shadow relocation, the load=STARTUP requirement for a
+  world generator plugin, the CycloneDX 3.x API (per project config moved to cyclonedxDirectBom),
+  release-please plus Conventional Commits, the reusable OneLiteFeather org workflows, and how to
+  test locally with runServer. Read this before editing build.gradle.kts, settings.gradle.kts,
+  gradle.properties, or anything under .github/, so a change does not silently break configuration
+  or publishing.
 ---
 
 # Build and release for SkyGrid-ng
@@ -24,8 +24,8 @@ responsibilities and the dependency arrows):
 - `api`, `ports`, `core`: framework-free `java-library` modules, no platform plugins.
 - `adapters/generator`, `adapters/command`, `adapters/json`: the Bukkit/Gson adapter libraries.
 - `platforms/common`: the shared Bukkit composition root, a library (no platform plugins).
-- `platforms/paper`: the public Paper distribution. Applies shadow, plugin-yml, run-paper, and all
-  publishing (Modrinth, Hangar, CycloneDX). Produces `skygrid-ng-<version>.jar`.
+- `platforms/paper`: the public Paper distribution. Applies shadow, plugin-yml, run-paper, and
+  CycloneDX SBOM generation. Produces `skygrid-ng-<version>.jar`.
 - `platforms/paper-olf`: the OLF network distribution. Applies shadow and plugin-yml only. Produces
   `skygrid-ng-olf-<version>.jar`.
 - `verification`: ArchUnit architecture tests only (no production code). Depends on every production
@@ -58,7 +58,7 @@ Each shaded jar shades Gson and relocates it to `net.onelitefeather.skygridng.li
 clashing with the server or other plugins. Keep any shaded library relocated under
 `net.onelitefeather.skygridng.libs.*`. Each distribution depends on `platforms/common`, which exposes
 the whole object graph (adapters, core, ports, api, Guice) with the `api` configuration, so shadow
-bundles everything transitively into a self-contained jar. The Modrinth and Hangar uploads use
+bundles everything transitively into a self-contained jar. The GitHub release attachment step uses
 `platforms/paper`'s `tasks.shadowJar`.
 
 ## plugin-yml
@@ -75,19 +75,19 @@ load = BukkitPluginDescription.PluginLoadOrder.STARTUP
 The command is `skygrid`, the permission is `skygridng.admin`. The main class is
 `...platforms.common.SkyGridNgPlugin` for `platforms/paper` (display name `SkyGrid-ng`) and
 `...platforms.olf.OlfNetworkPlugin` for `platforms/paper-olf` (display name `SkyGrid-ng-OLF`), the
-latter extending the former. Both `bukkit { }` blocks keep `load = STARTUP`. The OLF distribution has
-no Modrinth/Hangar config on purpose, so its OLF-only mechanics never reach the public registries.
+latter extending the former. Both `bukkit { }` blocks keep `load = STARTUP`. Neither distribution is
+published to any public plugin registry; `platforms/paper-olf` in particular ships OLF-only
+mechanics that are never published anywhere externally.
 
 ## Publishing
 
-Three pieces, configured in `platforms/paper/build.gradle.kts`, run by the reusable org workflow in CI:
+Configured in `platforms/paper/build.gradle.kts`, run by the reusable org workflow in CI:
 
-- Modrinth via `com.modrinth.minotaur`: `uploadFile.set(tasks.shadowJar)`. Project id is a
-  placeholder until the Modrinth project exists.
-- Hangar via `io.papermc.hangar-publish-plugin`: the jar is `tasks.shadowJar.archiveFile`. Slug and
-  id are placeholders.
 - CycloneDX SBOM via `org.cyclonedx.bom` 3.x: the SBOM is uploaded to Dependency-Track. The 3.x API
   differs from older versions, see the warning below.
+
+SkyGrid-ng does not publish to Modrinth or Hangar; the project is OneLiteFeather-internal. Internal
+Maven publishing may be added later as a separate task.
 
 ### CycloneDX 3.x (do not regress)
 
@@ -127,8 +127,7 @@ single-module build and the reference copy attaches `build/libs/*.jar` from the 
 shaded jars now live in `platforms/paper/build/libs/` and `platforms/paper-olf/build/libs/`, so the root
 `build/libs/` is empty. Before the first real release, confirm the reusable workflow globs
 `**/build/libs/*.jar` (or pin a workflow version that does), or adjust the release artifact path,
-otherwise the GitHub release attachment step finds no jar. The Modrinth/Hangar tasks themselves are
-fine because they run `:platforms:paper:modrinth` / `:platforms:paper:hangarPublish` against the module.
+otherwise the GitHub release attachment step finds no jar.
 
 ## Local testing
 

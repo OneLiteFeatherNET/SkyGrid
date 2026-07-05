@@ -41,8 +41,6 @@ dependencyResolutionManagement {
             version("shadow", "9.4.2")
             version("runPaper", "3.0.2")
             version("pluginYml", "0.8.0")
-            version("modrinth", "2.+")
-            version("hangar", "0.1.4")
             version("cyclonedx", "3.2.4")
 
             // Testing
@@ -74,8 +72,6 @@ dependencyResolutionManagement {
             plugin("shadow", "com.gradleup.shadow").versionRef("shadow")
             plugin("run-paper", "xyz.jpenilla.run-paper").versionRef("runPaper")
             plugin("plugin-yml-bukkit", "de.eldoria.plugin-yml.bukkit").versionRef("pluginYml")
-            plugin("modrinth", "com.modrinth.minotaur").versionRef("modrinth")
-            plugin("hangar", "io.papermc.hangar-publish-plugin").versionRef("hangar")
             plugin("cyclonedx", "org.cyclonedx.bom").versionRef("cyclonedx")
         }
     }
