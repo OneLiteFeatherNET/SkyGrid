@@ -18,6 +18,7 @@ dependencies {
     testImplementation(project(":adapters:command"))
     testImplementation(project(":adapters:config"))
     testImplementation(project(":adapters:spawn"))
+    testImplementation(project(":adapters:challenge"))
     testImplementation(project(":platforms:common"))
     testImplementation(project(":platforms:paper-olf"))
 
