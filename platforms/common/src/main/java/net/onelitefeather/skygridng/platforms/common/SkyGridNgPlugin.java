@@ -72,7 +72,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
 
         String algorithm = injector.getInstance(RuleState.class).current().algorithm();
         if (!injector.getInstance(TerrainAlgorithms.class).isKnown(algorithm)) {
-            getLogger().warning("Unknown algorithm '" + algorithm + "', falling back to WFC.");
+            getLogger().warning("Unknown algorithm '" + algorithm + "', falling back to skygrid.");
         }
 
         PluginCommand command = getCommand("skygrid");

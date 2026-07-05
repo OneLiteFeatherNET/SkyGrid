@@ -5,11 +5,9 @@ import com.google.inject.Injector;
 import com.google.inject.Stage;
 import net.onelitefeather.skygridng.adapters.generator.HexagonalChunkGenerator;
 import net.onelitefeather.skygridng.platforms.common.SkyGridNgPlugin;
-import net.onelitefeather.skygridng.ports.in.GenerateRegionUseCase;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 import net.onelitefeather.skygridng.core.service.DefaultTerrainAlgorithms;
-import net.onelitefeather.skygridng.core.service.RegionGenerationService;
 import net.onelitefeather.skygridng.core.service.RuleAdminService;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import org.junit.jupiter.api.AfterEach;
@@ -50,7 +48,6 @@ class GuiceModulesTest {
     @DisplayName("each in port is bound to its service implementation")
     void portsResolveToServices() {
         assertThat(injector.getInstance(TerrainAlgorithms.class)).isInstanceOf(DefaultTerrainAlgorithms.class);
-        assertThat(injector.getInstance(GenerateRegionUseCase.class)).isInstanceOf(RegionGenerationService.class);
         assertThat(injector.getInstance(RuleAdminUseCase.class)).isInstanceOf(RuleAdminService.class);
     }
 
