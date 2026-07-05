@@ -12,6 +12,7 @@ plugins {
 dependencies {
     // The shared composition root brings the whole object graph (adapters, core, ports, api).
     implementation(project(":platforms:common"))
+    implementation(project(":adapters:challenge"))
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
