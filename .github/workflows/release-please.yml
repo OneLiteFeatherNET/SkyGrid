@@ -24,14 +24,16 @@ jobs:
           manifest-file: .release-please-manifest.json
 
   publish:
-    name: Publish to Modrinth and Hangar
+    name: Attach release jar and upload SBOM
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
-    # Shared OneLiteFeather plugin publish workflow (Modrinth + Hangar + CycloneDX SBOM).
+    # Shared OneLiteFeather plugin publish workflow (CycloneDX SBOM upload only; Modrinth and
+    # Hangar are not used by SkyGrid-ng).
     uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-plugin-publish.yml@v2.4.0
     with:
       java-version: "25"
       tag-name: ${{ needs.release-please.outputs.tag_name }}
       project-name: "SkyGrid-ng"
       project-version: ${{ needs.release-please.outputs.version }}
+      publish-task: "cyclonedxBom"
     secrets: inherit

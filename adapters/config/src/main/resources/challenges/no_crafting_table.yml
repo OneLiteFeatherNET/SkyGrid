@@ -1,0 +1,3 @@
+id: no_crafting_table
+description: Crafting tables cannot be opened while this challenge is active.
+active: false

@@ -184,8 +184,8 @@ fixed recipe. Read `references/extending.md` and follow it step by step. The sho
 - New OLF-only mechanic (`platforms/paper-olf`): implement `OlfFeature` (id/enable/disable), inject
   the `JavaPlugin`, the public `SkyGridApi`, or any port, and add one `Multibinder` line in
   `OlfModule`. `OlfNetworkPlugin` enables it with the lifecycle. It ships only in the unpublished OLF
-  jar, so it never reaches Modrinth. Nothing in `api`, `ports`, `core`, the adapters, or
-  `platforms/paper` changes.
+  jar, so it never reaches any external distribution. Nothing in `api`, `ports`, `core`, the
+  adapters, or `platforms/paper` changes.
 
 ## Verifying a core change compiles
 

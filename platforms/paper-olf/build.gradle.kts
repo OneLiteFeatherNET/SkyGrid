@@ -17,6 +17,8 @@ plugins {
 dependencies {
     compileOnly(libs.paper.api)
     implementation(project(":platforms:common"))
+    // OLF-only mechanic (challenges), never pulled into :platforms:paper.
+    implementation(project(":adapters:challenge"))
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)

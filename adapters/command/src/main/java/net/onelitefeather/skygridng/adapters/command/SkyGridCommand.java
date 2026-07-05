@@ -1,5 +1,7 @@
 package net.onelitefeather.skygridng.adapters.command;
 
+import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import jakarta.inject.Inject;
@@ -12,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * In adapter: the /skygrid command for runtime administration of the configuration.
@@ -23,17 +26,22 @@ import java.util.Map;
 public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = List.of(
-            "preset", "presets", "worlds", "algorithm", "skyweight", "reload", "save", "undo", "help");
+            "preset", "presets", "worlds", "algorithm", "skyweight", "reload", "save", "undo",
+            "challenge", "help");
 
     private static final List<String> ALGORITHMS = List.of("skygrid", "noise_skygrid");
 
+    private static final List<String> CHALLENGE_SUBCOMMANDS = List.of("list", "toggle");
+
     private final RuleAdminUseCase admin;
     private final Presets presets;
+    private final Optional<ChallengeAdminUseCase> challenges;
 
     @Inject
-    public SkyGridCommand(RuleAdminUseCase admin, Presets presets) {
+    public SkyGridCommand(RuleAdminUseCase admin, Presets presets, Optional<ChallengeAdminUseCase> challenges) {
         this.admin = admin;
         this.presets = presets;
+        this.challenges = challenges;
     }
 
     @Override
@@ -62,6 +70,7 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(Messages.saved());
             }
             case "undo" -> sender.sendMessage(admin.undo() ? Messages.undoDone() : Messages.undoEmpty());
+            case "challenge" -> challenge(sender, args);
             default -> sender.sendMessage(Messages.help());
         }
         return true;
@@ -116,6 +125,48 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
                 ? Messages.skyWeightSet(args[1], value) : Messages.weightFail());
     }
 
+    private void challenge(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle> [id]"));
+            return;
+        }
+        challenges.ifPresentOrElse(
+                useCase -> {
+                    switch (args[1].toLowerCase(Locale.ROOT)) {
+                        case "list" -> challengeList(sender, useCase);
+                        case "toggle" -> challengeToggle(sender, args, useCase);
+                        default -> sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle> [id]"));
+                    }
+                },
+                () -> sender.sendMessage(Messages.challengeUnavailable()));
+    }
+
+    private void challengeList(CommandSender sender, ChallengeAdminUseCase useCase) {
+        List<ChallengeRule> rules = useCase.list();
+        if (rules.isEmpty()) {
+            sender.sendMessage(Messages.challengeListEmpty());
+            return;
+        }
+        for (ChallengeRule rule : rules) {
+            sender.sendMessage(Messages.challengeListEntry(rule.id(), rule.active()));
+        }
+    }
+
+    private void challengeToggle(CommandSender sender, String[] args, ChallengeAdminUseCase useCase) {
+        if (args.length < 3) {
+            sender.sendMessage(Messages.usage("/skygrid challenge toggle <id>"));
+            return;
+        }
+        String id = args[2];
+        boolean currentlyActive = useCase.isActive(id);
+        boolean changed = currentlyActive ? useCase.deactivate(id) : useCase.activate(id);
+        if (!changed) {
+            sender.sendMessage(Messages.challengeUnknown(id));
+            return;
+        }
+        sender.sendMessage(Messages.challengeToggled(id, !currentlyActive));
+    }
+
     private double parseDouble(String raw) {
         try {
             return Double.parseDouble(raw);
@@ -134,10 +185,22 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             return switch (sub) {
                 case "preset" -> filter(presets.names(), args[1]);
                 case "algorithm" -> filter(ALGORITHMS, args[1]);
+                case "challenge" -> filter(CHALLENGE_SUBCOMMANDS, args[1]);
                 default -> List.of();
             };
         }
+        if (args.length == 3 && sub.equals("challenge") && args[1].equalsIgnoreCase("toggle")) {
+            return challenges.map(useCase -> filter(challengeIds(useCase), args[2])).orElseGet(List::of);
+        }
         return List.of();
+    }
+
+    private List<String> challengeIds(ChallengeAdminUseCase useCase) {
+        List<String> ids = new ArrayList<>();
+        for (ChallengeRule rule : useCase.list()) {
+            ids.add(rule.id());
+        }
+        return ids;
     }
 
     private List<String> filter(List<String> options, String prefix) {

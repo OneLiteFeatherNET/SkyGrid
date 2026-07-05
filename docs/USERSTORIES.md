@@ -99,3 +99,50 @@ As a **developer**, I want algorithms behind a single port, so that I can add a 
 touching existing code.
 - A new algorithm is one class implementing `TerrainAlgorithm` plus one factory branch.
 - The chunk generator does not change when an algorithm is added.
+
+## Epic I: Challenges and Seasons
+
+### I1: Toggleable challenge rules
+As a **server admin**, I want to enable individual BastiGHG-style challenge rules (e.g. "no
+crafting table"), so that I can offer a harder, more focused survival experience without editing
+code.
+- Challenge rules are defined in config (`challenges/`, one file per rule, JSON/YAML/TOML).
+- `/skygrid challenge list|toggle <id>` lists and toggles rules; toggling persists immediately.
+- Ships in the `platforms/paper-olf` distribution only (documented OLF-only mechanic seam).
+
+### I2: Goal and achievement tracking within a challenge
+As a **player**, I want visible goals within an active challenge, so that I know what I'm working
+toward beyond surviving under restrictions.
+- Backlog. Needs a per-player durable state store (see `challenge-season-system` skill); not
+  implemented yet.
+
+### I3: Season lifecycle
+As a **server owner**, I want challenges bundled into fixed-duration Seasons with their own content
+package, so that I can deliver new content on a predictable cadence.
+- Backlog. Needs a Season model (start/end, bound challenge rule set) layered orthogonally to
+  Presets; not implemented yet.
+
+### I4: Adaptive meta-progression
+As a **player**, I want repeating/prestige-style progression that scales challenge difficulty to my
+own play patterns, so that the game stays appropriately challenging over time.
+- Adapts difficulty/pacing to behavior signals (session-length trend, completion ratio, drop-off
+  point, voluntary return rate); must never adapt reward magnitude to a struggle/disengagement
+  signal (the "compensation loop" risk).
+- Backlog. Needs the per-player state store; not implemented yet.
+
+### I5: Ethical engagement review gate
+As a **player**, I want every challenge/season/progression mechanic vetted against dark-pattern
+risks before release, so that the game stays fun rather than manipulative.
+- Every new mechanic passes the checklist in `.claude/skills/challenge-season-system/SKILL.md`,
+  reviewed by `player-psychology-designer`, before implementation.
+
+## Epic J: Economy and marketplace (sketch only, not scheduled)
+
+### J1: SkyBlock-style player economy (sketch)
+As a **server owner**, I want a configurable player economy, so that progression has a persistent
+goods/trade layer.
+- Sketch only; needs a full requirements pass before implementation.
+- Do not use JSR 354 (`javax.money`/Moneta): it hard-requires `jakarta.annotation` and `okhttp3` at
+  runtime, violating the framework-free-core rule. Use a small `Money`-style record in `api.model`
+  instead (same pattern as `BlockId`).
+- Shares the per-player persistence gap with Epic I2-I4; solve that once, generically.

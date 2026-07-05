@@ -5,7 +5,7 @@
 allprojects {
     group = "net.onelitefeather"
     // Strip the trailing release-please marker comment from the gradle.properties version so the
-    // jar name and the Modrinth/Hangar version stay clean. release-please still updates the number
+    // jar name and the release metadata stay clean. release-please still updates the number
     // in gradle.properties through the x-release-please-version annotation.
     version = providers.gradleProperty("version").get().substringBefore("#").trim()
 }

@@ -34,6 +34,15 @@ class RecordValidationTest {
     }
 
     @Test
+    @DisplayName("BiomeId requires a non blank, valid, namespaced id and defaults the namespace")
+    void biomeId() {
+        assertThatThrownBy(() -> BiomeId.of("")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> BiomeId.of("bad name!")).isInstanceOf(IllegalArgumentException.class);
+        assertDoesNotThrow(() -> BiomeId.of("mymod:custom_biome"));
+        org.assertj.core.api.Assertions.assertThat(BiomeId.of("plains").asString()).isEqualTo("minecraft:plains");
+    }
+
+    @Test
     @DisplayName("Plant rejects bad heights and out of range probability")
     void plant() {
         assertThatThrownBy(() -> new Plant(mc("cactus"), false, null, 0.5, 0, 3, false))

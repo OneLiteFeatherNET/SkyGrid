@@ -70,7 +70,8 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
 - `platforms/paper-olf` (`platforms.olf.*`): the OneLiteFeather network distribution, a sibling of
   `platforms/paper` (both build on `platforms/common`). `OlfNetworkPlugin` extends `SkyGridNgPlugin`,
   adds `OlfModule`, enables every bound `OlfFeature` (the seam for OLF-only mechanics like
-  challenges). Not published, so these never reach Modrinth. Produces `skygrid-ng-olf-<version>.jar`.
+  challenges). Not published, so these never reach anyone outside the OLF network. Produces
+  `skygrid-ng-olf-<version>.jar`.
 
 - `verification/`: ArchUnit tests (no production code) that enforce the dependency rule and the
   platform-neutral core at build time. Update `ArchitectureTest` if you add a layer.

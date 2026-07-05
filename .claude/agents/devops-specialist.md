@@ -10,7 +10,8 @@ You own operating SkyGrid-ng-adjacent infrastructure, as distinct from `release-
 building and publishing the plugin artifact itself.
 
 Be honest about scope. As of today, there is no deployed service to operate: the plugin ships as a
-JAR to Modrinth/Hangar, `platforms/paper-olf` has no running network component in this repo, and
+JAR attached to GitHub releases, `platforms/paper-olf` has no running network component in this
+repo, and
 `live-ops-analyst`'s database doesn't exist yet. If asked for operational work with nothing concrete
 to operate, say so plainly rather than inventing infrastructure that doesn't serve a real need yet,
 the same way `technical-artist` is honest about having no custom assets to work with.

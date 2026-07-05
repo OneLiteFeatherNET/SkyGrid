@@ -18,26 +18,29 @@ import java.nio.file.Path;
 
 /**
  * Generates the JSON Schema for the on-disk config. victools reads the Jackson annotations on the DTOs
- * ({@link ConfigDtos} and {@link RuleDtos}) to emit a Draft 2020-12 schema for each root file:
+ * ({@link ConfigDtos}, {@link RuleDtos} and {@link ChallengeDtos}) to emit a Draft 2020-12 schema for
+ * each root file:
  *
  * <ul>
  *   <li>{@code config.<ext>} maps to {@link ConfigDtos.ConfigDto} (the active-preset selector),</li>
  *   <li>a {@code presets/<name>.<ext>} file maps to {@link ConfigDtos.PresetDto},</li>
- *   <li>a {@code rules/<block>.<ext>} file maps to {@link RuleDtos.RuleDto}.</li>
+ *   <li>a {@code rules/<block>.<ext>} file maps to {@link RuleDtos.RuleDto},</li>
+ *   <li>a {@code challenges/<id>.<ext>} file maps to {@link ChallengeDtos.ChallengeDto}.</li>
  * </ul>
  *
  * The schemas describe the structure only, so they are format-neutral: an editor (a YAML or JSON
  * language server) can use them to validate and autocomplete the YAML, TOML or JSON an admin writes,
  * without the server having to ship a runtime validator. Generation is a one-off, so a single shared
- * instance is reused across the two repositories.
+ * instance is reused across the repositories.
  */
 final class ConfigSchemas {
 
-    /** The three schema kinds and their on-disk schema file names (under {@code schema/}). */
+    /** The four schema kinds and their on-disk schema file names (under {@code schema/}). */
     enum Kind {
         CONFIG("schema/config.schema.json"),
         PRESET("schema/preset.schema.json"),
-        RULE("schema/rule.schema.json");
+        RULE("schema/rule.schema.json"),
+        CHALLENGE("schema/challenge.schema.json");
 
         private final String fileName;
 
@@ -52,12 +55,14 @@ final class ConfigSchemas {
     private final ObjectNode configSchema;
     private final ObjectNode presetSchema;
     private final ObjectNode ruleSchema;
+    private final ObjectNode challengeSchema;
 
     private ConfigSchemas() {
         SchemaGenerator generator = newGenerator();
         this.configSchema = generator.generateSchema(ConfigDtos.ConfigDto.class);
         this.presetSchema = generator.generateSchema(ConfigDtos.PresetDto.class);
         this.ruleSchema = generator.generateSchema(RuleDtos.RuleDto.class);
+        this.challengeSchema = generator.generateSchema(ChallengeDtos.ChallengeDto.class);
     }
 
     /** The shared instance; the schemas are generated once and reused. */
@@ -82,6 +87,7 @@ final class ConfigSchemas {
             case CONFIG -> configSchema;
             case PRESET -> presetSchema;
             case RULE -> ruleSchema;
+            case CHALLENGE -> challengeSchema;
         };
     }
 

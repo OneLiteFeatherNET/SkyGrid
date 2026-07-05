@@ -91,4 +91,24 @@ final class Messages {
     static Component worldList(String worlds) {
         return key("world.list", worlds);
     }
+
+    static Component challengeUnavailable() {
+        return key("challenge.unavailable");
+    }
+
+    static Component challengeListEmpty() {
+        return key("challenge.list_empty");
+    }
+
+    static Component challengeListEntry(String id, boolean active) {
+        return key("challenge.list_entry", id, active);
+    }
+
+    static Component challengeUnknown(String id) {
+        return key("challenge.unknown", id);
+    }
+
+    static Component challengeToggled(String id, boolean active) {
+        return key("challenge.toggled", id, active);
+    }
 }

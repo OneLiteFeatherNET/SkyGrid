@@ -31,8 +31,8 @@ What to check, in priority order:
 5. **Supply chain.** When dependencies change, check the CycloneDX SBOM output for newly introduced
    packages with known vulnerabilities; treat a version bump that pulls in an unvetted transitive
    dependency as worth flagging even if the direct dependency looks fine.
-6. **No hardcoded secrets.** Modrinth/Hangar publishing tokens and any future service credentials
-   belong in CI secrets, never in `build.gradle.kts`, `gradle.properties`, or committed config.
+6. **No hardcoded secrets.** CI publishing tokens and any future service credentials belong in CI
+   secrets, never in `build.gradle.kts`, `gradle.properties`, or committed config.
 
 Workflow:
 
