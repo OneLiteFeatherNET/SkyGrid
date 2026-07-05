@@ -29,7 +29,10 @@ public final class JacksonChallengeRepository implements ChallengeRepository {
 
     private static final String CHALLENGES_DIR = "challenges";
     private static final List<String> DEFAULT_CHALLENGE_RESOURCES = List.of(
-            "challenges/no_crafting_table.yml");
+            "challenges/no_crafting_table.yml",
+            "challenges/one_life.yml",
+            "challenges/no_natural_regeneration.yml",
+            "challenges/level_is_border.yml");
 
     private final Path dataFolder;
     private final BundledDefaults defaults;

@@ -4,7 +4,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.OptionalBinder;
 import jakarta.inject.Singleton;
+import net.onelitefeather.skygridng.adapters.challenge.LevelBorderWarningTask;
 import net.onelitefeather.skygridng.adapters.challenge.NoCraftingTableListener;
+import net.onelitefeather.skygridng.adapters.challenge.NoNaturalRegenerationListener;
+import net.onelitefeather.skygridng.adapters.challenge.OneLifeListener;
 import net.onelitefeather.skygridng.adapters.config.BundledDefaults;
 import net.onelitefeather.skygridng.adapters.config.JacksonChallengeRepository;
 import net.onelitefeather.skygridng.adapters.generator.HexagonalChunkGenerator;
@@ -58,5 +61,30 @@ final class ChallengeModule extends AbstractModule {
     NoCraftingTableListener provideNoCraftingTableListener(ChallengeAdminUseCase challenges) {
         return new NoCraftingTableListener(challenges,
                 world -> world.getGenerator() instanceof HexagonalChunkGenerator);
+    }
+
+    /** The {@code one_life} enforcement listener, scoped the same way as the crafting table one. */
+    @Provides
+    @Singleton
+    OneLifeListener provideOneLifeListener(ChallengeAdminUseCase challenges) {
+        return new OneLifeListener(challenges,
+                world -> world.getGenerator() instanceof HexagonalChunkGenerator);
+    }
+
+    /** The {@code no_natural_regeneration} enforcement listener. */
+    @Provides
+    @Singleton
+    NoNaturalRegenerationListener provideNoNaturalRegenerationListener(ChallengeAdminUseCase challenges) {
+        return new NoNaturalRegenerationListener(challenges,
+                world -> world.getGenerator() instanceof HexagonalChunkGenerator);
+    }
+
+    /** The {@code level_is_border} reminder task, scheduled periodically by {@code ChallengeFeature}. */
+    @Provides
+    @Singleton
+    LevelBorderWarningTask provideLevelBorderWarningTask(ChallengeAdminUseCase challenges, JavaPlugin plugin) {
+        return new LevelBorderWarningTask(challenges,
+                world -> world.getGenerator() instanceof HexagonalChunkGenerator,
+                plugin.getServer());
     }
 }

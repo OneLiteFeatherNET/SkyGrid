@@ -1,0 +1,3 @@
+id: level_is_border
+description: Periodically reminds players that their experience level sets their allowed travel radius.
+active: false
