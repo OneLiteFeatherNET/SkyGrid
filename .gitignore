@@ -19,3 +19,6 @@ Thumbs.db
 
 # graphify knowledge graph (regenerated via `graphify update .`)
 graphify-out/
+
+# Claude Code personal local overrides
+.claude/settings.local.json
