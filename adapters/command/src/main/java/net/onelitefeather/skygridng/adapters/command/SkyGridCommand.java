@@ -61,7 +61,7 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            sender.sendMessage(Messages.help());
+            sendHelp(sender);
             return true;
         }
         if (args[0].equalsIgnoreCase("help")) {
@@ -82,22 +82,26 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             }
             case "undo" -> sender.sendMessage(admin.undo() ? Messages.undoDone() : Messages.undoEmpty());
             case "challenge" -> challenge(sender, args);
-            default -> sender.sendMessage(Messages.help());
+            default -> sendHelp(sender);
         }
         return true;
     }
 
     private void help(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Messages.help());
+            sendHelp(sender);
             return;
         }
         String usage = USAGE.get(args[1].toLowerCase(Locale.ROOT));
         if (usage != null) {
             sender.sendMessage(Messages.usage(usage));
         } else {
-            sender.sendMessage(Messages.help());
+            sendHelp(sender);
         }
+    }
+
+    private void sendHelp(CommandSender sender) {
+        Messages.help().forEach(sender::sendMessage);
     }
 
     private void preset(CommandSender sender, String[] args) {

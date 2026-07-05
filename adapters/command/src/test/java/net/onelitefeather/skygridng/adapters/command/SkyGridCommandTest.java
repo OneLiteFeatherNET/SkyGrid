@@ -98,7 +98,7 @@ class SkyGridCommandTest {
 
         subject.onCommand(sender, command, "skygrid", new String[]{"help"});
 
-        verify(sender).sendMessage(any(Component.class));
+        verify(sender, times(Messages.help().size())).sendMessage(any(Component.class));
         verify(admin, never()).setAlgorithm(any());
     }
 
@@ -277,6 +277,6 @@ class SkyGridCommandTest {
 
         subject.onCommand(sender, command, "skygrid", new String[]{"help", "notasubcommand"});
 
-        verify(sender).sendMessage(any(Component.class));
+        verify(sender, times(Messages.help().size())).sendMessage(any(Component.class));
     }
 }

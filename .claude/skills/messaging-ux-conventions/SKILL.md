@@ -3,12 +3,13 @@ name: messaging-ux-conventions
 description: >-
   Explains SkyGrid-ng's player- and admin-facing feedback surfaces: the four channels (chat, action
   bar, boss bar, scoreboard) and when each applies, the current i18n convention for chat messages
-  (Bundle_en/Bundle_de.properties, skygridng.command.* keys, Adventure Component.translatable),
-  the current state of server log messages (plain, untemplated, not localized), and the admin
-  versus player audience split. Use when wording a new command message, choosing which channel a
-  new piece of feedback should use, or deciding on a new i18n key name. Cross-links
-  hexagonal-architecture (where the message code lives) and project-context (why Adventure was
-  chosen); does not restate either.
+  (Bundle_en/Bundle_de.properties, skygridng.command.* keys, Adventure Component.translatable), how
+  to compose multi-line feedback as multiple Audience.sendMessage calls per the
+  docs.papermc.io/adventure reference, the current state of server log messages (plain, untemplated,
+  not localized), and the admin versus player audience split. Use when wording a new command message,
+  choosing which channel a new piece of feedback should use, deciding on a new i18n key name, or a
+  message needs more than one line. Cross-links hexagonal-architecture (where the message code lives)
+  and project-context (why Adventure was chosen); does not restate either.
 ---
 
 # Messaging and UX conventions
@@ -67,6 +68,30 @@ Going forward, name a new key `skygridng.<area>.<subarea>[.<detail>]`, following
 `skygridng.command.weight.fail`). When a new surface (action bar, boss bar, scoreboard) gets built,
 give it its own `<area>` segment (for example `skygridng.bossbar.*`) rather than overloading
 `command`.
+
+## Composing multi-line or multi-part feedback
+
+Authoritative reference: [docs.papermc.io/adventure](https://docs.papermc.io/adventure/), especially
+the [Text](https://docs.papermc.io/adventure/text/), [Audiences](https://docs.papermc.io/adventure/audiences/),
+and [Localization](https://docs.papermc.io/adventure/localization/) pages. Consult these (or the
+[Javadoc](https://jd.advntr.dev)) before inventing a workaround for something Adventure already has a
+documented way to do.
+
+When a piece of feedback needs more than one line, call `Audience.sendMessage(...)` once per line
+instead of concatenating everything (including a literal `\n`) into a single translatable/MessageFormat
+string. Sending discrete messages:
+
+- avoids relying on undocumented newline-in-a-single-component rendering behavior,
+- lets each line have its own bundle key (so one line can change independently, or be reused
+  elsewhere), and
+- keeps each `MessageFormat` pattern simple, which matters once a line has its own `{0}`/`{1}` args.
+
+Concrete precedent: `Messages.help()` in
+`adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java` returns
+a `List<Component>` (`skygridng.command.help.header`, `.subcommands`, `.algorithm_skyweight`,
+`.reload_save_undo_challenge`, `.footer`), and the command adapter sends each with its own
+`sender.sendMessage(...)` call (see `SkyGridCommand.sendHelp`). Use this shape, not a single
+newline-joined `key("help")`, whenever a message needs more than one visual line.
 
 ## Current log message reality
 

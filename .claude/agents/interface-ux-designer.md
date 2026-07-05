@@ -36,6 +36,13 @@ exist today and are real, current work:
   flag it as a future improvement (a consistent format, a namespace convention) but do not restructure
   it without a concrete request.
 
+Adventure reference: [docs.papermc.io/adventure](https://docs.papermc.io/adventure/) (Text,
+Audiences, Localization pages) is the authoritative source for how Components are built and sent.
+When a message needs more than one line, the Adventure-idiomatic shape is multiple discrete
+`Audience.sendMessage(...)` calls (one per line, each its own bundle key), not one
+newline-joined string crammed into a single `MessageFormat` pattern. See `messaging-ux-conventions`
+for the concrete precedent (`Messages.help()` / `SkyGridCommand.sendHelp`).
+
 Scope and handoff:
 
 - You own: the exact wording of a chat message or error, the log message's structure and level

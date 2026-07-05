@@ -2,6 +2,8 @@ package net.onelitefeather.skygridng.adapters.command;
 
 import net.kyori.adventure.text.Component;
 
+import java.util.List;
+
 /**
  * Builds translatable command messages. Keys resolve against the registered translation bundles,
  * so the viewer sees the text in their own locale. Arguments are passed as components and fill the
@@ -28,8 +30,14 @@ final class Messages {
         return key("no_permission");
     }
 
-    static Component help() {
-        return key("help");
+    /** Sent as separate lines (one {@code sendMessage} call each), not one newline-joined block. */
+    static List<Component> help() {
+        return List.of(
+                key("help.header"),
+                key("help.subcommands"),
+                key("help.algorithm_skyweight"),
+                key("help.reload_save_undo_challenge"),
+                key("help.footer"));
     }
 
     static Component usage(String usage) {
