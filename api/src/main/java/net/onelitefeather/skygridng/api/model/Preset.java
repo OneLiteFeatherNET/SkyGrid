@@ -27,7 +27,6 @@ import java.util.List;
  * @param spawnerMobs override: mobs assigned to spawners
  * @param biomes      override: the biome palette
  * @param spawn       override: spread-spawn settings
- * @param wfc         override: the full WFC rule set
  */
 public record Preset(
         String name,
@@ -41,8 +40,7 @@ public record Preset(
         List<BlockWeight> chestLoot,
         List<BlockWeight> spawnerMobs,
         List<BiomeId> biomes,
-        SpawnConfig spawn,
-        RuleSet wfc
+        SpawnConfig spawn
 ) {
     public Preset {
         if (name == null || name.isBlank()) {
