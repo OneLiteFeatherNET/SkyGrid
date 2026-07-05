@@ -47,7 +47,6 @@ class JacksonPresetRepositoryTest {
         Preset classic = catalog.presets().get("classic");
         assertThat(classic.parents()).isEmpty();
         assertThat(classic.blocks()).isNotEmpty();
-        assertThat(classic.wfc()).isNotNull();
         assertThat(classic.spawn()).isNotNull();
 
         Preset standard = catalog.presets().get("standard");
@@ -55,7 +54,6 @@ class JacksonPresetRepositoryTest {
         assertThat(standard.algorithm()).isEqualTo("noise_skygrid");
         assertThat(standard.blocks()).isNotEmpty();                     // overridden
         assertThat(standard.biomes()).isNull();                         // inherited
-        assertThat(standard.wfc()).isNull();                            // inherited
 
         Preset nether = catalog.presets().get("nether");
         assertThat(nether.parents()).containsExactly("classic");

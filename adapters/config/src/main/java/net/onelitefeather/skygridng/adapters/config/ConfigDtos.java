@@ -2,8 +2,6 @@ package net.onelitefeather.skygridng.adapters.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.util.List;
 
@@ -42,8 +40,7 @@ final class ConfigDtos {
             List<BlockWeightDto> chestLoot,
             List<BlockWeightDto> spawnerMobs,
             List<String> biomes,
-            SpawnDto spawn,
-            WfcDto wfc
+            SpawnDto spawn
     ) {
     }
 
@@ -52,95 +49,18 @@ final class ConfigDtos {
     record BlockWeightDto(String material, double weight) {
     }
 
-    /** The spread-spawn section. Boxed fields so an omitted key falls back to the domain default. */
+    /**
+     * The spread-spawn section. Boxed fields so an omitted key falls back to the domain default.
+     * {@code searchRadius} and {@code maxAttempts} bound the safe-block search: the adapter probes
+     * outward from the assigned slot for a standable block and teleports the player there instead of
+     * building a platform.
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record SpawnDto(
             Boolean spread,
             Integer spacing,
-            Integer platformY,
-            String platformBlock,
-            Integer platformRadius,
-            Boolean villager
+            Integer searchRadius,
+            Integer maxAttempts
     ) {
-    }
-
-    /** The Wave Function Collapse rule set. */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    record WfcDto(
-            SettingsDto settings,
-            List<TileDto> tiles,
-            List<List<String>> allowed
-    ) {
-    }
-
-    /** Global WFC generation settings. Boxed so omitted keys keep the domain defaults. */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    record SettingsDto(
-            Integer cellSize,
-            Integer regionSize,
-            Integer surfaceY,
-            Integer maxSolverAttempts,
-            String fallbackTileId,
-            Boolean allowSelf
-    ) {
-    }
-
-    /** A WFC macro tile type. */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    record TileDto(
-            String id,
-            Double weight,
-            Boolean neutral,
-            String surface,
-            String fill,
-            Boolean liquid,
-            List<DecorationDto> features
-    ) {
-    }
-
-    /**
-     * A tile decoration, a discriminated union keyed by the {@code type} property. Jackson injects and
-     * consumes {@code type} on both sides, so the concrete records stay clean and round-trip through
-     * every format.
-     */
-    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-    @JsonSubTypes({
-            @JsonSubTypes.Type(value = PlantDto.class, name = "plant"),
-            @JsonSubTypes.Type(value = LootChestDto.class, name = "loot_chest"),
-            @JsonSubTypes.Type(value = SpawnerDto.class, name = "spawner")
-    })
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    sealed interface DecorationDto permits PlantDto, LootChestDto, SpawnerDto {
-    }
-
-    /** A plant decoration. */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    record PlantDto(
-            String material,
-            Boolean requiresLiquidNeighbor,
-            String requiresGroundBlock,
-            Double probability,
-            Integer minHeight,
-            Integer maxHeight,
-            Boolean providesWater
-    ) implements DecorationDto {
-    }
-
-    /** A loot-container decoration. */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    record LootChestDto(
-            String block,
-            String lootTable,
-            Double probability
-    ) implements DecorationDto {
-    }
-
-    /** A monster-spawner decoration. */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    record SpawnerDto(
-            String block,
-            String mob,
-            Double probability
-    ) implements DecorationDto {
     }
 }

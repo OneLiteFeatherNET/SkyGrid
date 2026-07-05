@@ -18,8 +18,7 @@ import java.nio.file.Path;
 
 /**
  * Generates the JSON Schema for the on-disk config. victools reads the Jackson annotations on the DTOs
- * ({@link ConfigDtos} and {@link RuleDtos}), including the {@code @JsonSubTypes} union on the decoration
- * type, to emit a Draft 2020-12 schema for each root file:
+ * ({@link ConfigDtos} and {@link RuleDtos}) to emit a Draft 2020-12 schema for each root file:
  *
  * <ul>
  *   <li>{@code config.<ext>} maps to {@link ConfigDtos.ConfigDto} (the active-preset selector),</li>
@@ -68,7 +67,7 @@ final class ConfigSchemas {
 
     private static SchemaGenerator newGenerator() {
         // PLAIN_JSON is the neutral Draft 2020-12 option preset; the Jackson module teaches victools to
-        // read @JsonProperty, @JsonInclude and the @JsonTypeInfo/@JsonSubTypes decoration union.
+        // read @JsonProperty and @JsonInclude on the DTOs.
         JacksonModule jacksonModule = new JacksonModule();
         SchemaGeneratorConfigBuilder builder = new SchemaGeneratorConfigBuilder(
                 SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
