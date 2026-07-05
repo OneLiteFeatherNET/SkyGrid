@@ -5,7 +5,10 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Zombie;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.plugin.RegisteredListener;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,6 +35,7 @@ class NoNaturalRegenerationListenerTest {
     private WorldMock world;
     private PlayerMock player;
     private ChallengeAdminUseCase challenges;
+    private JavaPlugin plugin;
 
     @BeforeEach
     void setUp() {
@@ -39,6 +43,7 @@ class NoNaturalRegenerationListenerTest {
         world = server.addSimpleWorld("skygrid-world");
         player = server.addPlayer();
         challenges = mock(ChallengeAdminUseCase.class);
+        plugin = MockBukkit.createMockPlugin("SkyGridNg");
     }
 
     @AfterEach
@@ -47,7 +52,16 @@ class NoNaturalRegenerationListenerTest {
     }
 
     private NoNaturalRegenerationListener listener(Predicate<World> appliesTo) {
-        return new NoNaturalRegenerationListener(challenges, appliesTo);
+        return new NoNaturalRegenerationListener(challenges, appliesTo, plugin);
+    }
+
+    private static boolean isRegistered(HandlerList handlerList, Object listenerInstance) {
+        for (RegisteredListener registration : handlerList.getRegisteredListeners()) {
+            if (registration.getListener() == listenerInstance) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private EntityRegainHealthEvent regain(Entity entity, EntityRegainHealthEvent.RegainReason reason) {
@@ -108,5 +122,32 @@ class NoNaturalRegenerationListenerTest {
         listener(w -> true).onRegainHealth(event);
 
         assertThat(event.isCancelled()).isFalse();
+    }
+
+    @Test
+    @DisplayName("challengeId returns the constant challenge id")
+    void challengeIdReturnsConstant() {
+        assertThat(listener(w -> true).challengeId()).isEqualTo(NoNaturalRegenerationListener.CHALLENGE_ID);
+    }
+
+    @Test
+    @DisplayName("enable registers this listener with the plugin manager")
+    void enableRegistersListener() {
+        NoNaturalRegenerationListener behavior = listener(w -> true);
+
+        behavior.enable();
+
+        assertThat(isRegistered(EntityRegainHealthEvent.getHandlerList(), behavior)).isTrue();
+    }
+
+    @Test
+    @DisplayName("disable unregisters this listener")
+    void disableUnregistersListener() {
+        NoNaturalRegenerationListener behavior = listener(w -> true);
+        behavior.enable();
+
+        behavior.disable();
+
+        assertThat(isRegistered(EntityRegainHealthEvent.getHandlerList(), behavior)).isFalse();
     }
 }

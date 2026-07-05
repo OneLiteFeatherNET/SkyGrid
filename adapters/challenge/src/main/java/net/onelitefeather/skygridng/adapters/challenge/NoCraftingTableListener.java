@@ -1,15 +1,18 @@
 package net.onelitefeather.skygridng.adapters.challenge;
 
+import jakarta.inject.Inject;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.function.Predicate;
 
@@ -27,16 +30,34 @@ import java.util.function.Predicate;
  * and SkyGrid-generated floating-grid crafting tables uniformly, since Bukkit does not distinguish
  * block origin.
  */
-public final class NoCraftingTableListener implements Listener {
+public final class NoCraftingTableListener implements Listener, ChallengeBehavior {
 
     static final String CHALLENGE_ID = "no_crafting_table";
 
     private final ChallengeAdminUseCase challenges;
     private final Predicate<World> appliesTo;
+    private final JavaPlugin plugin;
 
-    public NoCraftingTableListener(ChallengeAdminUseCase challenges, Predicate<World> appliesTo) {
+    @Inject
+    public NoCraftingTableListener(ChallengeAdminUseCase challenges, Predicate<World> appliesTo, JavaPlugin plugin) {
         this.challenges = challenges;
         this.appliesTo = appliesTo;
+        this.plugin = plugin;
+    }
+
+    @Override
+    public String challengeId() {
+        return CHALLENGE_ID;
+    }
+
+    @Override
+    public void enable() {
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+    }
+
+    @Override
+    public void disable() {
+        HandlerList.unregisterAll(this);
     }
 
     @EventHandler

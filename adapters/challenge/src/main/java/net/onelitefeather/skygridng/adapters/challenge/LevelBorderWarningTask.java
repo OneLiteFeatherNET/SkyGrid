@@ -1,19 +1,24 @@
 package net.onelitefeather.skygridng.adapters.challenge;
 
+import jakarta.inject.Inject;
 import net.kyori.adventure.text.Component;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
-import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Collection;
 import java.util.function.Predicate;
 
 /**
  * Driving adapter: periodic reminder for the {@code level_is_border} challenge. This is not a
- * {@link org.bukkit.event.Listener}; it is a plain {@link Runnable} meant to be registered with
- * {@code Bukkit.getScheduler().runTaskTimer(plugin, task, 0L, ticks)} by the OLF composition root,
- * not to self-schedule.
+ * {@link org.bukkit.event.Listener}; it is a plain {@link Runnable}. As a {@link ChallengeBehavior}
+ * it self-schedules with {@code JavaPlugin.getServer().getScheduler().runTaskTimer(...)} on
+ * {@link #enable()} and cancels the stored {@link BukkitTask} on {@link #disable()}; the
+ * {@link Player} collection it reminds each tick is read via {@code plugin.getServer()} rather than a
+ * separately injected {@link org.bukkit.Server}, since the plugin reference is needed anyway to
+ * schedule and cancel the task and keeping a single field avoids the two ever drifting apart.
  *
  * The allowed radius is display only: a fixed {@value #BLOCKS_PER_LEVEL} blocks per experience
  * level, computed from the highest level among online players in a matching world. There is no real
@@ -21,21 +26,43 @@ import java.util.function.Predicate;
  * border is left to server operators or a future slice. The factor is a deliberate hardcoded
  * constant in this slice, not configurable.
  */
-public final class LevelBorderWarningTask implements Runnable {
+public final class LevelBorderWarningTask implements Runnable, ChallengeBehavior {
 
     static final String CHALLENGE_ID = "level_is_border";
+
+    private static final long PERIOD_TICKS = 100L;
 
     /** Deliberate, hardcoded "display only" simplification: not configurable in this slice. */
     static final int BLOCKS_PER_LEVEL = 10;
 
     private final ChallengeAdminUseCase challenges;
     private final Predicate<World> appliesTo;
-    private final Server server;
+    private final JavaPlugin plugin;
 
-    public LevelBorderWarningTask(ChallengeAdminUseCase challenges, Predicate<World> appliesTo, Server server) {
+    private BukkitTask task;
+
+    @Inject
+    public LevelBorderWarningTask(ChallengeAdminUseCase challenges, Predicate<World> appliesTo, JavaPlugin plugin) {
         this.challenges = challenges;
         this.appliesTo = appliesTo;
-        this.server = server;
+        this.plugin = plugin;
+    }
+
+    @Override
+    public String challengeId() {
+        return CHALLENGE_ID;
+    }
+
+    @Override
+    public void enable() {
+        task = plugin.getServer().getScheduler().runTaskTimer(plugin, this, 0L, PERIOD_TICKS);
+    }
+
+    @Override
+    public void disable() {
+        if (task != null) {
+            task.cancel();
+        }
     }
 
     @Override
@@ -43,7 +70,7 @@ public final class LevelBorderWarningTask implements Runnable {
         if (!challenges.isActive(CHALLENGE_ID)) {
             return;
         }
-        Collection<? extends Player> matching = server.getOnlinePlayers().stream()
+        Collection<? extends Player> matching = plugin.getServer().getOnlinePlayers().stream()
                 .filter(player -> appliesTo.test(player.getWorld()))
                 .toList();
         if (matching.isEmpty()) {

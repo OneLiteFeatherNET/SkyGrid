@@ -16,7 +16,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,6 +36,7 @@ class SkyGridCommandTest {
 
     private RuleAdminUseCase admin;
     private Presets presets;
+    private ChallengeAdminUseCase challenges;
     private CommandSender sender;
     private Command command;
     private SkyGridCommand subject;
@@ -45,9 +45,10 @@ class SkyGridCommandTest {
     void setUp() {
         admin = mock(RuleAdminUseCase.class);
         presets = mock(Presets.class);
+        challenges = mock(ChallengeAdminUseCase.class);
         sender = mock(CommandSender.class);
         command = mock(Command.class);
-        subject = new SkyGridCommand(admin, presets, Optional.empty());
+        subject = new SkyGridCommand(admin, presets, challenges);
     }
 
     private static GeneratorConfig minimalConfig(BlockWeight... blocks) {
@@ -118,10 +119,8 @@ class SkyGridCommandTest {
     // ----- challenge sub command -----
 
     @Test
-    @DisplayName("'challenge list' delegates to the ChallengeAdminUseCase when the port is present")
+    @DisplayName("'challenge list' delegates to the ChallengeAdminUseCase")
     void challengeListDelegatesWhenPresent() {
-        ChallengeAdminUseCase challenges = mock(ChallengeAdminUseCase.class);
-        subject = new SkyGridCommand(admin, presets, Optional.of(challenges));
         when(sender.hasPermission("skygridng.admin")).thenReturn(true);
         when(challenges.list()).thenReturn(List.of(new ChallengeRule("no_crafting_table", "no tables", false)));
 
@@ -134,8 +133,6 @@ class SkyGridCommandTest {
     @Test
     @DisplayName("'challenge toggle <id>' activates an inactive challenge")
     void challengeToggleActivatesWhenInactive() {
-        ChallengeAdminUseCase challenges = mock(ChallengeAdminUseCase.class);
-        subject = new SkyGridCommand(admin, presets, Optional.of(challenges));
         when(sender.hasPermission("skygridng.admin")).thenReturn(true);
         when(challenges.isActive("no_crafting_table")).thenReturn(false);
         when(challenges.activate("no_crafting_table")).thenReturn(true);
@@ -151,8 +148,6 @@ class SkyGridCommandTest {
     @Test
     @DisplayName("'challenge toggle <id>' deactivates an active challenge")
     void challengeToggleDeactivatesWhenActive() {
-        ChallengeAdminUseCase challenges = mock(ChallengeAdminUseCase.class);
-        subject = new SkyGridCommand(admin, presets, Optional.of(challenges));
         when(sender.hasPermission("skygridng.admin")).thenReturn(true);
         when(challenges.isActive("no_crafting_table")).thenReturn(true);
         when(challenges.deactivate("no_crafting_table")).thenReturn(true);
@@ -168,8 +163,6 @@ class SkyGridCommandTest {
     @Test
     @DisplayName("'challenge toggle <unknown id>' is handled without throwing")
     void challengeToggleUnknownId() {
-        ChallengeAdminUseCase challenges = mock(ChallengeAdminUseCase.class);
-        subject = new SkyGridCommand(admin, presets, Optional.of(challenges));
         when(sender.hasPermission("skygridng.admin")).thenReturn(true);
         when(challenges.isActive("bogus")).thenReturn(false);
         when(challenges.activate("bogus")).thenReturn(false);
@@ -178,17 +171,6 @@ class SkyGridCommandTest {
 
         assertThat(handled).isTrue();
         verify(challenges).activate("bogus");
-        verify(sender).sendMessage(any(Component.class));
-    }
-
-    @Test
-    @DisplayName("'challenge' replies with the unavailable message when the port is absent")
-    void challengeUnavailableWhenPortAbsent() {
-        // subject was built in setUp() with Optional.empty()
-        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-
-        subject.onCommand(sender, command, "skygrid", new String[]{"challenge", "list"});
-
         verify(sender).sendMessage(any(Component.class));
     }
 

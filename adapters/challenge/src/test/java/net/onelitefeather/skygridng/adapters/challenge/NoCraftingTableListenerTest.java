@@ -6,9 +6,12 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.plugin.RegisteredListener;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +39,7 @@ class NoCraftingTableListenerTest {
     private WorldMock world;
     private PlayerMock player;
     private ChallengeAdminUseCase challenges;
+    private JavaPlugin plugin;
 
     @BeforeEach
     void setUp() {
@@ -43,6 +47,7 @@ class NoCraftingTableListenerTest {
         world = server.addSimpleWorld("skygrid-world");
         player = server.addPlayer();
         challenges = mock(ChallengeAdminUseCase.class);
+        plugin = MockBukkit.createMockPlugin("SkyGridNg");
     }
 
     @AfterEach
@@ -51,7 +56,16 @@ class NoCraftingTableListenerTest {
     }
 
     private NoCraftingTableListener listener(Predicate<World> appliesTo) {
-        return new NoCraftingTableListener(challenges, appliesTo);
+        return new NoCraftingTableListener(challenges, appliesTo, plugin);
+    }
+
+    private static boolean isRegistered(HandlerList handlerList, Object listenerInstance) {
+        for (RegisteredListener registration : handlerList.getRegisteredListeners()) {
+            if (registration.getListener() == listenerInstance) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private PlayerInteractEvent interact(Player p, Block block, EquipmentSlot hand) {
@@ -122,5 +136,32 @@ class NoCraftingTableListenerTest {
         listener(w -> false).onInteract(event);
 
         assertThat(event.useInteractedBlock()).isEqualTo(Event.Result.ALLOW);
+    }
+
+    @Test
+    @DisplayName("challengeId returns the constant challenge id")
+    void challengeIdReturnsConstant() {
+        assertThat(listener(w -> true).challengeId()).isEqualTo(NoCraftingTableListener.CHALLENGE_ID);
+    }
+
+    @Test
+    @DisplayName("enable registers this listener with the plugin manager")
+    void enableRegistersListener() {
+        NoCraftingTableListener behavior = listener(w -> true);
+
+        behavior.enable();
+
+        assertThat(isRegistered(PlayerInteractEvent.getHandlerList(), behavior)).isTrue();
+    }
+
+    @Test
+    @DisplayName("disable unregisters this listener")
+    void disableUnregistersListener() {
+        NoCraftingTableListener behavior = listener(w -> true);
+        behavior.enable();
+
+        behavior.disable();
+
+        assertThat(isRegistered(PlayerInteractEvent.getHandlerList(), behavior)).isFalse();
     }
 }

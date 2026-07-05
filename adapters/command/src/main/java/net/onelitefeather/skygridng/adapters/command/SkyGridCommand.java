@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * In adapter: the /skygrid command for runtime administration of the configuration.
@@ -45,10 +44,10 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
     private final RuleAdminUseCase admin;
     private final Presets presets;
-    private final Optional<ChallengeAdminUseCase> challenges;
+    private final ChallengeAdminUseCase challenges;
 
     @Inject
-    public SkyGridCommand(RuleAdminUseCase admin, Presets presets, Optional<ChallengeAdminUseCase> challenges) {
+    public SkyGridCommand(RuleAdminUseCase admin, Presets presets, ChallengeAdminUseCase challenges) {
         this.admin = admin;
         this.presets = presets;
         this.challenges = challenges;
@@ -173,15 +172,11 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle> [id]"));
             return;
         }
-        challenges.ifPresentOrElse(
-                useCase -> {
-                    switch (args[1].toLowerCase(Locale.ROOT)) {
-                        case "list" -> challengeList(sender, useCase);
-                        case "toggle" -> challengeToggle(sender, args, useCase);
-                        default -> sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle> [id]"));
-                    }
-                },
-                () -> sender.sendMessage(Messages.challengeUnavailable()));
+        switch (args[1].toLowerCase(Locale.ROOT)) {
+            case "list" -> challengeList(sender, challenges);
+            case "toggle" -> challengeToggle(sender, args, challenges);
+            default -> sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle> [id]"));
+        }
     }
 
     private void challengeList(CommandSender sender, ChallengeAdminUseCase useCase) {
@@ -238,7 +233,7 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             };
         }
         if (args.length == 3 && sub.equals("challenge") && args[1].equalsIgnoreCase("toggle")) {
-            return challenges.map(useCase -> filter(challengeIds(useCase), args[2])).orElseGet(List::of);
+            return filter(challengeIds(challenges), args[2]);
         }
         return List.of();
     }

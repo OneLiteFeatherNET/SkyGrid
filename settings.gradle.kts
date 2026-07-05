@@ -10,7 +10,6 @@ include(":adapters:spawn")
 include(":adapters:challenge")
 include(":platforms:common")
 include(":platforms:paper")
-include(":platforms:paper-olf")
 include(":verification")
 
 pluginManagement {

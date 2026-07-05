@@ -55,21 +55,22 @@ ArchUnit in `:verification`:
 - `adapters/generator`, `adapters/command`, `adapters/json` (`adapters.*`): the Bukkit/Gson edges,
   one module each. Each depends on `ports` + `api` only. Bukkit and jakarta.inject are `compileOnly`
   (the platform provides them at runtime); Gson is bundled by the platform.
-- `platforms/common` (`platforms.common.*`): the shared Bukkit composition root. `SkyGridNgPlugin`,
-  `I18n`, the Guice modules, the message bundles. Exposes the whole graph with `api`. The only place
-  that may use Bukkit, Guice, and jakarta.inject (Adventure text is allowed in every layer). A
-  library (no shadow/plugin-yml).
-- `platforms/paper`: the public Paper distribution (thin: plugin.yml, shadow, run-paper, publishing).
+- `platforms/common` (`platforms.common.*`, `platforms.olf.*`): the shared Bukkit composition root
+  and the single distribution's home. `SkyGridNgPlugin`, `I18n`, the Guice modules, the message
+  bundles. `platforms.olf` (`OlfModule`, `OlfFeature`, `ChallengeModule`, `ChallengeFeature`) is a
+  naming convention, not a separate module, for mechanics specific to this OneLiteFeather server
+  (challenges); `SkyGridNgPlugin` always wires `OlfModule` and enables every bound `OlfFeature`.
+  Exposes the whole graph with `api`. The only place that may use Bukkit, Guice, and jakarta.inject
+  (Adventure text is allowed in every layer). A library (no shadow/plugin-yml).
+- `platforms/paper`: the single Paper distribution (thin: plugin.yml, shadow, run-paper, publishing).
   Produces `skygrid-ng-<version>.jar`. Holds the bootstrap integration tests (they need the generated
   plugin.yml).
-- `platforms/paper-olf` (`platforms.olf.*`): the OLF network distribution, a sibling of
-  `platforms/paper` (both build on `platforms/common`, neither depends on the other).
-  `OlfNetworkPlugin` extends `SkyGridNgPlugin`, adds `OlfModule`, enables every bound `OlfFeature`.
-  Home for OLF-only mechanics (challenges, ...). Not published. Produces `skygrid-ng-olf-<version>.jar`.
 
-`SkyGridNgPlugin` is extensible by design: `modules()` returns the base Guice modules (override and
-append), `injector()` exposes the graph, and `onExtensionEnable()`/`onExtensionDisable()` run around
-the base lifecycle. A distribution layers features through these seams.
+`SkyGridNgPlugin` is extensible by design: `modules()` returns the Guice modules (a future subclass
+could override and append), `injector()` exposes the graph, and
+`onExtensionEnable()`/`onExtensionDisable()` run around the base lifecycle; today `SkyGridNgPlugin`
+itself uses these seams directly to wire `OlfModule` and enable every bound `OlfFeature`, since there
+is only one distribution.
 
 Adding a new platform (Fabric, Sponge): create a new sibling under `platforms/` that depends on the
 adapters (or a new platform-specific adapter set) and the core. `api`, `ports`, `core`, and the
@@ -102,7 +103,8 @@ The second package segment matches the module: `api.*`, `ports.*`, `core.*`, `ad
   `generator.json` resource.
 - `platforms.common`: `SkyGridNgPlugin` (composition root), `I18n`, the `injection/` modules
   (`PlatformModule`, `RepositoryModule`, `GeneratorModule`), and the `messages/` bundles.
-- `platforms.olf`: `OlfNetworkPlugin`, `OlfModule`, `OlfFeature`, `NetworkStartupReportFeature`.
+- `platforms.olf` (inside `platforms/common`): `OlfModule`, `OlfFeature`, `NetworkStartupReportFeature`,
+  `ChallengeModule`, `ChallengeFeature`.
 
 For exact constructor and method signatures, read `references/api-surface.md` before editing. Do not
 guess signatures; the records have validating compact constructors that throw
@@ -181,11 +183,11 @@ fixed recipe. Read `references/extending.md` and follow it step by step. The sho
   generator adapter never changes.
 - New out adapter: implement the existing `ports.out` interface (in a new or existing adapter
   module), bind it in `RepositoryModule`. The core does not change.
-- New OLF-only mechanic (`platforms/paper-olf`): implement `OlfFeature` (id/enable/disable), inject
-  the `JavaPlugin`, the public `SkyGridApi`, or any port, and add one `Multibinder` line in
-  `OlfModule`. `OlfNetworkPlugin` enables it with the lifecycle. It ships only in the unpublished OLF
-  jar, so it never reaches any external distribution. Nothing in `api`, `ports`, `core`, the
-  adapters, or `platforms/paper` changes.
+- New OLF-only mechanic (`platforms.olf` inside `platforms/common`): implement `OlfFeature`
+  (id/enable/disable), inject the `JavaPlugin`, the public `SkyGridApi`, or any port, and add one
+  `Multibinder` line in `OlfModule`. `SkyGridNgPlugin` enables it with the lifecycle. "OLF-only" is
+  now a naming convention marking a mechanic as specific to this server, not a separate published
+  artifact. Nothing in `api`, `ports`, `core`, or the adapters changes.
 
 ## Verifying a core change compiles
 
