@@ -21,14 +21,17 @@ exist today and are real, current work:
 
 - **Chat messages.** `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
   registers the English and German bundles with Adventure's `GlobalTranslator` via
-  `TranslationStore.messageFormat`. The bundles themselves are
-  `platforms/common/src/main/resources/messages/Bundle_en.properties` and `Bundle_de.properties`,
-  flat `key=value` files with keys namespaced `skygridng.command.*` and `skygridng.api.summary`.
+  `MiniMessageTranslationStore` (`net.kyori.adventure.text.minimessage.translation`). The bundles
+  themselves are `platforms/common/src/main/resources/messages/Bundle_en.properties` and
+  `Bundle_de.properties`, flat `key=value` files with keys namespaced `skygridng.command.*` and
+  `skygridng.api.summary`, whose values are parsed as **MiniMessage**: use tags for color, decoration,
+  and click/hover events, and reference `Component.translatable` arguments as `<arg:0>`, `<arg:1>`,
+  ... (not `java.text.MessageFormat`'s `{0}`/`{1}`).
   `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java` builds
   the `Component.translatable(...)` calls that render them, and
   `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/SkyGridCommand.java`
-  is the `/skygrid` command whose subcommands (`preset`, `worlds`, `list`, `info`, `weight`, `allow`,
-  `disallow`, `algorithm`, `skyweight`, `reload`, `save`, `undo`) each send one of these messages.
+  is the `/skygrid` command whose subcommands (`preset`, `worlds`, `algorithm`, `skyweight`, `reload`,
+  `save`, `undo`, `challenge`) each send one of these messages.
 - **Server log messages.** `SkyGridNgPlugin.java` and `WorldGenerators.java` (both in
   `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/`) call
   `getLogger().info(...)` / `getLogger().warning(...)` with plain, untemplated, hand-concatenated

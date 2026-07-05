@@ -3,9 +3,10 @@ name: messaging-ux-conventions
 description: >-
   Explains SkyGrid-ng's player- and admin-facing feedback surfaces: the four channels (chat, action
   bar, boss bar, scoreboard) and when each applies, the current i18n convention for chat messages
-  (Bundle_en/Bundle_de.properties, skygridng.command.* keys, Adventure Component.translatable), how
-  to compose multi-line feedback as multiple Audience.sendMessage calls per the
-  docs.papermc.io/adventure reference, the current state of server log messages (plain, untemplated,
+  (Bundle_en/Bundle_de.properties, skygridng.command.* keys, Adventure Component.translatable
+  rendered via MiniMessageTranslationStore with <arg:N> placeholders and MiniMessage tags for
+  color/click/hover), how to compose multi-line feedback as multiple Audience.sendMessage calls per
+  the docs.papermc.io/adventure reference, the current state of server log messages (plain, untemplated,
   not localized), and the admin versus player audience split. Use when wording a new command message,
   choosing which channel a new piece of feedback should use, deciding on a new i18n key name, or a
   message needs more than one line. Cross-links hexagonal-architecture (where the message code lives)
@@ -57,8 +58,15 @@ Chat messages are the one real, shipping surface:
   `platforms/common/src/main/resources/messages/Bundle_en.properties` (source of truth) and
   `Bundle_de.properties` (translated, flows through Crowdin, never hand-edited directly).
 - Registration: `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
-  registers both locales with Adventure's `GlobalTranslator` via `TranslationStore.messageFormat`, so
-  a `Component.translatable(key, args...)` renders in each viewer's own client locale server side.
+  registers both locales with Adventure's `GlobalTranslator` via
+  `MiniMessageTranslationStore` (`net.kyori.adventure.text.minimessage.translation`), so a
+  `Component.translatable(key, args...)` renders in each viewer's own client locale server side.
+  Bundle values are parsed as **MiniMessage**, not `java.text.MessageFormat`: use MiniMessage tags
+  for color/decoration/click/hover (`<red>`, `<click:suggest_command:'...'>`, etc.), and reference
+  `Component.translatable` arguments positionally as `<arg:0>`, `<arg:1>`, ... (not `{0}`, `{1}`).
+  MiniMessage's default instance is lenient, an unrecognized tag (for example a literal `<name>`
+  placeholder in a usage string like `/skygrid preset <name>`) renders as plain text instead of
+  throwing, so existing `<placeholder>`/`[optional]` usage syntax stays safe without escaping.
 - Construction: `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java`
   builds every `Component.translatable(...)` call; `SkyGridCommand.java` in the same module is the
   one caller today.
@@ -84,7 +92,7 @@ string. Sending discrete messages:
 - avoids relying on undocumented newline-in-a-single-component rendering behavior,
 - lets each line have its own bundle key (so one line can change independently, or be reused
   elsewhere), and
-- keeps each `MessageFormat` pattern simple, which matters once a line has its own `{0}`/`{1}` args.
+- keeps each MiniMessage pattern simple, which matters once a line has its own `<arg:0>`/`<arg:1>` args.
 
 Concrete precedent: `Messages.help()` in
 `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java` returns
