@@ -11,6 +11,17 @@ admin command, and i18n. Maintained by OneLiteFeather (OLF).
 This file is the always on context for every session. The deeper, task specific knowledge lives in
 the skills under `.claude/skills/`. Read the matching skill before doing the work.
 
+## Standard workflow
+
+Every prompt in this repository, without exception for size or triviality, runs through the nine
+phase chain-of-thought in `.claude/skills/standard-workflow/SKILL.md`: check spelling/clarity,
+derive requirements, get requirements approved, survey the current repo state, research external
+sources (web, DeepWiki, Context7), draft an implementation plan, get the plan approved, implement
+with feedback folded in, test (deciding per change whether ArchUnit coverage is warranted), and
+close with a result summary. Read that skill before responding to any prompt, not just large ones.
+Delegated work (investigation, research, implementation, tests) always goes through the `producer`
+agent first; it is the standard entry point for the specialist team, not a fallback.
+
 ## Golden rules
 
 - English everywhere in the repository: code, identifiers, comments, docs, and commit messages.
@@ -78,6 +89,7 @@ and is switchable at runtime via `/skygrid algorithm <id>`.
 
 ## Where to look
 
+- Any prompt at all, before doing anything else: read `.claude/skills/standard-workflow/SKILL.md`.
 - Changing or adding Java code (core, ports, adapters, services, generator, command, repository,
   Guice modules): read `.claude/skills/hexagonal-architecture/SKILL.md`.
 - Writing or changing tests: read `.claude/skills/testing/SKILL.md`.
