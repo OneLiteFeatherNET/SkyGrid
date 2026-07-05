@@ -57,6 +57,7 @@ frameworks. See Epic F there for the current player engagement hypotheses.
 | `player-psychology-designer` | Player motivation and engagement (Self-Determination Theory, Octalysis, Bartle types, flow); guards against dark patterns |
 | `domain-config-specialist` | `generator.yaml`/`generator.conf` schema, presets, block tables, WFC tiles: encodes decisions others make |
 | `narrative-worldbuilding-designer` | Preset theming, flavor text, biome-to-theme coherence |
+| `interface-ux-designer` | Chat message and log copy, channel choice (chat/action bar/boss bar/scoreboard); boss bar and scoreboard not built yet |
 | `accessibility-designer` | Color-vision-safe block choices, comfort/difficulty preset variants, non-color-only feedback (Epic G) |
 | `technical-artist` | Particle/sound polish on vanilla assets, future resource pack scoping. Thin scope today by design, no custom assets exist yet |
 | `playtest-qa-coordinator` | Human playtesting, turning play sessions into balance feedback and sharper acceptance criteria |
@@ -96,7 +97,8 @@ A new mechanic (say, a new decoration type) usually moves through the team like 
 3. `core-architect` and `paper-adapter` implement it (often in parallel once the port shape is
    agreed, consulting `java-specialist`/`paper-platform-specialist`/`minecraft-platform-specialist`
    for anything needing deeper language or platform expertise), `test-engineer` covers it,
-   `technical-artist` adds any particle/sound polish.
+   `technical-artist` adds any particle/sound polish, `interface-ux-designer` writes any new
+   command or log message copy for `paper-adapter` to wire in.
 4. `architecture-reviewer` and `security-reviewer` check the diff before it ships; `security-specialist`
    fixes anything they flag.
 5. `playtest-qa-coordinator` validates it plays as intended; `live-ops-analyst` (built on
