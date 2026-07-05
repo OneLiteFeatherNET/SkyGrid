@@ -1,0 +1,106 @@
+---
+name: messaging-ux-conventions
+description: >-
+  Explains SkyGrid-ng's player- and admin-facing feedback surfaces: the four channels (chat, action
+  bar, boss bar, scoreboard) and when each applies, the current i18n convention for chat messages
+  (Bundle_en/Bundle_de.properties, skygridng.command.* keys, Adventure Component.translatable),
+  the current state of server log messages (plain, untemplated, not localized), and the admin
+  versus player audience split. Use when wording a new command message, choosing which channel a
+  new piece of feedback should use, or deciding on a new i18n key name. Cross-links
+  hexagonal-architecture (where the message code lives) and project-context (why Adventure was
+  chosen); does not restate either.
+---
+
+# Messaging and UX conventions
+
+This skill owns **what surface a piece of feedback should use and how it should read**: channel
+choice, wording conventions, and the current state of i18n and logging. It does not own:
+
+- perceptual accessibility of these surfaces (color-independence, not relying on color alone,
+  comfort framing): see the `accessibility-designer` agent.
+- where the message code architecturally lives (which module, which class): see
+  `hexagonal-architecture`.
+- why Adventure was chosen as the text API in the first place: see `project-context`.
+
+Cross-link those; do not restate them here.
+
+## The four feedback channels
+
+SkyGrid-ng has one of these four channels built today (chat); the other three are forward looking
+guidance for when they get built, not a description of existing code. A repository-wide grep for
+"bossbar" and "scoreboard" (case-insensitive) returns zero hits: neither exists yet.
+
+- **Chat.** Persistent scrollback (`Audience.sendMessage`). Use for command responses, errors, and
+  discrete important one-off events the player or admin should be able to scroll back to. This is
+  the only channel SkyGrid-ng uses today, via `/skygrid`'s subcommands.
+- **Action bar.** Transient, non-blocking (`Audience.sendActionBar`). Use for a brief status hint
+  that doesn't need to persist and shouldn't interrupt or clutter chat, for example a short
+  confirmation that fades on its own.
+- **Boss bar.** Adventure `BossBar.bossBar(name, progress, Color, Overlay)`, mutable: the same bar
+  instance can have its name, progress (0..1), color, or overlay updated in place without resending.
+  Use for an ambient, persistent-while-active, top-of-screen status or progress indicator, for
+  example a future region-generation progress indicator that updates as chunks resolve. Not built
+  yet; no `BossBar` usage exists in this repository today.
+- **Scoreboard.** Persistent glanceable sidebar for ongoing stats the player should be able to check
+  at a glance without opening anything. Use for a running count or status that stays relevant over a
+  session. Not built yet; no scoreboard usage exists in this repository today.
+
+## Current i18n reality and naming convention
+
+Chat messages are the one real, shipping surface:
+
+- Key namespace: `skygridng.command.*` (one key per command message, for example
+  `skygridng.command.weight.set`, `skygridng.command.algorithm.unknown`) and one exception,
+  `skygridng.api.summary`, used by `SkyGridApi.describe()`.
+- Bundles: flat `key=value` `.properties` files,
+  `platforms/common/src/main/resources/messages/Bundle_en.properties` (source of truth) and
+  `Bundle_de.properties` (translated, flows through Crowdin, never hand-edited directly).
+- Registration: `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
+  registers both locales with Adventure's `GlobalTranslator` via `TranslationStore.messageFormat`, so
+  a `Component.translatable(key, args...)` renders in each viewer's own client locale server side.
+- Construction: `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java`
+  builds every `Component.translatable(...)` call; `SkyGridCommand.java` in the same module is the
+  one caller today.
+
+Going forward, name a new key `skygridng.<area>.<subarea>[.<detail>]`, following the existing
+`skygridng.command.<subcommand>[.<detail>]` shape (for example `skygridng.command.weight.set`,
+`skygridng.command.weight.fail`). When a new surface (action bar, boss bar, scoreboard) gets built,
+give it its own `<area>` segment (for example `skygridng.bossbar.*`) rather than overloading
+`command`.
+
+## Current log message reality
+
+`SkyGridNgPlugin.java` and `WorldGenerators.java` (both in
+`platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/`) call
+`getLogger().info(...)` and `getLogger().warning(...)` with plain, hand-concatenated strings, for
+example `"Unknown algorithm '" + algorithm + "', falling back to WFC."`. These are not localized and
+follow no shared template today. State this as the current state, not a defect this skill mandates
+fixing; a consistent log message format is a legitimate future improvement to propose, not something
+to change opportunistically inside an unrelated task.
+
+## Audience split
+
+- **Admin-facing.** Command responses and errors (read by whoever runs `/skygrid`) and server log
+  messages (read by operators watching the console). This audience can handle more technical detail:
+  tile ids, config key names, algorithm identifiers are all fine here.
+- **Player-facing.** Boss bar and scoreboard content, and any in-game chat shown during normal
+  gameplay rather than administration. This audience needs text that stays in theme, stays terse, and
+  never surfaces a stack trace, an internal id, or a raw exception message.
+
+## Where to look
+
+- `hexagonal-architecture`: where `I18n`, `Messages`, and the command adapter architecturally live,
+  and the dependency rule that keeps them out of `api`/`ports`/`core`.
+- `project-context`: why Adventure-based i18n was chosen over an alternative.
+- `accessibility-designer` agent: perceptual accessibility of these same surfaces (color-independence,
+  comfort presets); consult alongside `interface-ux-designer` whenever a change touches one of these
+  surfaces.
+
+Code to read for real examples:
+
+- `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
+- `platforms/common/src/main/resources/messages/Bundle_en.properties`, `Bundle_de.properties`
+- `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java`
+- `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/SkyGridCommand.java`
+- `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/SkyGridNgPlugin.java`,
+  `WorldGenerators.java`
