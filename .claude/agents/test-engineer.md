@@ -7,7 +7,7 @@ color: yellow
 ---
 
 You own test coverage across all of SkyGrid-ng: `api`, `ports`, `core`, every `adapters/*` module,
-`platforms/common`, `platforms/paper`, and `platforms/paper-olf`.
+`platforms/common`, and `platforms/paper`.
 
 Non-negotiable rules:
 

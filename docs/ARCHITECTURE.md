@@ -31,25 +31,27 @@ adapter module has no `core` on its classpath):
 | `adapters/generator` | `adapters.generator` | yes (Bukkit) | library (depends on ports, api) |
 | `adapters/command` | `adapters.command` | yes (Bukkit, Adventure) | library (depends on ports, api) |
 | `adapters/json` | `adapters.json` | yes (Gson) | library (depends on ports, api) |
-| `platforms/common` | `platforms.common` | yes (Bukkit, Guice) | library (composition root) |
+| `platforms/common` | `platforms.common`, `platforms.olf` | yes (Bukkit, Guice) | library (composition root) |
 | `platforms/paper` | (none) | yes | `skygrid-ng-<version>.jar` |
-| `platforms/paper-olf` | `platforms.olf` | yes | `skygrid-ng-olf-<version>.jar` |
 
-`platforms/common` is the shared Bukkit composition root. `platforms/paper` (public) and
-`platforms/paper-olf` (OneLiteFeather network) are sibling distributions that both build on it; the
-OLF one layers OLF-only mechanics through the `OlfFeature` seam (see below). Adding another platform
-(Fabric, Sponge) is a new sibling under `platforms/` that depends on the adapters and the core; api,
-ports, core, and the existing adapters never change. The rings below describe the packages.
+`platforms/common` is the shared Bukkit composition root and the single distribution's home;
+`platforms/paper` is the thin plugin.yml/shadow/publishing wrapper around it. `platforms.olf` inside
+`platforms/common` is a naming convention, not a separate module: it groups mechanics specific to
+this OneLiteFeather (OLF) server (challenges) through the `OlfFeature` seam (see below), always
+wired and enabled, since there is only one distribution. Adding another platform (Fabric, Sponge) is
+a new sibling under `platforms/` that depends on the adapters and the core; api, ports, core, and the
+existing adapters never change. The rings below describe the packages.
 
 ### Extensible composition root and OLF-only mechanics
 
-`SkyGridNgPlugin` exposes seams so a distribution can add features without copying the wiring:
-`modules()` (append Guice modules), `injector()` (read the graph), and
-`onExtensionEnable()`/`onExtensionDisable()` (lifecycle hooks). `OlfNetworkPlugin` uses them to add
-`OlfModule` and to enable every bound `OlfFeature`. An OLF-only mechanic (for example challenges) is
-one `OlfFeature` (id/enable/disable) plus one `Multibinder` line; it may inject the `SkyGridApi`, any
-core port, and the `JavaPlugin`. Because `platforms/paper-olf` is not published, these mechanics ship
-to the OLF network only and are never published anywhere externally.
+`SkyGridNgPlugin` exposes seams a subclass or future distribution could use without copying the
+wiring: `modules()` (append Guice modules), `injector()` (read the graph), and
+`onExtensionEnable()`/`onExtensionDisable()` (lifecycle hooks); today `SkyGridNgPlugin` itself uses
+them directly to add `OlfModule` and enable every bound `OlfFeature`. An OLF-only mechanic (for
+example challenges) is one `OlfFeature` (id/enable/disable) plus one `Multibinder` line in
+`platforms.olf`; it may inject the `SkyGridApi`, any core port, and the `JavaPlugin`. The `platforms.olf`
+naming marks these as OneLiteFeather-server-specific by convention, not as a separately published
+artifact.
 
 ## The three rings
 
@@ -102,9 +104,8 @@ they depend on `ports` + `api`, never on `core`.
 adapters to ports. The core carries no injection annotations: its services are constructed in the
 modules' `@Provides` methods, so the core stays framework free while the wiring is Guice managed.
 Adapters (`HexagonalChunkGenerator`, `SkyGridCommand`) use constructor `@Inject`. `platforms.common`
-`I18n` registers the Adventure translation store. The distributions (`platforms/paper`,
-`platforms/paper-olf`) build on this shared root. Swapping an adapter changes a module binding, not the
-core.
+`I18n` registers the Adventure translation store. `platforms/paper` builds on this shared root.
+Swapping an adapter changes a module binding, not the core.
 
 ## Switchable algorithms
 

@@ -24,15 +24,14 @@ responsibilities and the dependency arrows):
 - `api`, `ports`, `core`: framework-free `java-library` modules, no platform plugins.
 - `adapters/generator`, `adapters/command`, `adapters/json`: the Bukkit/Gson adapter libraries.
 - `platforms/common`: the shared Bukkit composition root, a library (no platform plugins).
-- `platforms/paper`: the public Paper distribution. Applies shadow, plugin-yml, run-paper, and
+- `platforms/paper`: the single Paper distribution. Applies shadow, plugin-yml, run-paper, and
   CycloneDX SBOM generation. Produces `skygrid-ng-<version>.jar`.
-- `platforms/paper-olf`: the OLF network distribution. Applies shadow and plugin-yml only. Produces
-  `skygrid-ng-olf-<version>.jar`.
 - `verification`: ArchUnit architecture tests only (no production code). Depends on every production
   module and enforces the hexagonal rules at build time. See the `hexagonal-architecture` skill.
 
-`platforms/paper` and `platforms/paper-olf` are siblings: both depend on `platforms/common`, neither
-depends on the other.
+`platforms/paper` depends on `platforms/common`, which also holds the `platforms.olf` package
+(OneLiteFeather-specific mechanics like challenges, a naming convention now rather than a separate
+distribution; see the `hexagonal-architecture` skill).
 
 The root `build.gradle.kts` is pure aggregation: it sets `group` for all projects and the shared
 `version`. The version is read from `gradle.properties` and stripped of the trailing
@@ -53,13 +52,13 @@ versions current using the OLF presets in `renovate.json`.
 
 ## Shadow and relocation
 
-Shadow is applied in the distribution modules only (`platforms/paper` and `platforms/paper-olf`).
-Each shaded jar shades Gson and relocates it to `net.onelitefeather.skygridng.libs.gson` to avoid
-clashing with the server or other plugins. Keep any shaded library relocated under
-`net.onelitefeather.skygridng.libs.*`. Each distribution depends on `platforms/common`, which exposes
-the whole object graph (adapters, core, ports, api, Guice) with the `api` configuration, so shadow
-bundles everything transitively into a self-contained jar. The GitHub release attachment step uses
-`platforms/paper`'s `tasks.shadowJar`.
+Shadow is applied in the distribution module only (`platforms/paper`). The shaded jar shades Gson
+and relocates it to `net.onelitefeather.skygridng.libs.gson` to avoid clashing with the server or
+other plugins. Keep any shaded library relocated under `net.onelitefeather.skygridng.libs.*`.
+`platforms/paper` depends on `platforms/common`, which exposes the whole object graph (adapters,
+core, ports, api, Guice) with the `api` configuration, so shadow bundles everything transitively
+into a self-contained jar. The GitHub release attachment step uses `platforms/paper`'s
+`tasks.shadowJar`.
 
 ## plugin-yml
 
@@ -73,11 +72,10 @@ load = BukkitPluginDescription.PluginLoadOrder.STARTUP
 ```
 
 The command is `skygrid`, the permission is `skygridng.admin`. The main class is
-`...platforms.common.SkyGridNgPlugin` for `platforms/paper` (display name `SkyGrid-ng`) and
-`...platforms.olf.OlfNetworkPlugin` for `platforms/paper-olf` (display name `SkyGrid-ng-OLF`), the
-latter extending the former. Both `bukkit { }` blocks keep `load = STARTUP`. Neither distribution is
-published to any public plugin registry; `platforms/paper-olf` in particular ships OLF-only
-mechanics that are never published anywhere externally.
+`...platforms.common.SkyGridNgPlugin` (display name `SkyGrid-ng`), which always wires and enables
+the OLF-only mechanics in its `platforms.olf` package too (there is no separate distribution without
+them). The `bukkit { }` block keeps `load = STARTUP`. The distribution is not published to any
+public plugin registry; the project is OneLiteFeather-internal.
 
 ## Publishing
 
@@ -124,10 +122,10 @@ before the first publish, and the Dependency-Track path.
 
 The reusable org workflows (`gradle-build-pr.yml`, `gradle-plugin-publish.yml`) were written for a
 single-module build and the reference copy attaches `build/libs/*.jar` from the repository root. The
-shaded jars now live in `platforms/paper/build/libs/` and `platforms/paper-olf/build/libs/`, so the root
-`build/libs/` is empty. Before the first real release, confirm the reusable workflow globs
-`**/build/libs/*.jar` (or pin a workflow version that does), or adjust the release artifact path,
-otherwise the GitHub release attachment step finds no jar.
+shaded jar now lives in `platforms/paper/build/libs/`, so the root `build/libs/` is empty. Before
+the first real release, confirm the reusable workflow globs `**/build/libs/*.jar` (or pin a workflow
+version that does), or adjust the release artifact path, otherwise the GitHub release attachment
+step finds no jar.
 
 ## Local testing
 

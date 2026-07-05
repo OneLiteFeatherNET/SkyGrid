@@ -4,7 +4,8 @@ description: >-
   Explains SkyGrid-ng's Challenge and Season system (Epic I in docs/USERSTORIES.md): the domain
   shape (ChallengeRule/ChallengeCatalog today; ChallengeRuleSet/Season/player-progress as
   documented future extensions), why it is an OLF-only mechanic living in adapters/challenge and
-  platforms/paper-olf, and the reusable engagement-research methodology (an 8-point dark-pattern
+  the platforms.olf package inside platforms/common, and the reusable engagement-research
+  methodology (an 8-point dark-pattern
   checklist, a structural-precedent checklist, and a fixed source list) that must be re-applied
   before designing any new challenge, season, or progression mechanic. Use when adding or reviewing
   a challenge rule, planning a Season, designing adaptive/prestige progression, or evaluating
@@ -56,14 +57,15 @@ persistence port/adapter, since none exists anywhere in `api`/`ports`/`core` tod
 
 ## Why challenges are OLF-only
 
-`platforms/paper-olf`'s own code (`OlfFeature`, `OlfModule`, `NetworkStartupReportFeature`) and the
-`hexagonal-architecture` skill already name "challenges" as the reference example of an OLF-only
-mechanic, ahead of this epic's existence. New challenge enforcement code lives in a dedicated
-adapter module (for example `adapters/challenge`, mirroring `adapters/spawn`'s single-listener
-shape) wired only from `platforms/paper-olf` via an `OlfFeature`, never from `platforms/common`
-directly, so it never reaches the public `platforms/paper` jar. The shared `ChallengeAdminUseCase`
-port is bound with Guice's `OptionalBinder` in `platforms/common` (no default), so the public
-distribution's Guice graph still resolves cleanly with the feature simply absent.
+There is a single Paper distribution today (`platforms/paper-olf` was folded into `platforms/paper`
+once the project narrowed to running only on OneLiteFeather's own server); "OLF-only" is now a
+naming convention, not a module boundary. `platforms/common`'s own code (`OlfFeature`, `OlfModule`,
+`NetworkStartupReportFeature`, all in its `platforms.olf` package) and the `hexagonal-architecture`
+skill name "challenges" as the reference example of this convention. New challenge enforcement code
+still lives in a dedicated adapter module (`adapters/challenge`, mirroring `adapters/spawn`'s
+single-listener shape), wired via an `OlfFeature` bound in `platforms.olf.OlfModule` and always
+enabled by `SkyGridNgPlugin`. The shared `ChallengeAdminUseCase` port is a plain, always-present
+Guice binding now (no `OptionalBinder`), since there is no distribution where it would be absent.
 
 ## Money type for Epic J: do not use JSR 354
 
@@ -152,7 +154,7 @@ system was designed. Challenges and Seasons is Epic I; the economy sketch is Epi
   ChallengeRule.java`, `ChallengeCatalog.java`.
 - The ports: `ports/src/main/java/net/onelitefeather/skygridng/ports/out/ChallengeRepository.java`,
   `ports/src/main/java/net/onelitefeather/skygridng/ports/in/ChallengeAdminUseCase.java`.
-- The OLF-only wiring seam: `platforms/paper-olf/src/main/java/net/onelitefeather/skygridng/
+- The OLF-only wiring seam: `platforms/common/src/main/java/net/onelitefeather/skygridng/
   platforms/olf/{OlfFeature,OlfModule,ChallengeModule,ChallengeFeature}.java`.
 - The config layout precedent this deliberately does not reuse: `config-schema-and-rules` skill.
 - The full requirements and acceptance criteria: `docs/USERSTORIES.md` Epic I and Epic J.

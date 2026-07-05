@@ -3,7 +3,6 @@ package net.onelitefeather.skygridng.platforms.olf;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.OptionalBinder;
 import jakarta.inject.Singleton;
 import net.onelitefeather.skygridng.adapters.challenge.ChallengeBehavior;
 import net.onelitefeather.skygridng.adapters.challenge.LevelBorderWarningTask;
@@ -25,17 +24,16 @@ import java.util.function.Predicate;
 
 /**
  * OLF-only Guice module: wires the challenge mechanic (the Jackson-backed repository, the shared
- * state, the admin service, and every {@link ChallengeBehavior}), and sets the
- * {@link ChallengeAdminUseCase} optional binding that {@code GeneratorModule} leaves absent on the
- * public distribution. Layered on top of the base wiring by {@link OlfNetworkPlugin}, so it is
- * present only in this jar.
+ * state, the admin service, and every {@link ChallengeBehavior}), and binds
+ * {@link ChallengeAdminUseCase} to {@link ChallengeAdminService}. There is only one distribution now,
+ * so this binding is always present; {@code SkyGridNgPlugin} installs this module by default via
+ * {@code modules()}.
  */
-final class ChallengeModule extends AbstractModule {
+public final class ChallengeModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        OptionalBinder.newOptionalBinder(binder(), ChallengeAdminUseCase.class)
-                .setBinding().to(ChallengeAdminService.class);
+        bind(ChallengeAdminUseCase.class).to(ChallengeAdminService.class);
 
         Multibinder<ChallengeBehavior> behaviors = Multibinder.newSetBinder(binder(), ChallengeBehavior.class);
         behaviors.addBinding().to(NoCraftingTableListener.class);
