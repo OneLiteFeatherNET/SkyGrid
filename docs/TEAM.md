@@ -49,12 +49,14 @@ route anything else in that layer to them too. See `CLAUDE.md` for the module la
 
 ### Design and product
 Decides what the game mode is and why, grounded in `docs/USERSTORIES.md` and player motivation
-frameworks. See Epic F there for the current player engagement hypotheses.
+frameworks. See Epic F there for the current player engagement hypotheses, and Epic I for the
+Challenges and Seasons backlog.
 
 | Agent | Owns |
 |---|---|
 | `game-designer` | Core loop, mechanics, progression, difficulty curve (MDA framework) |
 | `player-psychology-designer` | Player motivation and engagement (Self-Determination Theory, Octalysis, Bartle types, flow); guards against dark patterns |
+| `challenge-season-designer` | Challenge rule sets and Season definitions as domain concepts, per-player goal/achievement tracking design (Epic I); coordinates with `game-designer`, `player-psychology-designer`, `domain-config-specialist`, `core-architect` |
 | `domain-config-specialist` | `generator.yaml`/`generator.conf` schema, presets, block tables, WFC tiles: encodes decisions others make |
 | `narrative-worldbuilding-designer` | Preset theming, flavor text, biome-to-theme coherence |
 | `interface-ux-designer` | Chat message and log copy, channel choice (chat/action bar/boss bar/scoreboard); boss bar and scoreboard not built yet |
