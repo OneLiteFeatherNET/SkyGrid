@@ -13,6 +13,7 @@ final class OlfModule extends AbstractModule {
     protected void configure() {
         Multibinder<OlfFeature> features = Multibinder.newSetBinder(binder(), OlfFeature.class);
         features.addBinding().to(NetworkStartupReportFeature.class);
-        // Future OLF mechanics (challenges, ...) add their binding here.
+        features.addBinding().to(ChallengeFeature.class);
+        // Future OLF mechanics add their binding here.
     }
 }
