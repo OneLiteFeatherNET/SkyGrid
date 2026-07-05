@@ -5,25 +5,24 @@ package net.onelitefeather.skygridng.api.model;
  * sugar cane or cactus). A rule carries a placement only when it should be placed by the decoration
  * pass; a rule without one is a plain palette-block modifier (state and physics only).
  *
- * @param requiresGround         optional block the plant must stand on (also the support the adapter
- *                               places for a self-contained plant), or {@code null} for none
- * @param requiresLiquidNeighbor true if a horizontal neighbor of the support must be liquid
- * @param water                  how the rule provides water for the plant (never {@code null};
- *                               defaults to {@link WaterMode#NONE})
- * @param minHeight              minimum column height in blocks (at least 1)
- * @param maxHeight              maximum column height in blocks (at least {@code minHeight})
- * @param probability            placement probability per eligible column in [0,1]
+ * @param structure   the 3D footprint placed around the decoration's anchor cell (never {@code null}).
+ *                     This guarantees real solid support at generation time, so a gravity block (for
+ *                     example the sand under sugar cane) never sits unsupported until a later block
+ *                     update makes it fall.
+ * @param minHeight   minimum column height in blocks (at least 1)
+ * @param maxHeight   maximum column height in blocks (at least {@code minHeight})
+ * @param probability placement probability per eligible column in [0,1]
  */
 public record PlacementRule(
-        BlockId requiresGround,
-        boolean requiresLiquidNeighbor,
-        WaterMode water,
+        StructurePattern structure,
         int minHeight,
         int maxHeight,
         double probability
 ) {
     public PlacementRule {
-        water = water == null ? WaterMode.NONE : water;
+        if (structure == null) {
+            throw new IllegalArgumentException("PlacementRule.structure must not be null");
+        }
         if (minHeight < 1 || maxHeight < minHeight) {
             throw new IllegalArgumentException("invalid heights: min=" + minHeight + " max=" + maxHeight);
         }
