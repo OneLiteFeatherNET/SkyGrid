@@ -45,6 +45,15 @@ class RecordValidationTest {
     }
 
     @Test
+    @DisplayName("BiomeId requires a non blank, valid, namespaced id and defaults the namespace")
+    void biomeId() {
+        assertThatThrownBy(() -> BiomeId.of("")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> BiomeId.of("bad name!")).isInstanceOf(IllegalArgumentException.class);
+        assertDoesNotThrow(() -> BiomeId.of("mymod:custom_biome"));
+        org.assertj.core.api.Assertions.assertThat(BiomeId.of("plains").asString()).isEqualTo("minecraft:plains");
+    }
+
+    @Test
     @DisplayName("AllowedPair rejects blank endpoints")
     void allowedPair() {
         assertThatThrownBy(() -> new AllowedPair("a", " ")).isInstanceOf(IllegalArgumentException.class);
