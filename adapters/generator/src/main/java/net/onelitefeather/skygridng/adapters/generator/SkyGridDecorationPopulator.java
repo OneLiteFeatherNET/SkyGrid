@@ -27,8 +27,7 @@ import java.util.Random;
  * and any boxed water it declares), grows its plant column and applies its physics. If no decoration
  * lands, it fills an existing chest or spawner with the loot table or mob the core picks
  * (deterministic). Everything is seeded from the world seed and the cell coordinates, so the result
- * is independent of population order. Used only for the classic algorithms (WFC has its own
- * populator).
+ * is independent of population order.
  */
 public final class SkyGridDecorationPopulator extends BlockPopulator {
 

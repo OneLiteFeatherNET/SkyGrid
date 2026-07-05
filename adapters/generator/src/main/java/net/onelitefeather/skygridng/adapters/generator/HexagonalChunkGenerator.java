@@ -3,7 +3,6 @@ package net.onelitefeather.skygridng.adapters.generator;
 import net.onelitefeather.skygridng.api.model.RuleCatalog;
 import net.onelitefeather.skygridng.ports.algorithm.TerrainAlgorithm;
 import net.onelitefeather.skygridng.ports.in.Biomes;
-import net.onelitefeather.skygridng.ports.in.GenerateRegionUseCase;
 import net.onelitefeather.skygridng.ports.in.SkyGridDecorations;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 import jakarta.inject.Inject;
@@ -24,22 +23,20 @@ import java.util.Random;
  *
  * The adapter holds no generation logic. It asks the active algorithm to emit a column and writes
  * the resolved blocks into the chunk. Everything else stays void, which is what the SkyGrid
- * algorithms need. The WFC algorithm fills solid ground instead.
+ * algorithms need.
  */
 public final class HexagonalChunkGenerator extends ChunkGenerator {
 
     private final TerrainAlgorithms algorithms;
-    private final GenerateRegionUseCase region;
     private final SkyGridDecorations decorations;
     private final Biomes biomes;
     private final RuleResolver rules;
     private final BiomeResolver biomeResolver = new BiomeResolver(Biome.PLAINS);
 
     @Inject
-    public HexagonalChunkGenerator(TerrainAlgorithms algorithms, GenerateRegionUseCase region,
-                                   SkyGridDecorations decorations, Biomes biomes, RuleCatalog ruleCatalog) {
+    public HexagonalChunkGenerator(TerrainAlgorithms algorithms, SkyGridDecorations decorations, Biomes biomes,
+                                   RuleCatalog ruleCatalog) {
         this.algorithms = algorithms;
-        this.region = region;
         this.decorations = decorations;
         this.biomes = biomes;
         this.rules = new RuleResolver(ruleCatalog, Material.STONE);
@@ -104,9 +101,6 @@ public final class HexagonalChunkGenerator extends ChunkGenerator {
 
     @Override
     public List<BlockPopulator> getDefaultPopulators(World world) {
-        if (algorithms.current().usesWfcDecorations()) {
-            return List.of(new MaterialPopulator(region, rules));
-        }
         if (decorations.active() || !rules.decorations().isEmpty()) {
             return List.of(new SkyGridDecorationPopulator(decorations, rules));
         }
@@ -115,10 +109,8 @@ public final class HexagonalChunkGenerator extends ChunkGenerator {
 
     @Override
     public Location getFixedSpawnLocation(World world, Random random) {
-        if (algorithms.current().usesWfcDecorations()) {
-            int surfaceY = region.rules().settings().surfaceY();
-            return new Location(world, 0.5, surfaceY + 1.0, 0.5);
-        }
+        // Paper's one-time world-spawn concept, set before any chunk or player exists; it is
+        // intentionally not wired to the safe-location search, which needs live block reads.
         return new Location(world, 0.5, 80.0, 0.5);
     }
 }
