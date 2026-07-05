@@ -7,10 +7,10 @@ description: >-
   record mapping in adapters/config, and the state/physics/placement rule shape. Use when editing
   config.yml/json/toml, a presets/<name> or rules/<block> file, ConfigDtos, RuleDtos,
   ConfigFormats, JacksonPresetRepository or JacksonRuleRepository; when adding a config format,
-  preset field or rule field; when working on block state, PhysicsMode, WaterMode, PlacementRule or
-  RuleResolver; or when answering water/waterlogged, leaf decay, falling sand or "flows into the void"
-  config questions. Cross-links skygrid-domain (generation semantics) and world-generator-presets
-  (preset selection and inheritance), which own those topics.
+  preset field or rule field; when working on block state, PhysicsMode, PlacementRule,
+  StructurePattern/LegendEntry or RuleResolver; or when answering water/waterlogged, leaf decay,
+  falling sand or "flows into the void" config questions. Cross-links skygrid-domain (generation
+  semantics) and world-generator-presets (preset selection and inheritance), which own those topics.
 ---
 
 # Config schema and per-block rules
@@ -29,7 +29,7 @@ Cross-link those; do not restate them here.
 - [The split layout](#the-split-layout)
 - [Formats: one per file, chosen by extension](#formats-one-per-file-chosen-by-extension)
 - [The per-block rule model](#the-per-block-rule-model)
-- [The waterlogging invariant](#the-waterlogging-invariant)
+- [The structure pattern: a 3D footprint per decoration](#the-structure-pattern-a-3d-footprint-per-decoration)
 - [Determinism](#determinism)
 - [How a change flows through the layers](#how-a-change-flows-through-the-layers)
 - [A rule applies everywhere its block is generated](#a-rule-applies-everywhere-its-block-is-generated)
@@ -91,12 +91,17 @@ state:                        # block-data properties as strings, empty = plain 
   persistent: true
 physics: none                 # none | block_update | fluid_update (PhysicsMode, default none)
 placement:                    # present only for a grown decoration; absent = palette modifier only
-  requiresGround: minecraft:sand
-  requiresLiquidNeighbor: false
-  water: source               # none | source | waterlogged (WaterMode, default none)
   minHeight: 1
   maxHeight: 3
   probability: 0.04           # per eligible column, [0,1]
+  structure:                  # the 3D footprint placed at generation time, see below
+    filler: minecraft:sandstone
+    legend:
+      S: { block: minecraft:sand, anchor: true }
+      W: { block: minecraft:water }
+    layers:                   # bottom-to-top; each layer is a list of rows (Z) of symbols (X)
+      - ["###", "###", "###"]
+      - [" # ", "SW#", " # "]
 ```
 
 - `state` is a `Map<String,String>` of block-data properties. `RuleResolver.build` turns it into
@@ -107,23 +112,36 @@ placement:                    # present only for a grown decoration; absent = pa
   sand, no redstone recompute on placement). `block_update` schedules a block update, `fluid_update`
   starts a fluid flowing. Applied via `RuleResolver.applyPhysics` after placement. Unknown values
   throw with a clear message listing the three legal names.
-- `placement` (`PlacementRule`): present only when the rule grows a decoration column. `requiresGround`
-  is the support block, also the block the adapter lays under a self-contained plant. `water`
-  (`WaterMode`) says how the plant is watered. `min/maxHeight` bound the column, `probability` is the
-  per-cell roll. A rule with no `placement` is a plain palette-block modifier (state/physics only).
+- `placement` (`PlacementRule`): present only when the rule grows a decoration column. `structure`
+  (`StructurePattern`) declares the 3D footprint placed at the decoration's cell, see below.
+  `min/maxHeight` bound the grown column, `probability` is the per-cell roll. A rule with no
+  `placement` is a plain palette-block modifier (state/physics only).
 
 A rule with `placement` is a decoration (`Rule.isDecoration()`); `RuleCatalog.decorations()` returns
 those in stored order.
 
-## The waterlogging invariant
+## The structure pattern: a 3D footprint per decoration
 
-This is the load-bearing constraint. **Sand cannot be waterlogged.** So sugar cane, which stands on
-sand, uses `water: source`: `SkyGridDecorationPopulator` places a contained still-water pool boxed
-into a neighbor cell (`StillWater.place`) so nothing ever flows into the void. `water: waterlogged`
-only fits a support that is actually waterloggable (a `Waterlogged` block data); on a non-waterloggable
-support it does nothing. Rule of thumb: `waterlogged` for a waterloggable support, `source` for a
-contained still-water neighbor (the sand/sugar-cane case). Generated `minecraft:water` itself is
-pinned to `state: { level: 0 }` with `physics: none` so it stays a stable source and never floods.
+`structure` (`api.model.StructurePattern` + `LegendEntry`) replaces the old single-block
+`requiresGround`/`requiresLiquidNeighbor`/`water` fields with a small, recipe-like 3D pattern: a list
+of `layers` stacked bottom-to-top, each layer a list of row-strings, each character a symbol. A
+`legend` maps each symbol to a `{ block, state, anchor }` entry; exactly one entry must be
+`anchor: true`, marking the cell that is the decoration's own placement position (what
+`requiresGround` used to target). Three symbols are reserved and cannot be redefined: `' '` (leave
+the cell untouched), `'#'` (ensure solid, filling with `filler` only if the cell is currently air),
+and `'.'` (must be air, cleared). All of this is validated at config load in `JacksonRuleRepository`
+(rectangular layers, unknown symbols, exactly one anchor), fail-fast with a message naming the file.
+
+This is the load-bearing fix for a real bug: a decoration's ground block placed at generation time
+had nothing solid under it, an unsupported "floating gravity block" that fell (as a `FallingBlock`
+entity) the first time a real block update reached it, typically the decoration's own later growth.
+`structure` lets a rule declare real solid support (and boxed water, and waterlogged blocks via
+`state`) as data instead of hardcoding oasis geometry in Java. **Sand cannot be waterlogged** is still
+the one hard invariant to remember: a boxed water `legend` entry (walls + floor via `#`/exact blocks,
+open top) is how the shipped `sugar_cane` rule waters sand; `state: { waterlogged: "true" }` only
+does something on a block that is genuinely waterloggable. See `docs/rules.md` for the full worked
+example and `generation-pipeline` for how `adapters/generator.StructurePlacer` realizes a pattern
+against Bukkit (`StillWater` still exists separately, for the WFC `Plant` decoration pipeline only).
 
 ## Determinism
 
@@ -184,6 +202,7 @@ Code:
 
 - `adapters/config/.../ConfigFormats.java`, `ConfigDtos.java`, `RuleDtos.java`,
   `JacksonPresetRepository.java`, `JacksonRuleRepository.java`.
-- `api/.../model/Rule.java`, `PlacementRule.java`, `PhysicsMode.java`, `WaterMode.java`,
-  `RuleCatalog.java`.
-- `adapters/generator/.../RuleResolver.java`, `SkyGridDecorationPopulator.java`.
+- `api/.../model/Rule.java`, `PlacementRule.java`, `PhysicsMode.java`, `StructurePattern.java`,
+  `LegendEntry.java`, `RuleCatalog.java`.
+- `adapters/generator/.../RuleResolver.java`, `SkyGridDecorationPopulator.java`,
+  `StructurePlacer.java`.
