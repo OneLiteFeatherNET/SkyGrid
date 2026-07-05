@@ -35,7 +35,7 @@ class PresetResolverTest {
     /** A preset overriding only the fields named; everything else is null (inherited). */
     private Preset child(String name, String parent, String algorithm, List<BlockWeight> blocks, List<BiomeId> biomes) {
         List<String> parents = parent == null ? List.of() : List.of(parent);
-        return new Preset(name, parents, algorithm, null, null, null, null, blocks, null, null, biomes, null, null);
+        return new Preset(name, parents, algorithm, null, null, null, null, blocks, null, null, biomes, null);
     }
 
     @Test
@@ -55,7 +55,6 @@ class PresetResolverTest {
 
         assertThat(resolved.algorithm()).isEqualTo("noise_skygrid");        // overridden
         assertThat(resolved.skygrid().blocks()).isEqualTo(standardBlocks);     // overridden
-        assertThat(resolved.wfc()).isEqualTo(Fixtures.config("skygrid").wfc());     // inherited
         assertThat(resolved.spawn()).isEqualTo(Fixtures.config("skygrid").spawn()); // inherited
         assertThat(resolved.skygrid().spacing()).isEqualTo(4);              // inherited scalar
     }
@@ -78,39 +77,30 @@ class PresetResolverTest {
     void multipleParentsMergeLeftToRight() {
         // water and lava both extend classic (diamond); mix extends [water, lava].
         Preset water = new Preset("water", List.of("classic"), null, null, null, null, null,
-                List.of(new BlockWeight(Fixtures.mc("water"), 50.0)), null, null, null, null, null);
+                List.of(new BlockWeight(Fixtures.mc("water"), 50.0)), null, null, null, null);
         Preset lava = new Preset("lava", List.of("classic"), "noise_skygrid", null, null, null, null,
-                List.of(new BlockWeight(Fixtures.mc("lava"), 50.0)), null, null, null, null, null);
+                List.of(new BlockWeight(Fixtures.mc("lava"), 50.0)), null, null, null, null);
         Preset mix = new Preset("mix", List.of("water", "lava"), null, null, null, null, null,
-                null, null, null, null, null, null);
+                null, null, null, null, null);
 
         GeneratorConfig resolved = PresetResolver.resolve(catalog("mix", classic, water, lava, mix), "mix");
 
         // lava is the later parent, so its blocks and algorithm win
         assertThat(resolved.skygrid().blocks()).containsExactly(new BlockWeight(Fixtures.mc("lava"), 50.0));
         assertThat(resolved.algorithm()).isEqualTo("noise_skygrid");
-        // the shared base (classic) is applied once and supplies wfc
-        assertThat(resolved.wfc()).isEqualTo(Fixtures.config("skygrid").wfc());
+        // the shared base (classic) is applied once and supplies the chest loot table (neither water
+        // nor lava override it)
+        assertThat(resolved.skygrid().chestLoot()).isEqualTo(Fixtures.config("skygrid").skygrid().chestLoot());
     }
 
     @Test
     @DisplayName("a chain with no block palette anywhere is rejected")
     void rejectsMissingBlocks() {
         Preset noBlocks = new Preset("bare", List.of(), "skygrid", 4, 0, 64, 0.03,
-                null, null, null, null, null, Fixtures.ruleSet());
+                null, null, null, null, null);
         assertThatThrownBy(() -> PresetResolver.resolve(catalog("bare", noBlocks), "bare"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("block palette");
-    }
-
-    @Test
-    @DisplayName("a chain with no wfc rule set is rejected")
-    void rejectsMissingWfc() {
-        Preset noWfc = new Preset("bare", List.of(), "skygrid", 4, 0, 64, 0.03,
-                List.of(new BlockWeight(Fixtures.mc("stone"), 1.0)), null, null, null, null, null);
-        assertThatThrownBy(() -> PresetResolver.resolve(catalog("bare", noWfc), "bare"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("wfc");
     }
 
     @Test

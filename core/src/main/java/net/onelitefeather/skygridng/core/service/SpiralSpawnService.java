@@ -1,6 +1,5 @@
 package net.onelitefeather.skygridng.core.service;
 
-import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.api.model.SpawnConfig;
 import net.onelitefeather.skygridng.api.model.SpawnPoint;
 import net.onelitefeather.skygridng.core.state.RuleState;
@@ -33,23 +32,13 @@ public final class SpiralSpawnService implements SpawnPoints {
     }
 
     @Override
-    public int platformY() {
-        return config().platformY();
+    public int searchRadius() {
+        return config().searchRadius();
     }
 
     @Override
-    public BlockId platformBlock() {
-        return config().platformBlock();
-    }
-
-    @Override
-    public int platformRadius() {
-        return config().platformRadius();
-    }
-
-    @Override
-    public boolean spawnVillager() {
-        return config().villager();
+    public int maxAttempts() {
+        return config().maxAttempts();
     }
 
     @Override

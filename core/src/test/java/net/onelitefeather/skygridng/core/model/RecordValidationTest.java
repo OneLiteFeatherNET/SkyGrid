@@ -1,9 +1,8 @@
 package net.onelitefeather.skygridng.api.model;
 
+import net.onelitefeather.skygridng.testutil.Fixtures;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -16,16 +15,6 @@ class RecordValidationTest {
 
     private static BlockId mc(String value) {
         return BlockId.of("minecraft:" + value);
-    }
-
-    @Test
-    @DisplayName("TileType rejects blank id and non positive weight")
-    void tileType() {
-        assertThatThrownBy(() -> new TileType(" ", 1, true, mc("stone"), mc("stone"), false, List.of()))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new TileType("x", 0, true, mc("stone"), mc("stone"), false, List.of()))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertDoesNotThrow(() -> new TileType("x", 1, true, mc("stone"), mc("stone"), false, null));
     }
 
     @Test
@@ -45,13 +34,6 @@ class RecordValidationTest {
     }
 
     @Test
-    @DisplayName("AllowedPair rejects blank endpoints")
-    void allowedPair() {
-        assertThatThrownBy(() -> new AllowedPair("a", " ")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new AllowedPair(null, "b")).isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
     @DisplayName("Plant rejects bad heights and out of range probability")
     void plant() {
         assertThatThrownBy(() -> new Plant(mc("cactus"), false, null, 0.5, 0, 3, false))
@@ -63,56 +45,29 @@ class RecordValidationTest {
     }
 
     @Test
-    @DisplayName("LootChest and Spawner reject null ids and out of range probability")
-    void lootChestAndSpawner() {
-        assertThatThrownBy(() -> new LootChest(null, mc("chests/x"), 0.5))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new LootChest(mc("chest"), mc("chests/x"), 1.5))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new Spawner(mc("spawner"), null, 0.5))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertDoesNotThrow(() -> new Spawner(mc("spawner"), mc("zombie"), 0.1));
-    }
-
-    @Test
-    @DisplayName("GenerationSettings rejects degenerate sizes and a blank fallback")
-    void generationSettings() {
-        assertThatThrownBy(() -> new GenerationSettings(0, 8, 64, 8, "x", true))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new GenerationSettings(4, 1, 64, 8, "x", true))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new GenerationSettings(4, 8, 64, 0, "x", true))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new GenerationSettings(4, 8, 64, 8, " ", true))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
     @DisplayName("SkyGridConfig rejects bad spacing, inverted Y, bad noise scale and empty blocks")
     void skyGridConfig() {
-        List<BlockWeight> ok = List.of(new BlockWeight(mc("stone"), 1));
-        assertThatThrownBy(() -> new SkyGridConfig(0, 0, 64, 0.03, ok, List.of(), List.of()))
+        java.util.List<BlockWeight> ok = java.util.List.of(new BlockWeight(mc("stone"), 1));
+        assertThatThrownBy(() -> new SkyGridConfig(0, 0, 64, 0.03, ok, java.util.List.of(), java.util.List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SkyGridConfig(4, 10, 0, 0.03, ok, List.of(), List.of()))
+        assertThatThrownBy(() -> new SkyGridConfig(4, 10, 0, 0.03, ok, java.util.List.of(), java.util.List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SkyGridConfig(4, 0, 64, 0.0, ok, List.of(), List.of()))
+        assertThatThrownBy(() -> new SkyGridConfig(4, 0, 64, 0.0, ok, java.util.List.of(), java.util.List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SkyGridConfig(4, 0, 64, 0.03, List.of(), List.of(), List.of()))
+        assertThatThrownBy(() -> new SkyGridConfig(4, 0, 64, 0.03, java.util.List.of(), java.util.List.of(), java.util.List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    @DisplayName("GeneratorConfig rejects a blank algorithm and null sections")
+    @DisplayName("GeneratorConfig rejects a blank algorithm and a null skygrid section")
     void generatorConfig() {
-        assertThatThrownBy(() -> new GeneratorConfig(" ",
-                net.onelitefeather.skygridng.testutil.Fixtures.ruleSet(),
-                net.onelitefeather.skygridng.testutil.Fixtures.skyConfig()))
+        assertThatThrownBy(() -> new GeneratorConfig(" ", Fixtures.skyConfig()))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new GeneratorConfig("skygrid", null,
-                net.onelitefeather.skygridng.testutil.Fixtures.skyConfig()))
+        assertThatThrownBy(() -> new GeneratorConfig("skygrid", null))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new GeneratorConfig("skygrid",
-                net.onelitefeather.skygridng.testutil.Fixtures.ruleSet(), null))
+        assertThatThrownBy(() -> new GeneratorConfig("skygrid", Fixtures.skyConfig(), null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new GeneratorConfig("skygrid", Fixtures.skyConfig(), SpawnConfig.defaults(), null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

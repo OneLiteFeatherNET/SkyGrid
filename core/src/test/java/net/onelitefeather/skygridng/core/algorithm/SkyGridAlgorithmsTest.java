@@ -24,14 +24,12 @@ class SkyGridAlgorithmsTest {
     }
 
     @Test
-    @DisplayName("ids are stable and neither variant uses the WFC decoration populator")
+    @DisplayName("ids are stable")
     void contract() {
         TerrainAlgorithm independent = new IndependentSkyGridAlgorithm(Fixtures.skyConfig());
         TerrainAlgorithm noise = new NoiseSkyGridAlgorithm(Fixtures.skyConfig());
         assertThat(independent.id()).isEqualTo("skygrid");
         assertThat(noise.id()).isEqualTo("noise_skygrid");
-        assertThat(independent.usesWfcDecorations()).isFalse();
-        assertThat(noise.usesWfcDecorations()).isFalse();
     }
 
     @Test

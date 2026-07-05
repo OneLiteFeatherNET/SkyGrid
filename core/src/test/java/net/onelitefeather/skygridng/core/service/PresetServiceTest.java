@@ -30,7 +30,7 @@ class PresetServiceTest {
         Preset classic = PresetResolver.toPreset("classic", Fixtures.config("skygrid"));
         // "stone" extends classic and overrides only the block palette.
         Preset stone = new Preset("stone", List.of("classic"), null, null, null, null, null,
-                List.of(new BlockWeight(Fixtures.mc("stone"), 1.0)), null, null, null, null, null);
+                List.of(new BlockWeight(Fixtures.mc("stone"), 1.0)), null, null, null, null);
         Map<String, Preset> map = new LinkedHashMap<>();
         map.put("classic", classic);
         map.put("stone", stone);

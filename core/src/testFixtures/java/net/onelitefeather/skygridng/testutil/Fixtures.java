@@ -1,24 +1,18 @@
 package net.onelitefeather.skygridng.testutil;
 
-import net.onelitefeather.skygridng.api.model.AllowedPair;
 import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.api.model.BlockWeight;
-import net.onelitefeather.skygridng.api.model.GenerationSettings;
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
 import net.onelitefeather.skygridng.api.model.PresetCatalog;
-import net.onelitefeather.skygridng.api.model.RuleSet;
 import net.onelitefeather.skygridng.api.model.SkyGridConfig;
-import net.onelitefeather.skygridng.api.model.TileType;
 import net.onelitefeather.skygridng.core.algorithm.IndependentSkyGridAlgorithm;
 import net.onelitefeather.skygridng.core.algorithm.NoiseSkyGridAlgorithm;
-import net.onelitefeather.skygridng.core.algorithm.WfcSurfaceAlgorithm;
 import net.onelitefeather.skygridng.core.service.PresetResolver;
 import net.onelitefeather.skygridng.ports.algorithm.AlgorithmFactory;
 import net.onelitefeather.skygridng.ports.out.PresetRepository;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Shared, deterministic fixtures for the test suite. Kept tiny and explicit so each test reads on
@@ -31,41 +25,16 @@ public final class Fixtures {
     private Fixtures() {
     }
 
-    /** The three shipped algorithm factories, the same set the composition root binds via MapBinder. */
+    /** The two shipped algorithm factories, the same set the composition root binds via MapBinder. */
     public static Map<String, AlgorithmFactory> defaultAlgorithmFactories() {
         return Map.of(
-                IndependentSkyGridAlgorithm.ID, (config, region) -> new IndependentSkyGridAlgorithm(config.skygrid()),
-                NoiseSkyGridAlgorithm.ID, (config, region) -> new NoiseSkyGridAlgorithm(config.skygrid()),
-                WfcSurfaceAlgorithm.ID, (config, region) -> new WfcSurfaceAlgorithm(region));
+                IndependentSkyGridAlgorithm.ID, config -> new IndependentSkyGridAlgorithm(config.skygrid()),
+                NoiseSkyGridAlgorithm.ID, config -> new NoiseSkyGridAlgorithm(config.skygrid()));
     }
 
     /** A vanilla block id, for example {@code mc("stone")} -> {@code minecraft:stone}. */
     public static BlockId mc(String value) {
         return BlockId.of("minecraft:" + value);
-    }
-
-    public static List<TileType> tiles() {
-        return List.of(
-                new TileType("water", 6.0, true, mc("water"), mc("sand"), true, List.of()),
-                new TileType("sand", 4.0, true, mc("sand"), mc("sand"), false, List.of()),
-                new TileType("grass", 10.0, true, mc("grass_block"), mc("dirt"), false, List.of()),
-                new TileType("cactus", 2.0, false, mc("sand"), mc("sand"), false, List.of()));
-    }
-
-    public static Set<AllowedPair> pairs() {
-        return Set.of(
-                new AllowedPair("water", "sand"),
-                new AllowedPair("sand", "grass"),
-                new AllowedPair("sand", "cactus"),
-                new AllowedPair("grass", "cactus"));
-    }
-
-    public static GenerationSettings settings() {
-        return new GenerationSettings(4, 8, 64, 8, "grass", true);
-    }
-
-    public static RuleSet ruleSet() {
-        return new RuleSet(tiles(), pairs(), settings());
     }
 
     public static SkyGridConfig skyConfig() {
@@ -80,7 +49,7 @@ public final class Fixtures {
     }
 
     public static GeneratorConfig config(String algorithm) {
-        return new GeneratorConfig(algorithm, ruleSet(), skyConfig());
+        return new GeneratorConfig(algorithm, skyConfig());
     }
 
     /** A single-preset catalog ("classic") flattening {@link #config(String)}; active is "classic". */

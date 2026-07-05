@@ -5,7 +5,6 @@ import net.onelitefeather.skygridng.api.model.BlockWeight;
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
 import net.onelitefeather.skygridng.api.model.Preset;
 import net.onelitefeather.skygridng.api.model.PresetCatalog;
-import net.onelitefeather.skygridng.api.model.RuleSet;
 import net.onelitefeather.skygridng.api.model.SkyGridConfig;
 import net.onelitefeather.skygridng.api.model.SpawnConfig;
 
@@ -23,9 +22,9 @@ import java.util.Set;
  * after its parents), then applies overrides in that order so the most derived preset wins (the same
  * rule as CMake presets and Minecraft world presets). A preset may extend several parents; they are
  * applied left to right, so a later parent overrides an earlier one. A field left unset anywhere
- * falls back to a built-in default; the block palette and the WFC rule set have no universal
- * default, so a graph that never supplies them is rejected. Inheritance cycles (across the whole
- * graph, not just one chain) and unknown parents are rejected too. Pure and platform-neutral.
+ * falls back to a built-in default; the block palette has no universal default, so a graph that
+ * never supplies it is rejected. Inheritance cycles (across the whole graph, not just one chain)
+ * and unknown parents are rejected too. Pure and platform-neutral.
  */
 public final class PresetResolver {
 
@@ -44,7 +43,6 @@ public final class PresetResolver {
         List<BlockWeight> spawnerMobs = List.of();
         List<BiomeId> biomes = GeneratorConfig.DEFAULT_BIOMES;
         SpawnConfig spawn = SpawnConfig.defaults();
-        RuleSet wfc = null;
 
         for (Preset p : flatten(catalog, name)) { // ancestors first, target last (most derived wins)
             if (p.algorithm() != null) algorithm = p.algorithm();
@@ -57,17 +55,13 @@ public final class PresetResolver {
             if (p.spawnerMobs() != null) spawnerMobs = p.spawnerMobs();
             if (p.biomes() != null) biomes = p.biomes();
             if (p.spawn() != null) spawn = p.spawn();
-            if (p.wfc() != null) wfc = p.wfc();
         }
 
         if (blocks == null) {
             throw new IllegalStateException("preset '" + name + "' has no block palette (set 'blocks' in it or a base)");
         }
-        if (wfc == null) {
-            throw new IllegalStateException("preset '" + name + "' has no wfc rule set (set 'wfc' in it or a base)");
-        }
         SkyGridConfig sky = new SkyGridConfig(spacing, minY, maxY, noiseScale, blocks, chestLoot, spawnerMobs);
-        return new GeneratorConfig(algorithm, wfc, sky, spawn, biomes);
+        return new GeneratorConfig(algorithm, sky, spawn, biomes);
     }
 
     /** Captures the resolved config as a self-contained preset (no parents), for persisting edits. */
@@ -76,7 +70,7 @@ public final class PresetResolver {
         return new Preset(name, List.of(), config.algorithm(),
                 sky.spacing(), sky.minY(), sky.maxY(), sky.noiseScale(),
                 sky.blocks(), sky.chestLoot(), sky.spawnerMobs(),
-                config.biomes(), config.spawn(), config.wfc());
+                config.biomes(), config.spawn());
     }
 
     /**

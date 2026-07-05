@@ -1,12 +1,11 @@
 package net.onelitefeather.skygridng.core.service;
 
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
-import net.onelitefeather.skygridng.core.algorithm.WfcSurfaceAlgorithm;
+import net.onelitefeather.skygridng.core.algorithm.IndependentSkyGridAlgorithm;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import net.onelitefeather.skygridng.core.util.Registry;
 import net.onelitefeather.skygridng.ports.algorithm.AlgorithmFactory;
 import net.onelitefeather.skygridng.ports.algorithm.TerrainAlgorithm;
-import net.onelitefeather.skygridng.ports.in.GenerateRegionUseCase;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 
 import java.util.Map;
@@ -20,18 +19,16 @@ import java.util.Set;
  * and {@link #ids} all read it and cannot drift. The factories are contributed from outside (a Guice
  * MapBinder in the composition root), so a distribution can add an algorithm without changing this
  * class. The active algorithm is rebuilt whenever the configuration changes (Observer on
- * {@link RuleState}); an unknown id falls back to the WFC algorithm.
+ * {@link RuleState}); an unknown id falls back to the {@link IndependentSkyGridAlgorithm}.
  */
 public final class DefaultTerrainAlgorithms implements TerrainAlgorithms {
 
     private final RuleState state;
-    private final GenerateRegionUseCase region;
     private final Registry<String, AlgorithmFactory> registry;
     private volatile TerrainAlgorithm current;
 
-    public DefaultTerrainAlgorithms(RuleState state, Map<String, AlgorithmFactory> factories, GenerateRegionUseCase region) {
+    public DefaultTerrainAlgorithms(RuleState state, Map<String, AlgorithmFactory> factories) {
         this.state = state;
-        this.region = region;
         this.registry = new Registry<>();
         factories.forEach(this.registry::register);
         rebuild();
@@ -56,7 +53,7 @@ public final class DefaultTerrainAlgorithms implements TerrainAlgorithms {
     private void rebuild() {
         GeneratorConfig config = state.current();
         AlgorithmFactory factory = registry.find(config.algorithm())
-                .orElseGet(() -> registry.find(WfcSurfaceAlgorithm.ID).orElseThrow());
-        this.current = factory.create(config, region);
+                .orElseGet(() -> registry.find(IndependentSkyGridAlgorithm.ID).orElseThrow());
+        this.current = factory.create(config);
     }
 }
