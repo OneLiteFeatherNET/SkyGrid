@@ -49,7 +49,7 @@ ports, core, and the existing adapters never change. The rings below describe th
 `OlfModule` and to enable every bound `OlfFeature`. An OLF-only mechanic (for example challenges) is
 one `OlfFeature` (id/enable/disable) plus one `Multibinder` line; it may inject the `SkyGridApi`, any
 core port, and the `JavaPlugin`. Because `platforms/paper-olf` is not published, these mechanics ship
-to the OLF network only and never reach Modrinth or Hangar.
+to the OLF network only and are never published anywhere externally.
 
 ## The three rings
 

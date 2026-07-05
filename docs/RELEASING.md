@@ -6,14 +6,15 @@ go forward standard for the repository.
 ## Overview
 
 SkyGrid-ng uses **Conventional Commits** plus **release-please** for fully automated, low touch
-releases, and publishes to **Modrinth** and **Hangar** with a **CycloneDX** SBOM for supply chain
-tracking. This mirrors the newest OneLiteFeather setup (Otis) and the publishing targets of the
-plugin projects (AntiRedstoneClock-Remastered).
+releases. Each release attaches the built jar to the GitHub release and uploads a **CycloneDX**
+SBOM to Dependency-Track for supply chain tracking. This mirrors the newest OneLiteFeather setup
+(Otis). SkyGrid-ng is OneLiteFeather-internal, so it does not publish to any public plugin
+registry (Modrinth, Hangar); internal Maven publishing may be added later as a separate task.
 
 ```
 commit (feat/fix) -> push to main -> release-please opens a Release PR
         -> merge Release PR -> tag + GitHub release -> publish job runs
-        -> Modrinth + Hangar upload, jar attached to the GitHub release, SBOM to Dependency-Track
+        -> jar attached to the GitHub release, SBOM to Dependency-Track
 ```
 
 ## Pipelines
@@ -21,13 +22,14 @@ commit (feat/fix) -> push to main -> release-please opens a Release PR
 | Workflow | Trigger | What it does |
 |----------|---------|--------------|
 | `build-pr.yml` | pull_request | Reuses `OneLiteFeatherNET/workflows/gradle-build-pr.yml`: builds on Linux/Windows/macOS, runs tests, publishes test and coverage reports. |
-| `release-please.yml` | push to `main` | Runs release-please. On a merged Release PR it tags and creates the GitHub release, then calls the shared `OneLiteFeatherNET/workflows/gradle-plugin-publish.yml` to upload to Modrinth and Hangar, attach the jar, and send the SBOM to Dependency-Track. |
+| `release-please.yml` | push to `main` | Runs release-please. On a merged Release PR it tags and creates the GitHub release, then calls the shared `OneLiteFeatherNET/workflows/gradle-plugin-publish.yml` to attach the jar to the GitHub release and send the SBOM to Dependency-Track. |
 | `close-invalid-prs.yml` | pull_request_target | Reuses the org workflow to close PRs opened from `main`. |
 
 We reuse the central `OneLiteFeatherNET/workflows` repository wherever possible so pipeline
 maintenance happens once for all projects. Plugin publishing uses the shared
-`gradle-plugin-publish.yml` workflow (proposed in `docs/org-workflows/`); only the Modrinth and
-Hangar coordinates stay per project in `build.gradle.kts`.
+`gradle-plugin-publish.yml` workflow (proposed in `docs/org-workflows/`); SkyGrid-ng overrides its
+`publish-task` input to `cyclonedxBom` so only the SBOM task runs through Gradle, since it does not
+use that workflow's Modrinth/Hangar upload steps.
 
 ## release-please
 
@@ -44,16 +46,14 @@ There is no manual release step. The flow for a maintainer is:
 1. Merge feature and fix PRs with Conventional Commit titles.
 2. release-please keeps an open "chore(main): release x.y.z" PR up to date. Review the proposed
    changelog and version.
-3. Merge that Release PR when you want to ship. The tag, GitHub release, Modrinth and Hangar
-   uploads, and SBOM happen automatically.
+3. Merge that Release PR when you want to ship. The tag, GitHub release, jar attachment, and SBOM
+   upload happen automatically.
 4. To ship a prerelease, target a `next`, `beta`, or `alpha` branch (optional, add later).
 
 ## Required repository secrets
 
 | Secret | Used for |
 |--------|----------|
-| `MODRINTH_TOKEN` | Modrinth upload |
-| `HANGAR_API_TOKEN` | Hangar upload |
 | `DEPENDENCYTRACK_HOSTNAME`, `DEPENDENCYTRACK_APIKEY` | SBOM upload (optional) |
 | `GITHUB_TOKEN` | provided by Actions |
 
@@ -61,8 +61,6 @@ Set these as organization secrets so every OneLiteFeather plugin inherits them.
 
 ## One time setup checklist
 
-- [ ] Create the Modrinth project, set its id in `build.gradle.kts` (`modrinth.projectId`).
-- [ ] Create the Hangar project, set its slug in `build.gradle.kts` (`hangarPublish ... id`).
 - [ ] Create the GitHub teams `skygrid-ng-maintainers` and ensure `core-team` exists (CODEOWNERS).
 - [ ] Add the repository to the OneLiteFeather Renovate config and a GitHub Project board.
 - [ ] Configure Crowdin for `messages/Bundle_en.properties`.

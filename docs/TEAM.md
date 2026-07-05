@@ -39,7 +39,7 @@ route anything else in that layer to them too. See `CLAUDE.md` for the module la
 | `core-architect` | General purpose developer for `api/`, `ports/`, `core/`: algorithms, solver, use case services, `RuleState` |
 | `paper-adapter` | General purpose developer for `adapters/*`, `platforms/common`: Bukkit/Guice wiring, the `/skygrid` command, plugin lifecycle |
 | `test-engineer` | JUnit 5 + AssertJ + Mockito + MockBukkit tests across every module |
-| `release-engineer` | Gradle build, version catalog, CI workflows, Modrinth/Hangar/CycloneDX publishing |
+| `release-engineer` | Gradle build, version catalog, CI workflows, CycloneDX publishing |
 | `architecture-reviewer` | Read only. Hexagonal dependency rule, ArchUnit, CONTRIBUTING conventions |
 | `security-reviewer` | Read only. Generation resource exhaustion, command permission checks, malformed-input handling, dependency supply chain (CycloneDX) |
 | `security-specialist` | Implements the fixes `security-reviewer` finds: permission checks, input validation, secrets handling, CVE bumps |

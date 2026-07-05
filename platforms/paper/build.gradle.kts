@@ -6,13 +6,8 @@ plugins {
     alias(libs.plugins.shadow)
     alias(libs.plugins.run.paper)
     alias(libs.plugins.plugin.yml.bukkit)
-    alias(libs.plugins.modrinth)
-    alias(libs.plugins.hangar)
     alias(libs.plugins.cyclonedx)
 }
-
-// Minecraft versions this build targets, reused by Modrinth and Hangar metadata.
-val supportedMinecraftVersions = listOf("26.1")
 
 dependencies {
     // The shared composition root brings the whole object graph (adapters, core, ports, api).
@@ -76,36 +71,6 @@ bukkit {
     permissions {
         register("skygridng.admin") {
             description = "Allows managing the generator configuration."
-        }
-    }
-}
-
-// ----- Publishing: Modrinth (com.modrinth.minotaur) -----
-// Fill in the Modrinth project id/slug after creating the project; token comes from CI.
-modrinth {
-    token = providers.environmentVariable("MODRINTH_TOKEN")
-    projectId = "REPLACE_WITH_MODRINTH_PROJECT_ID"
-    versionNumber = project.version.toString()
-    versionType = "release"
-    uploadFile.set(tasks.shadowJar)
-    gameVersions.addAll(supportedMinecraftVersions)
-    loaders.addAll("paper", "purpur")
-    syncBodyFrom = provider { rootProject.file("README.md").readText() }
-}
-
-// ----- Publishing: Hangar (io.papermc.hangar-publish-plugin) -----
-hangarPublish {
-    publications.register("plugin") {
-        version = project.version.toString()
-        channel = "Release"
-        // Hangar project slug, set after creating the project on hangar.papermc.io.
-        id = "SkyGrid-ng"
-        apiKey = providers.environmentVariable("HANGAR_API_TOKEN")
-        platforms {
-            paper {
-                jar = tasks.shadowJar.flatMap { it.archiveFile }
-                platformVersions.addAll(supportedMinecraftVersions)
-            }
         }
     }
 }
