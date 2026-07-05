@@ -143,7 +143,7 @@ There is no `water` field anymore. The old `none`/`source`/`waterlogged` modes a
 
 Leaves are pinned to `persistent=true` so they are never checked for decay, and `physics: none` so
 placement does not trigger that check. They survive on the grid even with no adjacent log. (The
-`modern` preset's `cherry_leaves` rule is identical in shape.)
+`standard` preset's `cherry_leaves` rule is identical in shape.)
 
 ```yaml
 # rules/oak_leaves.yml
@@ -204,6 +204,30 @@ physical effect the old `water: source` mode had, just declared as data instead 
 
 Note this rule has no `state` section: it does not need to pin any block-data property, so the sugar
 cane itself uses its default state.
+
+### `golden_dandelion`: a minimal one-cell anchor
+
+Unlike sugar cane, the golden dandelion needs no water and no growth column, just a single
+`grass_block` anchor cell for ground support, since `minHeight` and `maxHeight` are both 1.
+
+```yaml
+# rules/golden_dandelion.yml
+block: minecraft:golden_dandelion
+physics: none
+placement:
+  minHeight: 1
+  maxHeight: 1
+  probability: 0.03
+  structure:
+    filler: minecraft:dirt
+    legend:
+      G: { block: minecraft:grass_block, anchor: true }
+    layers:
+      - ["G"]
+```
+
+`filler` is present for consistency with the other rule files, but it is unused here since the
+pattern has no `#` (ENSURE_SOLID) cell.
 
 ## Determinism
 

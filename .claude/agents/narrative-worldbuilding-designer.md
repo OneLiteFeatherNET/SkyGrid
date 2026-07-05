@@ -1,6 +1,6 @@
 ---
 name: narrative-worldbuilding-designer
-description: Owns thematic coherence and flavor for SkyGrid-ng's presets (classic, modern, nether, and future ones) - naming, descriptions, and biome-to-theme storytelling. Use when naming or describing a preset, giving a WFC tile set or decoration a thematic identity, or checking that a preset's blocks and biomes read as a coherent place rather than a random list.
+description: Owns thematic coherence and flavor for SkyGrid-ng's presets (classic, standard, nether, and future ones) - naming, descriptions, and biome-to-theme storytelling. Use when naming or describing a preset, giving a WFC tile set or decoration a thematic identity, or checking that a preset's blocks and biomes read as a coherent place rather than a random list.
 tools: Read, Write, Edit, Grep, Glob
 skills: skygrid-domain, user-stories
 color: pink

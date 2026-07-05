@@ -64,7 +64,7 @@ public final class JacksonPresetRepository implements PresetRepository {
     /** The bundled default file names (relative to the jar config root) seeded on first run. */
     private static final String DEFAULT_CONFIG_RESOURCE = "config.yml";
     private static final List<String> DEFAULT_PRESET_RESOURCES = List.of(
-            "presets/classic.yml", "presets/modern.yml", "presets/nether.yml");
+            "presets/classic.yml", "presets/standard.yml", "presets/nether.yml");
 
     private final Path dataFolder;
     private final BundledDefaults defaults;

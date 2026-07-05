@@ -8,7 +8,7 @@ import java.util.List;
  *
  * A {@code null} field means "inherit from the parents (or, at the root, fall back to the built-in
  * default)". The resolver flattens the {@code extends} graph into a complete {@link GeneratorConfig},
- * so a {@code modern} or {@code nether} preset can restate just its block palette or mob list on top
+ * so a {@code standard} or {@code nether} preset can restate just its block palette or mob list on top
  * of {@code classic}. This mirrors the inheritance model used by CMake presets and Minecraft world
  * presets (override only what differs).
  *

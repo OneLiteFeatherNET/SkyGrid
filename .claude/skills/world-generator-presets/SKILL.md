@@ -6,7 +6,7 @@ description: >-
   from one another. Use when working on per-world generators, the
   getDefaultWorldGenerator id parameter, bukkit.yml generator settings,
   Multiverse world creation, WorldCreator.generator, preset inheritance/extends,
-  the PresetResolver/PresetCatalog/PresetService, or assigning classic/modern/
+  the PresetResolver/PresetCatalog/PresetService, or assigning classic/standard/
   nether (or any preset) to a specific world on a multi-world server.
 ---
 
@@ -30,14 +30,14 @@ generator is specified:
   NOT create worlds):
   ```yaml
   worlds:
-    skygrid_modern:
-      generator: SkyGrid-ng:modern
+    skygrid_standard:
+      generator: SkyGrid-ng:standard
   ```
 - **Multiverse** (current docs use the long flag; old 2.x/4.x used `-g`):
   ```
-  /mv create skygrid_modern normal --generator SkyGrid-ng:modern
+  /mv create skygrid_standard normal --generator SkyGrid-ng:standard
   ```
-- **Programmatic** (`WorldCreator`): `new WorldCreator("w").generator("SkyGrid-ng:modern")`.
+- **Programmatic** (`WorldCreator`): `new WorldCreator("w").generator("SkyGrid-ng:standard")`.
   Never use `WorldCreator.generatorSettings(...)` for this; it is vanilla-only.
 
 Rules to honor in the adapter:
@@ -66,7 +66,7 @@ Sibling method with the same id semantics, if per-world biomes ever need it:
   absorbs reload/save from the admin service.
 - `adapters.config.ConfiguratePresetRepository`: maps the raw preset catalog to
   and from YAML/HOCON (`generator.yaml` / `generator.conf`).
-- The bundled default ships `classic` (the base), `modern` and `nether`.
+- The bundled default ships `classic` (the base), `standard` and `nether`.
 
 ## Preset inheritance (single and multiple)
 
@@ -80,9 +80,9 @@ own fields win over all.
 
 ```yaml
 presets:
-  classic: { algorithm: skygrid, blocks: [...], wfc: {...}, biomes: [...] }
-  modern:  { extends: classic, blocks: [...], spawnerMobs: [...] }   # overrides only these
-  hybrid:  { extends: [modern, nether] }                             # nether wins on conflicts
+  classic:  { algorithm: skygrid, blocks: [...], wfc: {...}, biomes: [...] }
+  standard: { extends: classic, blocks: [...], spawnerMobs: [...] }   # overrides only these
+  hybrid:   { extends: [standard, nether] }                           # nether wins on conflicts
 active: classic
 ```
 
