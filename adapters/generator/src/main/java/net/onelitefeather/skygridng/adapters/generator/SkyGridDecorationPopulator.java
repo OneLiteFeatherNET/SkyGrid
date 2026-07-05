@@ -2,14 +2,12 @@ package net.onelitefeather.skygridng.adapters.generator;
 
 import net.onelitefeather.skygridng.api.model.PlacementRule;
 import net.onelitefeather.skygridng.api.model.Rule;
-import net.onelitefeather.skygridng.api.model.WaterMode;
 import net.onelitefeather.skygridng.api.util.Seeds;
 import net.onelitefeather.skygridng.ports.in.SkyGridDecorations;
 import org.bukkit.Material;
 import org.bukkit.block.Chest;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.Waterlogged;
 import org.bukkit.entity.EntityType;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.LimitedRegion;
@@ -25,11 +23,12 @@ import java.util.Random;
  * It scans only the grid cells the algorithm can place a block on (x/z on grid lines, y on grid
  * layers), so the cost is a few hundred lookups per chunk, not a full volume scan. At each cell it
  * first tries the decoration rules ({@link RuleResolver#decorations()}): a rolled rule places its
- * ground support, provides water per its {@link WaterMode}, grows its plant column and applies its
- * physics. If no decoration lands, it fills an existing chest or spawner with the loot table or mob
- * the core picks (deterministic). Everything is seeded from the world seed and the cell coordinates,
- * so the result is independent of population order. Used only for the classic algorithms (WFC has its
- * own populator).
+ * {@link net.onelitefeather.skygridng.api.model.StructurePattern} (guaranteeing real solid support,
+ * and any boxed water it declares), grows its plant column and applies its physics. If no decoration
+ * lands, it fills an existing chest or spawner with the loot table or mob the core picks
+ * (deterministic). Everything is seeded from the world seed and the cell coordinates, so the result
+ * is independent of population order. Used only for the classic algorithms (WFC has its own
+ * populator).
  */
 public final class SkyGridDecorationPopulator extends BlockPopulator {
 
@@ -93,11 +92,11 @@ public final class SkyGridDecorationPopulator extends BlockPopulator {
     }
 
     /**
-     * Grows the first decoration rule that rolls a hit at this grid cell: it lays the ground support
-     * (replacing the cell's block), provides water (a waterlogged support, or a contained still-water
-     * pool on a neighbor so nothing flows into the void), grows the plant column on top and schedules
-     * the update the rule asks for. Returns {@code true} when a decoration was placed, so the caller
-     * does not then treat the cell as a chest or spawner.
+     * Grows the first decoration rule that rolls a hit at this grid cell: it places the rule's
+     * {@link net.onelitefeather.skygridng.api.model.StructurePattern} anchored at this cell (its solid
+     * support, any boxed water and walls it declares), grows the plant column on top and schedules the
+     * update the rule asks for. Returns {@code true} when a decoration was placed, so the caller does
+     * not then treat the cell as a chest or spawner.
      */
     private boolean placeDecoration(LimitedRegion area, long seed, int x, int y, int z) {
         long base = Seeds.blockSeed(seed, x, y, z);
@@ -107,16 +106,8 @@ public final class SkyGridDecorationPopulator extends BlockPopulator {
             if (Seeds.unitDouble(ruleSeed) >= placement.probability()) {
                 continue;
             }
-            if (placement.requiresGround() != null) {
-                BlockData ground = rules.blockData(placement.requiresGround());
-                if (placement.water() == WaterMode.WATERLOGGED && ground instanceof Waterlogged) {
-                    ground = ground.clone();
-                    ((Waterlogged) ground).setWaterlogged(true);
-                }
-                area.setBlockData(x, y, z, ground);
-            }
-            if (placement.water() == WaterMode.SOURCE && !StillWater.place(area, x, y, z)) {
-                return true; // rolled this rule but no room for a contained pool: consume the cell
+            if (!StructurePlacer.place(area, rules, placement.structure(), x, y, z)) {
+                return true; // rolled this rule but the structure does not fit here: consume the cell
             }
             growColumn(area, rule, placement, ruleSeed, x, y, z);
             return true;

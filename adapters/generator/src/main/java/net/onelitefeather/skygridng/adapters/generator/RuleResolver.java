@@ -61,6 +61,24 @@ final class RuleResolver {
         return cache.computeIfAbsent(id, this::build);
     }
 
+    /**
+     * The block's data with an explicit state map applied instead of its rule's own (used by
+     * {@link StructurePlacer} for a {@link net.onelitefeather.skygridng.api.model.LegendEntry} that
+     * carries its own state overrides). Falls back to the plain default state on an invalid property,
+     * same as {@link #blockData(BlockId)}. Not cached: a legend's state is typically distinct per rule.
+     */
+    BlockData blockData(BlockId id, Map<String, String> state) {
+        if (state.isEmpty()) {
+            return blockData(id);
+        }
+        try {
+            return Bukkit.createBlockData(blockState(id, state));
+        } catch (IllegalArgumentException ignored) {
+            // an invalid property for this block: fall back to the plain default state
+            return materials.resolve(id).createBlockData();
+        }
+    }
+
     private BlockData build(BlockId id) {
         Material material = materials.resolve(id);
         Optional<Rule> rule = rules.forBlock(id);
