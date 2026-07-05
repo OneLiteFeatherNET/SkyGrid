@@ -100,10 +100,6 @@ final class Messages {
         return key("world.list", worlds);
     }
 
-    static Component challengeUnavailable() {
-        return key("challenge.unavailable");
-    }
-
     static Component challengeListEmpty() {
         return key("challenge.list_empty");
     }
