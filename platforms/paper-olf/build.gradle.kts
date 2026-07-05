@@ -24,6 +24,7 @@ dependencies {
     testRuntimeOnly(libs.junit.launcher)
     testImplementation(libs.paper.api)
     testImplementation(libs.mockbukkit)
+    testImplementation(libs.mockito.core)
     testImplementation(libs.assertj.core)
 }
 

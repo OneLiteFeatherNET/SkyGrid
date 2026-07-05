@@ -1,44 +1,31 @@
 package net.onelitefeather.skygridng.platforms.olf;
 
 import jakarta.inject.Inject;
-import net.onelitefeather.skygridng.adapters.challenge.LevelBorderWarningTask;
-import net.onelitefeather.skygridng.adapters.challenge.NoCraftingTableListener;
-import net.onelitefeather.skygridng.adapters.challenge.NoNaturalRegenerationListener;
-import net.onelitefeather.skygridng.adapters.challenge.OneLifeListener;
-import org.bukkit.event.HandlerList;
-import org.bukkit.plugin.PluginManager;
+import net.onelitefeather.skygridng.adapters.challenge.ChallengeBehavior;
+import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * OLF-only feature: enables all challenge enforcement by registering
- * {@link NoCraftingTableListener}, {@link OneLifeListener}, and {@link NoNaturalRegenerationListener}
- * with Bukkit's {@link PluginManager} on enable, and scheduling {@link LevelBorderWarningTask} to run
- * every 5 seconds (100 ticks). Everything is unregistered / cancelled on disable.
+ * OLF-only feature: enables every bound {@link ChallengeBehavior} on enable and disables all of them
+ * on shutdown. This class deliberately knows no concrete challenge class; adding a fifth challenge
+ * only means adding a new {@link ChallengeBehavior} implementation plus one
+ * {@code Multibinder.addBinding()} line in {@link ChallengeModule}, never a change here.
  */
 final class ChallengeFeature implements OlfFeature {
 
-    private static final long LEVEL_BORDER_WARNING_PERIOD_TICKS = 100L;
-
     private final JavaPlugin plugin;
-    private final NoCraftingTableListener noCraftingTableListener;
-    private final OneLifeListener oneLifeListener;
-    private final NoNaturalRegenerationListener noNaturalRegenerationListener;
-    private final LevelBorderWarningTask levelBorderWarningTask;
-
-    private BukkitTask levelBorderWarningBukkitTask;
+    private final ChallengeAdminUseCase challenges;
+    private final Set<ChallengeBehavior> behaviors;
 
     @Inject
-    ChallengeFeature(JavaPlugin plugin,
-                      NoCraftingTableListener noCraftingTableListener,
-                      OneLifeListener oneLifeListener,
-                      NoNaturalRegenerationListener noNaturalRegenerationListener,
-                      LevelBorderWarningTask levelBorderWarningTask) {
+    ChallengeFeature(JavaPlugin plugin, ChallengeAdminUseCase challenges, Set<ChallengeBehavior> behaviors) {
         this.plugin = plugin;
-        this.noCraftingTableListener = noCraftingTableListener;
-        this.oneLifeListener = oneLifeListener;
-        this.noNaturalRegenerationListener = noNaturalRegenerationListener;
-        this.levelBorderWarningTask = levelBorderWarningTask;
+        this.challenges = challenges;
+        this.behaviors = behaviors;
     }
 
     @Override
@@ -48,21 +35,36 @@ final class ChallengeFeature implements OlfFeature {
 
     @Override
     public void enable() {
-        PluginManager pluginManager = plugin.getServer().getPluginManager();
-        pluginManager.registerEvents(noCraftingTableListener, plugin);
-        pluginManager.registerEvents(oneLifeListener, plugin);
-        pluginManager.registerEvents(noNaturalRegenerationListener, plugin);
-        levelBorderWarningBukkitTask = plugin.getServer().getScheduler()
-                .runTaskTimer(plugin, levelBorderWarningTask, 0L, LEVEL_BORDER_WARNING_PERIOD_TICKS);
+        logConfigBehaviorMismatches();
+        behaviors.forEach(ChallengeBehavior::enable);
     }
 
     @Override
     public void disable() {
-        HandlerList.unregisterAll(noCraftingTableListener);
-        HandlerList.unregisterAll(oneLifeListener);
-        HandlerList.unregisterAll(noNaturalRegenerationListener);
-        if (levelBorderWarningBukkitTask != null) {
-            levelBorderWarningBukkitTask.cancel();
-        }
+        behaviors.forEach(ChallengeBehavior::disable);
+    }
+
+    /**
+     * Startup diagnostic only: warns about a config-defined challenge id with no matching
+     * {@link ChallengeBehavior} and about a behavior whose id has no matching config entry. Never
+     * throws and never prevents {@link #enable()} from calling through to every behavior.
+     */
+    private void logConfigBehaviorMismatches() {
+        Set<String> configuredIds = challenges.list().stream()
+                .map(ChallengeRule::id)
+                .collect(Collectors.toUnmodifiableSet());
+        Set<String> behaviorIds = behaviors.stream()
+                .map(ChallengeBehavior::challengeId)
+                .collect(Collectors.toUnmodifiableSet());
+
+        configuredIds.stream()
+                .filter(id -> !behaviorIds.contains(id))
+                .forEach(id -> plugin.getLogger().warning(
+                        "Configured challenge '" + id + "' has no matching ChallengeBehavior; it will never take effect."));
+
+        behaviorIds.stream()
+                .filter(id -> !configuredIds.contains(id))
+                .forEach(id -> plugin.getLogger().warning(
+                        "ChallengeBehavior '" + id + "' has no matching configured challenge entry."));
     }
 }
