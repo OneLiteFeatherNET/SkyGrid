@@ -8,9 +8,12 @@ import org.bukkit.World;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.plugin.RegisteredListener;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +42,7 @@ class OneLifeListenerTest {
     private WorldMock world;
     private PlayerMock player;
     private ChallengeAdminUseCase challenges;
+    private JavaPlugin plugin;
 
     @BeforeEach
     void setUp() {
@@ -46,6 +50,7 @@ class OneLifeListenerTest {
         world = server.addSimpleWorld("skygrid-world");
         player = server.addPlayer();
         challenges = mock(ChallengeAdminUseCase.class);
+        plugin = MockBukkit.createMockPlugin("SkyGridNg");
     }
 
     @AfterEach
@@ -54,7 +59,16 @@ class OneLifeListenerTest {
     }
 
     private OneLifeListener listener(Predicate<World> appliesTo) {
-        return new OneLifeListener(challenges, appliesTo);
+        return new OneLifeListener(challenges, appliesTo, plugin);
+    }
+
+    private static boolean isRegistered(HandlerList handlerList, Object listenerInstance) {
+        for (RegisteredListener registration : handlerList.getRegisteredListeners()) {
+            if (registration.getListener() == listenerInstance) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private PlayerDeathEvent death(Player p) {
@@ -132,5 +146,36 @@ class OneLifeListenerTest {
         listener.onRespawn(respawn(player));
 
         assertThat(player.getGameMode()).isEqualTo(before);
+    }
+
+    @Test
+    @DisplayName("challengeId returns the constant challenge id")
+    void challengeIdReturnsConstant() {
+        assertThat(listener(w -> true).challengeId()).isEqualTo(OneLifeListener.CHALLENGE_ID);
+    }
+
+    @Test
+    @DisplayName("enable registers this listener with the plugin manager for every handled event")
+    void enableRegistersListener() {
+        OneLifeListener behavior = listener(w -> true);
+
+        behavior.enable();
+
+        assertThat(isRegistered(PlayerDeathEvent.getHandlerList(), behavior)).isTrue();
+        assertThat(isRegistered(PlayerRespawnEvent.getHandlerList(), behavior)).isTrue();
+        assertThat(isRegistered(PlayerJoinEvent.getHandlerList(), behavior)).isTrue();
+    }
+
+    @Test
+    @DisplayName("disable unregisters this listener from every handled event")
+    void disableUnregistersListener() {
+        OneLifeListener behavior = listener(w -> true);
+        behavior.enable();
+
+        behavior.disable();
+
+        assertThat(isRegistered(PlayerDeathEvent.getHandlerList(), behavior)).isFalse();
+        assertThat(isRegistered(PlayerRespawnEvent.getHandlerList(), behavior)).isFalse();
+        assertThat(isRegistered(PlayerJoinEvent.getHandlerList(), behavior)).isFalse();
     }
 }

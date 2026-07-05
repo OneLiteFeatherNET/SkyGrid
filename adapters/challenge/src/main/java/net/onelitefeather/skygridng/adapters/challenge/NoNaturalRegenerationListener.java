@@ -1,11 +1,14 @@
 package net.onelitefeather.skygridng.adapters.challenge;
 
+import jakarta.inject.Inject;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.function.Predicate;
 
@@ -19,16 +22,34 @@ import java.util.function.Predicate;
  * {@code FoodLevelChangeEvent}: hunger still depletes exactly as vanilla, only the passive
  * heal-from-full-hunger effect is removed.
  */
-public final class NoNaturalRegenerationListener implements Listener {
+public final class NoNaturalRegenerationListener implements Listener, ChallengeBehavior {
 
     static final String CHALLENGE_ID = "no_natural_regeneration";
 
     private final ChallengeAdminUseCase challenges;
     private final Predicate<World> appliesTo;
+    private final JavaPlugin plugin;
 
-    public NoNaturalRegenerationListener(ChallengeAdminUseCase challenges, Predicate<World> appliesTo) {
+    @Inject
+    public NoNaturalRegenerationListener(ChallengeAdminUseCase challenges, Predicate<World> appliesTo, JavaPlugin plugin) {
         this.challenges = challenges;
         this.appliesTo = appliesTo;
+        this.plugin = plugin;
+    }
+
+    @Override
+    public String challengeId() {
+        return CHALLENGE_ID;
+    }
+
+    @Override
+    public void enable() {
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+    }
+
+    @Override
+    public void disable() {
+        HandlerList.unregisterAll(this);
     }
 
     @EventHandler

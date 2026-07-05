@@ -1,14 +1,17 @@
 package net.onelitefeather.skygridng.adapters.challenge;
 
+import jakarta.inject.Inject;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import org.bukkit.GameMode;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Set;
 import java.util.UUID;
@@ -33,17 +36,35 @@ import java.util.function.Predicate;
  * server restart. There is no persistence store for it yet; that is an accepted tradeoff at this
  * scale (see Epic I2's backlog status for a future season-persistence layer).
  */
-public final class OneLifeListener implements Listener {
+public final class OneLifeListener implements Listener, ChallengeBehavior {
 
     static final String CHALLENGE_ID = "one_life";
 
     private final ChallengeAdminUseCase challenges;
     private final Predicate<World> appliesTo;
+    private final JavaPlugin plugin;
     private final Set<UUID> eliminated = ConcurrentHashMap.newKeySet();
 
-    public OneLifeListener(ChallengeAdminUseCase challenges, Predicate<World> appliesTo) {
+    @Inject
+    public OneLifeListener(ChallengeAdminUseCase challenges, Predicate<World> appliesTo, JavaPlugin plugin) {
         this.challenges = challenges;
         this.appliesTo = appliesTo;
+        this.plugin = plugin;
+    }
+
+    @Override
+    public String challengeId() {
+        return CHALLENGE_ID;
+    }
+
+    @Override
+    public void enable() {
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+    }
+
+    @Override
+    public void disable() {
+        HandlerList.unregisterAll(this);
     }
 
     @EventHandler
