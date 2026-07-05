@@ -16,3 +16,6 @@ run/
 # OS
 .DS_Store
 Thumbs.db
+
+# graphify knowledge graph (regenerated via `graphify update .`)
+graphify-out/
