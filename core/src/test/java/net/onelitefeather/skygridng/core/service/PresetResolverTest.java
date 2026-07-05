@@ -48,13 +48,13 @@ class PresetResolverTest {
     @Test
     @DisplayName("a child overrides its own fields and inherits the rest from the base")
     void childOverridesAndInherits() {
-        List<BlockWeight> modernBlocks = List.of(new BlockWeight(Fixtures.mc("deepslate"), 20.0));
-        Preset modern = child("modern", "classic", "noise_skygrid", modernBlocks, null);
+        List<BlockWeight> standardBlocks = List.of(new BlockWeight(Fixtures.mc("deepslate"), 20.0));
+        Preset standard = child("standard", "classic", "noise_skygrid", standardBlocks, null);
 
-        GeneratorConfig resolved = PresetResolver.resolve(catalog("modern", classic, modern), "modern");
+        GeneratorConfig resolved = PresetResolver.resolve(catalog("standard", classic, standard), "standard");
 
         assertThat(resolved.algorithm()).isEqualTo("noise_skygrid");        // overridden
-        assertThat(resolved.skygrid().blocks()).isEqualTo(modernBlocks);     // overridden
+        assertThat(resolved.skygrid().blocks()).isEqualTo(standardBlocks);     // overridden
         assertThat(resolved.wfc()).isEqualTo(Fixtures.config("skygrid").wfc());     // inherited
         assertThat(resolved.spawn()).isEqualTo(Fixtures.config("skygrid").spawn()); // inherited
         assertThat(resolved.skygrid().spacing()).isEqualTo(4);              // inherited scalar

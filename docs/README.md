@@ -24,7 +24,7 @@ only changes newly generated chunks, never the seed-to-world mapping.
 - [Configuration layout and formats](configuration.md): the split file layout, the three formats,
   the `schema/` directory, and editor validation/autocompletion.
 - [Presets](presets.md): the preset schema, inheritance (`extends`), the three shipped presets
-  (`classic`, `modern`, `nether`), and selecting a preset per world.
+  (`classic`, `standard`, `nether`), and selecting a preset per world.
 - [Per-block rules](rules.md): the rule model, `state`, `physics`, `placement`, water modes, and
   worked examples from the shipped defaults.
 
@@ -35,7 +35,7 @@ plugins/SkyGrid-ng/
   config.yml            # selects the active preset
   presets/
     classic.yml         # the base preset every other one builds on
-    modern.yml          # extends: classic
+    standard.yml        # extends: classic
     nether.yml          # extends: classic
   rules/
     oak_leaves.yml      # per-block rules

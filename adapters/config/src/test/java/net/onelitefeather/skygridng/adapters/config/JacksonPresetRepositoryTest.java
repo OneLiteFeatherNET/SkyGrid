@@ -32,17 +32,17 @@ class JacksonPresetRepositoryTest {
     }
 
     @Test
-    @DisplayName("the bundled default seeds the classic/modern/nether catalog")
+    @DisplayName("the bundled default seeds the classic/standard/nether catalog")
     void seedsAndLoadsPresets(@TempDir Path dir) {
         PresetCatalog catalog = repository(dir).load();
 
         assertThat(Files.exists(dir.resolve("config.yml"))).isTrue();
         assertThat(Files.exists(dir.resolve("presets/classic.yml"))).isTrue();
-        assertThat(Files.exists(dir.resolve("presets/modern.yml"))).isTrue();
+        assertThat(Files.exists(dir.resolve("presets/standard.yml"))).isTrue();
         assertThat(Files.exists(dir.resolve("presets/nether.yml"))).isTrue();
 
         assertThat(catalog.active()).isEqualTo("classic");
-        assertThat(catalog.names()).contains("classic", "modern", "nether");
+        assertThat(catalog.names()).contains("classic", "standard", "nether");
 
         Preset classic = catalog.presets().get("classic");
         assertThat(classic.parents()).isEmpty();
@@ -50,12 +50,12 @@ class JacksonPresetRepositoryTest {
         assertThat(classic.wfc()).isNotNull();
         assertThat(classic.spawn()).isNotNull();
 
-        Preset modern = catalog.presets().get("modern");
-        assertThat(modern.parents()).containsExactly("classic");      // extends
-        assertThat(modern.algorithm()).isEqualTo("noise_skygrid");
-        assertThat(modern.blocks()).isNotEmpty();                     // overridden
-        assertThat(modern.biomes()).isNull();                         // inherited
-        assertThat(modern.wfc()).isNull();                            // inherited
+        Preset standard = catalog.presets().get("standard");
+        assertThat(standard.parents()).containsExactly("classic");      // extends
+        assertThat(standard.algorithm()).isEqualTo("noise_skygrid");
+        assertThat(standard.blocks()).isNotEmpty();                     // overridden
+        assertThat(standard.biomes()).isNull();                         // inherited
+        assertThat(standard.wfc()).isNull();                            // inherited
 
         Preset nether = catalog.presets().get("nether");
         assertThat(nether.parents()).containsExactly("classic");
@@ -72,8 +72,8 @@ class JacksonPresetRepositoryTest {
 
         PresetCatalog reloaded = repository(dir).load();
         assertThat(reloaded.active()).isEqualTo("nether");
-        assertThat(reloaded.names()).contains("classic", "modern", "nether");
-        assertThat(reloaded.presets().get("modern").algorithm()).isEqualTo("noise_skygrid");
+        assertThat(reloaded.names()).contains("classic", "standard", "nether");
+        assertThat(reloaded.presets().get("standard").algorithm()).isEqualTo("noise_skygrid");
     }
 
     @Test
@@ -82,23 +82,23 @@ class JacksonPresetRepositoryTest {
         PresetRepository repository = repository(dir);
         PresetCatalog catalog = repository.load();     // seeds and reads the YAML defaults
 
-        // Force modern to JSON and nether to TOML by swapping the file extension, then let save write
+        // Force standard to JSON and nether to TOML by swapping the file extension, then let save write
         // each preset back in the format of the file that already exists for it.
         Path presets = dir.resolve("presets");
-        Files.delete(presets.resolve("modern.yml"));
-        Files.createFile(presets.resolve("modern.json"));
+        Files.delete(presets.resolve("standard.yml"));
+        Files.createFile(presets.resolve("standard.json"));
         Files.delete(presets.resolve("nether.yml"));
         Files.createFile(presets.resolve("nether.toml"));
 
         repository(dir).save(catalog);
 
-        assertThat(Files.exists(presets.resolve("modern.json"))).isTrue();
+        assertThat(Files.exists(presets.resolve("standard.json"))).isTrue();
         assertThat(Files.exists(presets.resolve("nether.toml"))).isTrue();
         assertThat(Files.exists(presets.resolve("classic.yml"))).isTrue();
 
         PresetCatalog reloaded = repository(dir).load();
         assertThat(reloaded.active()).isEqualTo("classic");
-        assertThat(reloaded.presets().get("modern")).isEqualTo(catalog.presets().get("modern"));
+        assertThat(reloaded.presets().get("standard")).isEqualTo(catalog.presets().get("standard"));
         assertThat(reloaded.presets().get("nether")).isEqualTo(catalog.presets().get("nether"));
         assertThat(reloaded).isEqualTo(catalog);
     }

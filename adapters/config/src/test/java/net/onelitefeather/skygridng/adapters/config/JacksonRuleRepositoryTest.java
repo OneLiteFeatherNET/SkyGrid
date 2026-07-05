@@ -79,6 +79,28 @@ class JacksonRuleRepositoryTest {
     }
 
     @Test
+    @DisplayName("the bundled default seeds the golden_dandelion decoration rule")
+    void seedsAndLoadsGoldenDandelionRule(@TempDir Path dir) {
+        RuleCatalog catalog = repository(dir).load();
+
+        assertThat(Files.exists(dir.resolve("rules/golden_dandelion.yml"))).isTrue();
+
+        Rule dandelion = catalog.forBlock(BlockId.of("minecraft:golden_dandelion")).orElseThrow();
+        assertThat(dandelion.isDecoration()).isTrue();
+        assertThat(dandelion.physics()).isEqualTo(PhysicsMode.NONE);
+        assertThat(dandelion.placement().minHeight()).isEqualTo(1);
+        assertThat(dandelion.placement().maxHeight()).isEqualTo(1);
+        assertThat(dandelion.placement().probability()).isEqualTo(0.03);
+        assertThat(catalog.decorations()).extracting(Rule::block).contains(BlockId.of("minecraft:golden_dandelion"));
+
+        StructurePattern structure = dandelion.placement().structure();
+        assertThat(structure.filler()).isEqualTo(BlockId.of("minecraft:dirt"));
+        assertThat(structure.layers()).containsExactly(List.of("G"));
+        assertThat(structure.legend().get('G'))
+                .isEqualTo(new LegendEntry(BlockId.of("minecraft:grass_block"), Map.of(), true));
+    }
+
+    @Test
     @DisplayName("a saved catalog is read back unchanged")
     void roundTrip(@TempDir Path dir) {
         RuleRepository repository = repository(dir);

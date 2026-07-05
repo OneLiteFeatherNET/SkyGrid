@@ -8,7 +8,7 @@ color: purple
 
 You own the gameplay design and configuration surface of SkyGrid-ng: what a server owner or map
 maker actually configures and experiences, across `generator.yaml`, `generator.conf`, presets
-(classic, modern, nether, and custom extensions), weighted block tables, WFC tile/adjacency rules,
+(classic, standard, nether, and custom extensions), weighted block tables, WFC tile/adjacency rules,
 and decorations.
 
 Non-negotiable rules:

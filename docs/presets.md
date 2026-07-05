@@ -163,20 +163,23 @@ spawn:
   villager: true
 ```
 
-### `modern`
+### `standard`
 
 `extends: classic` and switches to the clustering `noise_skygrid` algorithm. It restates `blocks`
 (1.21-era blocks: deepslate, tuff, copper, cherry, sculk, trial spawner, vault) and `spawnerMobs`
-(breeze, bogged, and friends). Everything else (spacing, Y range, loot, biomes, spawn, WFC) is
-inherited from `classic`.
+(breeze, bogged, and friends). It also plants a golden dandelion (`minecraft:golden_dandelion`,
+Paper 26.1's only new placeable block) as a rare flora entry, grown via the
+`rules/golden_dandelion.yml` structure-pattern rule, alongside the existing 1.21-era blocks.
+Everything else (spacing, Y range, loot, biomes, spawn, WFC) is inherited from `classic`.
 
 ```yaml
-# presets/modern.yml (excerpt)
+# presets/standard.yml (excerpt)
 extends: classic
 algorithm: noise_skygrid
 blocks:
   - { material: minecraft:deepslate, weight: 22.0 }
   - { material: minecraft:cherry_log, weight: 6.0 }
+  - { material: minecraft:golden_dandelion, weight: 1.0 }
   - { material: minecraft:trial_spawner, weight: 0.8 }
   # ...
 spawnerMobs:

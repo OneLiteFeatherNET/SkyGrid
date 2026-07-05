@@ -37,7 +37,8 @@ public final class JacksonRuleRepository implements RuleRepository {
 
     private static final String RULES_DIR = "rules";
     private static final List<String> DEFAULT_RULE_RESOURCES = List.of(
-            "rules/oak_leaves.yml", "rules/cherry_leaves.yml", "rules/sugar_cane.yml", "rules/water.yml");
+            "rules/oak_leaves.yml", "rules/cherry_leaves.yml", "rules/golden_dandelion.yml",
+            "rules/sugar_cane.yml", "rules/water.yml");
 
     private final Path dataFolder;
     private final BundledDefaults defaults;

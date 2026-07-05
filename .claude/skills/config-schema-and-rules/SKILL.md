@@ -42,10 +42,10 @@ from the bundled defaults under `adapters/config/src/main/resources/`.
 
 - `config.<ext>` (the selector). Only names the active preset: `active: classic`. Nothing else.
   Mapped by `ConfigDtos.ConfigDto(String active)`.
-- `presets/` (one file per preset, **file base name = preset name**). `classic.yml`, `modern.yml`,
+- `presets/` (one file per preset, **file base name = preset name**). `classic.yml`, `standard.yml`,
   `nether.yml`. The preset name is deliberately not a field inside the file; it comes from the file
   name. A preset may `extends` one or more parents and override only what it changes. Mapped by
-  `ConfigDtos.PresetDto`. Seeded from `presets/classic.yml`, `presets/modern.yml`, `presets/nether.yml`.
+  `ConfigDtos.PresetDto`. Seeded from `presets/classic.yml`, `presets/standard.yml`, `presets/nether.yml`.
 - `rules/` (one file per block, **the `block:` id inside the file is authoritative**; the file name
   is only for humans). `oak_leaves.yml`, `cherry_leaves.yml`, `sugar_cane.yml`, `water.yml`. Mapped by
   `RuleDtos.RuleDto`. Seeded from the matching resources.
