@@ -37,6 +37,25 @@ class ConfigSchemasTest {
     }
 
     @Test
+    @DisplayName("the rule schema's placement describes the structure pattern shape")
+    void placementSchemaHasStructure() {
+        JsonNode placement = schemas.schema(ConfigSchemas.Kind.RULE).get("properties").get("placement");
+        assertThat(placement).isNotNull();
+
+        JsonNode placementProperties = placement.get("properties");
+        assertThat(placementProperties.has("minHeight")).isTrue();
+        assertThat(placementProperties.has("maxHeight")).isTrue();
+        assertThat(placementProperties.has("probability")).isTrue();
+        assertThat(placementProperties.has("structure")).isTrue();
+
+        JsonNode structureProperties = placementProperties.get("structure").get("properties");
+        assertThat(structureProperties.has("filler")).isTrue();
+        assertThat(structureProperties.has("legend")).isTrue();
+        assertThat(structureProperties.has("layers")).isTrue();
+        assertThat(structureProperties.get("layers").get("type").asText()).isEqualTo("array");
+    }
+
+    @Test
     @DisplayName("the preset schema describes the preset properties (extends renamed)")
     void presetSchemaHasProperties() {
         JsonNode properties = schemas.schema(ConfigSchemas.Kind.PRESET).get("properties");
