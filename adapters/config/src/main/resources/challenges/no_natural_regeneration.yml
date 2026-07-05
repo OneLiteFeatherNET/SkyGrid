@@ -1,0 +1,3 @@
+id: no_natural_regeneration
+description: Health no longer regenerates from a full hunger bar while this challenge is active.
+active: false

@@ -1,0 +1,3 @@
+id: one_life
+description: A player who dies is eliminated for the rest of the run and stays in spectator mode.
+active: false
