@@ -5,6 +5,7 @@ import net.onelitefeather.skygridng.api.model.TileType;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * In port: in game administration of the configuration (called by the command adapter).
@@ -21,6 +22,9 @@ public interface RuleAdminUseCase {
 
     /** Switches the active algorithm. Returns false for an unknown id. */
     boolean setAlgorithm(String algorithmId);
+
+    /** All registered algorithm ids, for validation and tab completion. */
+    Set<String> algorithmIds();
 
     List<String> tileIds();
 

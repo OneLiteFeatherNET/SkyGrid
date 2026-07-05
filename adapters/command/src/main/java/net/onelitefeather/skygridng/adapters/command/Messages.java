@@ -48,16 +48,16 @@ final class Messages {
         return key("usage", usage);
     }
 
-    static Component notANumber() {
-        return key("not_a_number");
+    static Component notANumber(String raw) {
+        return key("not_a_number", raw);
     }
 
     static Component weightSet(String tile, double value) {
         return key("weight.set", tile, value);
     }
 
-    static Component weightFail() {
-        return key("weight.fail");
+    static Component weightFail(String raw) {
+        return key("weight.fail", raw);
     }
 
     static Component allowed(String a, String b) {
@@ -68,8 +68,12 @@ final class Messages {
         return key("removed", a, b);
     }
 
-    static Component unknownTilePair() {
-        return key("unknown_pair");
+    static Component invalidMaterial(String raw) {
+        return key("skyweight.invalid_material", raw);
+    }
+
+    static Component reloadConfirm() {
+        return key("reload.confirm");
     }
 
     static Component reloaded() {

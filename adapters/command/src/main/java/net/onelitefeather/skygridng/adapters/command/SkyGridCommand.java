@@ -1,5 +1,7 @@
 package net.onelitefeather.skygridng.adapters.command;
 
+import net.kyori.adventure.text.Component;
+import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import jakarta.inject.Inject;
@@ -26,7 +28,20 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             "preset", "presets", "worlds", "list", "info", "weight", "allow", "disallow", "algorithm",
             "skyweight", "reload", "save", "undo", "help");
 
-    private static final List<String> ALGORITHMS = List.of("wfc", "skygrid", "noise_skygrid");
+    private static final Map<String, String> USAGE = Map.ofEntries(
+            Map.entry("weight", "/skygrid weight <tile> <value>"),
+            Map.entry("reload", "/skygrid reload confirm"),
+            Map.entry("algorithm", "/skygrid algorithm [id]"),
+            Map.entry("presets", "/skygrid presets"),
+            Map.entry("worlds", "/skygrid worlds"),
+            Map.entry("list", "/skygrid list"),
+            Map.entry("undo", "/skygrid undo"),
+            Map.entry("save", "/skygrid save"),
+            Map.entry("preset", "/skygrid preset <name>"),
+            Map.entry("info", "/skygrid info <tile>"),
+            Map.entry("allow", "/skygrid allow <tileA> <tileB>"),
+            Map.entry("disallow", "/skygrid disallow <tileA> <tileB>"),
+            Map.entry("skyweight", "/skygrid skyweight <material> <value>"));
 
     private final RuleAdminUseCase admin;
     private final Presets presets;
@@ -43,8 +58,12 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(Messages.noPermission());
             return true;
         }
-        if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+        if (args.length == 0) {
             sender.sendMessage(Messages.help());
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("help")) {
+            help(sender, args);
             return true;
         }
 
@@ -59,10 +78,7 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             case "disallow" -> disallow(sender, args);
             case "algorithm" -> algorithm(sender, args);
             case "skyweight" -> skyWeight(sender, args);
-            case "reload" -> {
-                admin.reload();
-                sender.sendMessage(Messages.reloaded());
-            }
+            case "reload" -> reload(sender, args);
             case "save" -> {
                 admin.save();
                 sender.sendMessage(Messages.saved());
@@ -73,9 +89,22 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private void help(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Messages.help());
+            return;
+        }
+        String usage = USAGE.get(args[1].toLowerCase(Locale.ROOT));
+        if (usage != null) {
+            sender.sendMessage(Messages.usage(usage));
+        } else {
+            sender.sendMessage(Messages.help());
+        }
+    }
+
     private void preset(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Messages.usage("/skygrid preset <name>"));
+            sender.sendMessage(Messages.usage(USAGE.get("preset")));
             return;
         }
         String name = args[1];
@@ -100,7 +129,7 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
     private void info(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Messages.usage("/skygrid info <tile>"));
+            sender.sendMessage(Messages.usage(USAGE.get("info")));
             return;
         }
         admin.tile(args[1]).ifPresentOrElse(
@@ -111,35 +140,58 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
     private void weight(CommandSender sender, String[] args) {
         if (args.length < 3) {
-            sender.sendMessage(Messages.usage("/skygrid weight <tile> <value>"));
+            sender.sendMessage(Messages.usage(USAGE.get("weight")));
+            return;
+        }
+        if (admin.tile(args[1]).isEmpty()) {
+            sender.sendMessage(Messages.unknownTile(args[1]));
             return;
         }
         double value = parseDouble(args[2]);
         if (Double.isNaN(value)) {
-            sender.sendMessage(Messages.notANumber());
+            sender.sendMessage(Messages.notANumber(args[2]));
             return;
         }
         sender.sendMessage(admin.setWeight(args[1], value)
                 ? Messages.weightSet(args[1], value)
-                : Messages.weightFail());
+                : Messages.weightFail(args[2]));
+    }
+
+    private Component firstUnknownTile(String... ids) {
+        for (String id : ids) {
+            if (admin.tile(id).isEmpty()) {
+                return Messages.unknownTile(id);
+            }
+        }
+        return null;
     }
 
     private void allow(CommandSender sender, String[] args) {
         if (args.length < 3) {
-            sender.sendMessage(Messages.usage("/skygrid allow <tileA> <tileB>"));
+            sender.sendMessage(Messages.usage(USAGE.get("allow")));
             return;
         }
-        sender.sendMessage(admin.allow(args[1], args[2])
-                ? Messages.allowed(args[1], args[2]) : Messages.unknownTilePair());
+        Component unknown = firstUnknownTile(args[1], args[2]);
+        if (unknown != null) {
+            sender.sendMessage(unknown);
+            return;
+        }
+        admin.allow(args[1], args[2]);
+        sender.sendMessage(Messages.allowed(args[1], args[2]));
     }
 
     private void disallow(CommandSender sender, String[] args) {
         if (args.length < 3) {
-            sender.sendMessage(Messages.usage("/skygrid disallow <tileA> <tileB>"));
+            sender.sendMessage(Messages.usage(USAGE.get("disallow")));
             return;
         }
-        sender.sendMessage(admin.disallow(args[1], args[2])
-                ? Messages.removed(args[1], args[2]) : Messages.unknownTilePair());
+        Component unknown = firstUnknownTile(args[1], args[2]);
+        if (unknown != null) {
+            sender.sendMessage(unknown);
+            return;
+        }
+        admin.disallow(args[1], args[2]);
+        sender.sendMessage(Messages.removed(args[1], args[2]));
     }
 
     private void algorithm(CommandSender sender, String[] args) {
@@ -154,16 +206,31 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
     private void skyWeight(CommandSender sender, String[] args) {
         if (args.length < 3) {
-            sender.sendMessage(Messages.usage("/skygrid skyweight <material> <value>"));
+            sender.sendMessage(Messages.usage(USAGE.get("skyweight")));
+            return;
+        }
+        try {
+            BlockId.of(args[1]);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage(Messages.invalidMaterial(args[1]));
             return;
         }
         double value = parseDouble(args[2]);
         if (Double.isNaN(value)) {
-            sender.sendMessage(Messages.notANumber());
+            sender.sendMessage(Messages.notANumber(args[2]));
             return;
         }
         sender.sendMessage(admin.setSkyGridWeight(args[1], value)
-                ? Messages.skyWeightSet(args[1], value) : Messages.weightFail());
+                ? Messages.skyWeightSet(args[1], value) : Messages.weightFail(args[2]));
+    }
+
+    private void reload(CommandSender sender, String[] args) {
+        if (args.length < 2 || !args[1].equalsIgnoreCase("confirm")) {
+            sender.sendMessage(Messages.reloadConfirm());
+            return;
+        }
+        admin.reload();
+        sender.sendMessage(Messages.reloaded());
     }
 
     private double parseDouble(String raw) {
@@ -176,6 +243,9 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission("skygridng.admin")) {
+            return List.of();
+        }
         if (args.length == 1) {
             return filter(SUBCOMMANDS, args[0]);
         }
@@ -184,7 +254,9 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             return switch (sub) {
                 case "preset" -> filter(presets.names(), args[1]);
                 case "info", "weight", "allow", "disallow" -> filter(admin.tileIds(), args[1]);
-                case "algorithm" -> filter(ALGORITHMS, args[1]);
+                case "algorithm" -> filter(List.copyOf(admin.algorithmIds()), args[1]);
+                case "skyweight" -> filter(materialIds(), args[1]);
+                case "reload" -> filter(List.of("confirm"), args[1]);
                 default -> List.of();
             };
         }
@@ -192,6 +264,12 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             return filter(admin.tileIds(), args[2]);
         }
         return List.of();
+    }
+
+    private List<String> materialIds() {
+        return admin.current().skygrid().blocks().stream()
+                .map(blockWeight -> blockWeight.material().asString())
+                .toList();
     }
 
     private List<String> filter(List<String> options, String prefix) {

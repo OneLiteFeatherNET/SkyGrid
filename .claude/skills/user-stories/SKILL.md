@@ -4,7 +4,8 @@ description: >
   Use whenever planning, implementing, reviewing, or prioritizing a feature for SkyGrid-ng, to keep
   it aligned with the functional requirements. Captures the user stories by role (server owner,
   server admin, map maker, maintainer, developer) and epic (SkyGrid revival, switchable algorithms,
-  retained WFC, internationalization, architecture), each with its acceptance criteria. Read this
+  retained WFC, internationalization, architecture, admin command UX), each with its acceptance
+  criteria. Read this
   before adding or changing a feature so it satisfies a real user need, and treat the acceptance
   criteria as the definition of done before calling a feature complete.
 ---
@@ -61,6 +62,14 @@ terrain), maintainer (keeps the code healthy), developer (extends the plugin).
   are unit testable without a server.
 - E2 Pluggable algorithm port: a new algorithm is one class implementing `TerrainAlgorithm` plus one
   factory branch; the chunk generator does not change.
+
+## Epic F: Admin command UX
+
+- F1 Actionable, discoverable command feedback: error messages echo the invalid value; `reload`/`save`
+  state their actual consequence; `/skygrid help <subcommand>` gives a focused usage line; tab
+  completion for `algorithm` and `skyweight` stays registry driven and permission checked.
+- F2 Confirmation for destructive actions: `/skygrid reload` requires an explicit confirmation before
+  discarding the undo history, naming exactly what will be lost.
 
 ## Using these stories
 

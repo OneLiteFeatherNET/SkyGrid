@@ -92,3 +92,28 @@ As a **developer**, I want algorithms behind a single port, so that I can add a 
 touching existing code.
 - A new algorithm is one class implementing `TerrainAlgorithm` plus one factory branch.
 - The chunk generator does not change when an algorithm is added.
+
+## Epic F: Admin command UX
+
+### F1: Actionable, discoverable command feedback
+As a **server admin**, I want `/skygrid` command feedback to explain what went wrong and what
+changed, so that I can fix mistakes without guessing and understand a command's consequences
+before I run it.
+- Every error message echoes the invalid value that caused it (unknown tile, invalid number,
+  unknown tile pair).
+- `reload` and `save` messages state their actual consequence (reload discards the undo history,
+  save permanently overwrites the rule file).
+- `/skygrid help <subcommand>` shows a focused usage line instead of one dense line listing every
+  subcommand at once.
+- Tab completion for `/skygrid algorithm` suggests ids from the same registry the algorithm switch
+  uses, so a newly added algorithm cannot drift out of sync with the suggestions.
+- Tab completion for `/skygrid skyweight` suggests material ids.
+- Tab completion only suggests subcommands and arguments to a player holding `skygridng.admin`,
+  matching the permission already enforced on execution.
+
+### F2: Confirmation for destructive actions
+As a **server admin**, I want a confirmation step before a command that discards unsaved rule
+changes, so that I don't lose in-game edits by accident.
+- `/skygrid reload` requires an explicit confirmation (for example `/skygrid reload confirm`)
+  before discarding the undo history.
+- The warning shown before confirmation names exactly what will be lost.

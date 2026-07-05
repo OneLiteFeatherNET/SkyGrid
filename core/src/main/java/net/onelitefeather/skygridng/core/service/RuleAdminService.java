@@ -9,6 +9,7 @@ import net.onelitefeather.skygridng.core.state.RuleState;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Implements in game administration. Validates input against the domain; changes go through
@@ -45,6 +46,11 @@ public final class RuleAdminService implements RuleAdminUseCase {
         }
         state.apply(state.current().withAlgorithm(algorithmId));
         return true;
+    }
+
+    @Override
+    public Set<String> algorithmIds() {
+        return algorithms.ids();
     }
 
     @Override

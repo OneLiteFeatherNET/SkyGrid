@@ -46,6 +46,12 @@ class RuleAdminServiceTest {
     }
 
     @Test
+    @DisplayName("algorithmIds exposes exactly the registered algorithm ids")
+    void algorithmIdsReflectRegistry() {
+        assertThat(admin.algorithmIds()).containsExactlyInAnyOrder("skygrid", "noise_skygrid", "wfc");
+    }
+
+    @Test
     @DisplayName("tile lookups return known tiles and report unknown ones")
     void tileLookups() {
         assertThat(admin.tileIds()).containsExactlyInAnyOrder("water", "sand", "grass", "cactus");
