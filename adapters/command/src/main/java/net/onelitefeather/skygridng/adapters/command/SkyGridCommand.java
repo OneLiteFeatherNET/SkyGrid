@@ -23,10 +23,9 @@ import java.util.Map;
 public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = List.of(
-            "preset", "presets", "worlds", "list", "info", "weight", "allow", "disallow", "algorithm",
-            "skyweight", "reload", "save", "undo", "help");
+            "preset", "presets", "worlds", "algorithm", "skyweight", "reload", "save", "undo", "help");
 
-    private static final List<String> ALGORITHMS = List.of("wfc", "skygrid", "noise_skygrid");
+    private static final List<String> ALGORITHMS = List.of("skygrid", "noise_skygrid");
 
     private final RuleAdminUseCase admin;
     private final Presets presets;
@@ -52,11 +51,6 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             case "presets" -> sender.sendMessage(Messages.presetList(String.join(", ", presets.names()), presets.active()));
             case "preset" -> preset(sender, args);
             case "worlds" -> sender.sendMessage(Messages.worldList(formatWorlds()));
-            case "list" -> sender.sendMessage(Messages.list(String.join(", ", admin.tileIds())));
-            case "info" -> info(sender, args);
-            case "weight" -> weight(sender, args);
-            case "allow" -> allow(sender, args);
-            case "disallow" -> disallow(sender, args);
             case "algorithm" -> algorithm(sender, args);
             case "skyweight" -> skyWeight(sender, args);
             case "reload" -> {
@@ -96,50 +90,6 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             out.append(world).append('=').append(preset);
         });
         return out.toString();
-    }
-
-    private void info(CommandSender sender, String[] args) {
-        if (args.length < 2) {
-            sender.sendMessage(Messages.usage("/skygrid info <tile>"));
-            return;
-        }
-        admin.tile(args[1]).ifPresentOrElse(
-                tile -> sender.sendMessage(Messages.info(
-                        tile.id(), tile.weight(), tile.neutral(), tile.surface().asString(), tile.liquid(), tile.features().size())),
-                () -> sender.sendMessage(Messages.unknownTile(args[1])));
-    }
-
-    private void weight(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage(Messages.usage("/skygrid weight <tile> <value>"));
-            return;
-        }
-        double value = parseDouble(args[2]);
-        if (Double.isNaN(value)) {
-            sender.sendMessage(Messages.notANumber());
-            return;
-        }
-        sender.sendMessage(admin.setWeight(args[1], value)
-                ? Messages.weightSet(args[1], value)
-                : Messages.weightFail());
-    }
-
-    private void allow(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage(Messages.usage("/skygrid allow <tileA> <tileB>"));
-            return;
-        }
-        sender.sendMessage(admin.allow(args[1], args[2])
-                ? Messages.allowed(args[1], args[2]) : Messages.unknownTilePair());
-    }
-
-    private void disallow(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage(Messages.usage("/skygrid disallow <tileA> <tileB>"));
-            return;
-        }
-        sender.sendMessage(admin.disallow(args[1], args[2])
-                ? Messages.removed(args[1], args[2]) : Messages.unknownTilePair());
     }
 
     private void algorithm(CommandSender sender, String[] args) {
@@ -183,13 +133,9 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
         if (args.length == 2) {
             return switch (sub) {
                 case "preset" -> filter(presets.names(), args[1]);
-                case "info", "weight", "allow", "disallow" -> filter(admin.tileIds(), args[1]);
                 case "algorithm" -> filter(ALGORITHMS, args[1]);
                 default -> List.of();
             };
-        }
-        if (args.length == 3 && (sub.equals("allow") || sub.equals("disallow"))) {
-            return filter(admin.tileIds(), args[2]);
         }
         return List.of();
     }

@@ -32,18 +32,6 @@ final class Messages {
         return key("help");
     }
 
-    static Component list(String ids) {
-        return key("list", ids);
-    }
-
-    static Component info(String id, double weight, boolean neutral, String surface, boolean liquid, int features) {
-        return key("info", id, weight, neutral, surface, liquid, features);
-    }
-
-    static Component unknownTile(String id) {
-        return key("unknown_tile", id);
-    }
-
     static Component usage(String usage) {
         return key("usage", usage);
     }
@@ -52,24 +40,8 @@ final class Messages {
         return key("not_a_number");
     }
 
-    static Component weightSet(String tile, double value) {
-        return key("weight.set", tile, value);
-    }
-
     static Component weightFail() {
         return key("weight.fail");
-    }
-
-    static Component allowed(String a, String b) {
-        return key("allowed", a, b);
-    }
-
-    static Component removed(String a, String b) {
-        return key("removed", a, b);
-    }
-
-    static Component unknownTilePair() {
-        return key("unknown_pair");
     }
 
     static Component reloaded() {

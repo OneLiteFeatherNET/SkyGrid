@@ -9,8 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -45,7 +43,7 @@ class SkyGridCommandTest {
     void deniedWithoutPermission() {
         when(sender.hasPermission("skygridng.admin")).thenReturn(false);
 
-        boolean handled = subject.onCommand(sender, command, "skygrid", new String[]{"list"});
+        boolean handled = subject.onCommand(sender, command, "skygrid", new String[]{"undo"});
 
         assertThat(handled).isTrue();
         verify(sender).sendMessage(any(Component.class));
@@ -56,23 +54,11 @@ class SkyGridCommandTest {
     @DisplayName("'algorithm <id>' delegates to setAlgorithm")
     void algorithmDelegates() {
         when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        when(admin.setAlgorithm("wfc")).thenReturn(true);
+        when(admin.setAlgorithm("noise_skygrid")).thenReturn(true);
 
-        subject.onCommand(sender, command, "skygrid", new String[]{"algorithm", "wfc"});
+        subject.onCommand(sender, command, "skygrid", new String[]{"algorithm", "noise_skygrid"});
 
-        verify(admin).setAlgorithm("wfc");
-        verify(sender).sendMessage(any(Component.class));
-    }
-
-    @Test
-    @DisplayName("'list' reads the tile ids from the use case")
-    void listDelegates() {
-        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        when(admin.tileIds()).thenReturn(List.of("water", "sand"));
-
-        subject.onCommand(sender, command, "skygrid", new String[]{"list"});
-
-        verify(admin).tileIds();
+        verify(admin).setAlgorithm("noise_skygrid");
         verify(sender).sendMessage(any(Component.class));
     }
 
@@ -103,8 +89,8 @@ class SkyGridCommandTest {
     @DisplayName("tab completion offers the sub commands and algorithm ids")
     void tabCompletion() {
         assertThat(subject.onTabComplete(sender, command, "skygrid", new String[]{""}))
-                .contains("list", "algorithm", "reload", "help");
+                .contains("algorithm", "skyweight", "reload", "help");
         assertThat(subject.onTabComplete(sender, command, "skygrid", new String[]{"algorithm", ""}))
-                .containsExactlyInAnyOrder("wfc", "skygrid", "noise_skygrid");
+                .containsExactlyInAnyOrder("skygrid", "noise_skygrid");
     }
 }
