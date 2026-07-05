@@ -10,6 +10,10 @@ dependencies {
     implementation(project(":ports"))
     implementation(project(":api"))
 
+    // Stage 1 of the Cloud command framework migration: infrastructure only, no subcommands yet.
+    // Declared as `api` so it flows through platforms/common into the platforms/paper shaded jar.
+    api(libs.cloud.paper)
+
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
     testImplementation(libs.paper.api)

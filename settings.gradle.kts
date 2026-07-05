@@ -38,6 +38,7 @@ dependencyResolutionManagement {
             version("adventure", "4.24.0")      // platform-neutral text API; matches Paper 26.1's adventure-bom
             version("guice", "7.0.0")
             version("jakartaInject", "2.0.1")
+            version("cloudPaper", "2.0.0-beta.17") // Incendo Cloud command framework, Paper module
 
             version("shadow", "9.4.2")
             version("runPaper", "3.0.2")
@@ -61,6 +62,7 @@ dependencyResolutionManagement {
             library("adventure-api", "net.kyori", "adventure-api").versionRef("adventure")
             library("guice", "com.google.inject", "guice").versionRef("guice")
             library("jakarta-inject", "jakarta.inject", "jakarta.inject-api").versionRef("jakartaInject")
+            library("cloud-paper", "org.incendo", "cloud-paper").versionRef("cloudPaper")
 
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit")
             library("junit-launcher", "org.junit.platform", "junit-platform-launcher").version("1.11.3")

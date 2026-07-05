@@ -4,7 +4,9 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
+import net.onelitefeather.skygridng.adapters.command.CloudCommandManagerFactory;
 import net.onelitefeather.skygridng.adapters.command.SkyGridCommand;
+import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
 import net.onelitefeather.skygridng.adapters.spawn.SpreadSpawnListener;
 import net.onelitefeather.skygridng.platforms.common.injection.GeneratorModule;
 import net.onelitefeather.skygridng.platforms.common.injection.PlatformModule;
@@ -16,9 +18,11 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.incendo.cloud.paper.PaperCommandManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 /**
  * Composition Root (Hexagonal): builds the Guice object graph and connects adapters to ports.
@@ -36,6 +40,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
 
     private final I18n i18n = new I18n();
     private Injector injector;
+    private PaperCommandManager<CommandSource> cloudCommandManager;
 
     @Override
     public void onLoad() {
@@ -82,6 +87,19 @@ public class SkyGridNgPlugin extends JavaPlugin {
             command.setTabCompleter(executor);
         } else {
             getLogger().warning("Command 'skygrid' is not registered in plugin.yml.");
+        }
+
+        // Cloud command framework migration, stage 1: build the sender-mapped manager so it exists
+        // side by side with the legacy executor above. Its constructor eagerly reflects into the
+        // server's real Brigadier argument type registry; a test double (MockBukkit) or a server
+        // fork without that registry throws a LinkageError (ExceptionInInitializerError or
+        // NoClassDefFoundError) from a static initializer, not a plain exception. Guard it the same
+        // way the missing "skygrid" registration above is guarded, so a construction failure never
+        // takes down the rest of the plugin. Stage 2 registers the migrated subcommands here.
+        try {
+            cloudCommandManager = CloudCommandManagerFactory.create(this);
+        } catch (RuntimeException | LinkageError e) {
+            getLogger().log(Level.WARNING, "Failed to build the Cloud command manager.", e);
         }
 
         // Spread-spawn: first-join players are scattered onto their own platforms in our worlds.

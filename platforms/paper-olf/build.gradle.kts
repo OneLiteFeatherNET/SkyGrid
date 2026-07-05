@@ -39,6 +39,9 @@ tasks {
         // both so they cannot clash with the copies the server or another plugin ships.
         relocate("com.github.victools", "net.onelitefeather.skygridng.libs.victools")
         relocate("com.fasterxml.classmate", "net.onelitefeather.skygridng.libs.classmate")
+        // Incendo Cloud is a popular command framework other plugins may also shade; relocate it so
+        // two differently-versioned copies on the same server cannot clash on the classpath.
+        relocate("org.incendo.cloud", "net.onelitefeather.skygridng.libs.cloud")
         mergeServiceFiles()
     }
 

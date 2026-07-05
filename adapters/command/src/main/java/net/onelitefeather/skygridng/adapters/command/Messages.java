@@ -14,11 +14,25 @@ final class Messages {
     private Messages() {
     }
 
+    /** Every reply carries this brand prefix, followed by a space, ahead of the message body. */
+    private static Component prefix() {
+        return Component.translatable("skygridng.command.prefix");
+    }
+
     private static Component key(String key) {
-        return Component.translatable("skygridng.command." + key);
+        return prefix().append(Component.space()).append(keyNoPrefix(key));
     }
 
     private static Component key(String key, Object... args) {
+        return prefix().append(Component.space()).append(keyNoPrefix(key, args));
+    }
+
+    /** Unprefixed lookup, for continuation lines that are not a repeated brand line. */
+    private static Component keyNoPrefix(String key) {
+        return Component.translatable("skygridng.command." + key);
+    }
+
+    private static Component keyNoPrefix(String key, Object... args) {
         Component[] components = new Component[args.length];
         for (int i = 0; i < args.length; i++) {
             components[i] = Component.text(String.valueOf(args[i]));
@@ -30,14 +44,18 @@ final class Messages {
         return key("no_permission");
     }
 
-    /** Sent as separate lines (one {@code sendMessage} call each), not one newline-joined block. */
+    /**
+     * Sent as separate lines (one {@code sendMessage} call each), not one newline-joined block.
+     * Only the header carries the brand prefix; the remaining lines are a visual continuation of
+     * it, not a repeated brand line.
+     */
     static List<Component> help() {
         return List.of(
                 key("help.header"),
-                key("help.subcommands"),
-                key("help.algorithm_skyweight"),
-                key("help.reload_save_undo_challenge"),
-                key("help.footer"));
+                keyNoPrefix("help.subcommands"),
+                keyNoPrefix("help.algorithm_skyweight"),
+                keyNoPrefix("help.reload_save_undo_challenge"),
+                keyNoPrefix("help.footer"));
     }
 
     static Component usage(String usage) {

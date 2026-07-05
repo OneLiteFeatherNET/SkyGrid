@@ -23,6 +23,7 @@ class ArchitectureTest {
     private static final String CORE = "net.onelitefeather.skygridng.core..";
     private static final String ADAPTERS = "net.onelitefeather.skygridng.adapters..";
     private static final String PLATFORMS = "net.onelitefeather.skygridng.platforms..";
+    private static final String COMMAND_HANDLER = "net.onelitefeather.skygridng.adapters.command.handler..";
 
     /**
      * Packages no platform-neutral layer may ever depend on. Adventure (net.kyori.adventure) is
@@ -54,6 +55,31 @@ class ArchitectureTest {
             noClasses().that().resideInAPackage(ADAPTERS)
                     .should().dependOnClassesThat().resideInAPackage(CORE)
                     .because("an adapter compiles against the ports and the api only, never the core");
+
+    /**
+     * Packages the command handler abstraction (CommandSource, the Adventure Component based,
+     * Bukkit-free seam that stage 2 subcommand logic compiles against) must never depend on.
+     * Only the Paper and Brigadier bindings of Incendo Cloud are banned here; plain cloud core
+     * packages (annotations, context, and the like) stay allowed, so the negative matcher targets
+     * org.incendo.cloud.paper.. and org.incendo.cloud.brigadier.. specifically rather than all of
+     * org.incendo.cloud...
+     */
+    private static final String[] COMMAND_HANDLER_FORBIDDEN_PACKAGES = {
+            "org.bukkit..",
+            "io.papermc..",
+            "org.incendo.cloud.paper..",
+            "org.incendo.cloud.brigadier..",
+    };
+
+    @ArchTest
+    static final ArchRule commandHandlerStaysPlatformFree =
+            noClasses().that().resideInAPackage(COMMAND_HANDLER)
+                    .should().dependOnClassesThat().resideInAnyPackage(COMMAND_HANDLER_FORBIDDEN_PACKAGES)
+                    .because("CommandSource must stay Bukkit and cloud-platform free so stage 2 "
+                            + "subcommand handler logic can compile against it without pulling in "
+                            + "Paper or Brigadier directly; plain cloud core packages, ports, api, "
+                            + "and Adventure text (excluding its platform bindings) remain allowed")
+                    .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule layeredArchitectureIsRespected =
