@@ -1,13 +1,16 @@
 package net.onelitefeather.skygridng.adapters.config;
 
+import net.onelitefeather.skygridng.adapters.config.RuleDtos.LegendEntryDto;
 import net.onelitefeather.skygridng.adapters.config.RuleDtos.PlacementDto;
 import net.onelitefeather.skygridng.adapters.config.RuleDtos.RuleDto;
+import net.onelitefeather.skygridng.adapters.config.RuleDtos.StructureDto;
 import net.onelitefeather.skygridng.api.model.BlockId;
+import net.onelitefeather.skygridng.api.model.LegendEntry;
 import net.onelitefeather.skygridng.api.model.PhysicsMode;
 import net.onelitefeather.skygridng.api.model.PlacementRule;
 import net.onelitefeather.skygridng.api.model.Rule;
 import net.onelitefeather.skygridng.api.model.RuleCatalog;
-import net.onelitefeather.skygridng.api.model.WaterMode;
+import net.onelitefeather.skygridng.api.model.StructurePattern;
 import net.onelitefeather.skygridng.ports.out.RuleRepository;
 
 import java.io.IOException;
@@ -34,7 +37,8 @@ public final class JacksonRuleRepository implements RuleRepository {
 
     private static final String RULES_DIR = "rules";
     private static final List<String> DEFAULT_RULE_RESOURCES = List.of(
-            "rules/oak_leaves.yml", "rules/cherry_leaves.yml", "rules/sugar_cane.yml", "rules/water.yml");
+            "rules/oak_leaves.yml", "rules/cherry_leaves.yml", "rules/golden_dandelion.yml",
+            "rules/sugar_cane.yml", "rules/water.yml");
 
     private final Path dataFolder;
     private final BundledDefaults defaults;
@@ -141,20 +145,55 @@ public final class JacksonRuleRepository implements RuleRepository {
             throw new IllegalStateException("rule file " + file.getFileName() + " is missing a 'block'");
         }
         Map<String, String> state = dto.state() == null ? Map.of() : dto.state();
-        return new Rule(BlockId.of(dto.block()), state, physics(dto.physics(), file), placement(dto.placement()));
+        return new Rule(
+                BlockId.of(dto.block()), state, physics(dto.physics(), file), placement(dto.placement(), file));
     }
 
-    private PlacementRule placement(PlacementDto dto) {
+    private PlacementRule placement(PlacementDto dto, Path file) {
         if (dto == null) {
             return null;
         }
+        if (dto.structure() == null) {
+            throw new IllegalStateException(
+                    "rule file " + file.getFileName() + " has a 'placement' block but is missing 'structure'");
+        }
         return new PlacementRule(
-                dto.requiresGround() == null || dto.requiresGround().isBlank() ? null : BlockId.of(dto.requiresGround()),
-                dto.requiresLiquidNeighbor() != null && dto.requiresLiquidNeighbor(),
-                water(dto.water()),
+                structure(dto.structure(), file),
                 dto.minHeight() != null ? dto.minHeight() : 1,
                 dto.maxHeight() != null ? dto.maxHeight() : 1,
                 dto.probability() != null ? dto.probability() : 0.0);
+    }
+
+    private StructurePattern structure(StructureDto dto, Path file) {
+        Map<Character, LegendEntry> legend = new LinkedHashMap<>();
+        if (dto.legend() != null) {
+            for (Map.Entry<String, LegendEntryDto> entry : dto.legend().entrySet()) {
+                String key = entry.getKey();
+                if (key == null || key.length() != 1) {
+                    throw new IllegalStateException("rule file " + file.getFileName()
+                            + " has an invalid structure legend key '" + key + "' (must be exactly one character)");
+                }
+                char symbol = key.charAt(0);
+                if (symbol == StructurePattern.IGNORE || symbol == StructurePattern.ENSURE_SOLID
+                        || symbol == StructurePattern.CLEAR_AIR) {
+                    throw new IllegalStateException("rule file " + file.getFileName()
+                            + " has a structure legend entry '" + symbol + "' that reuses a reserved symbol");
+                }
+                LegendEntryDto value = entry.getValue();
+                legend.put(symbol, new LegendEntry(
+                        BlockId.of(value.block()),
+                        value.state() == null ? Map.of() : value.state(),
+                        value.anchor() != null && value.anchor()));
+            }
+        }
+        List<List<String>> layers = dto.layers() == null ? List.of() : dto.layers();
+        BlockId filler = dto.filler() == null || dto.filler().isBlank() ? null : BlockId.of(dto.filler());
+        try {
+            return new StructurePattern(layers, legend, filler);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException(
+                    "invalid structure pattern in " + file.getFileName() + ": " + e.getMessage());
+        }
     }
 
     private RuleDto toDto(Rule rule) {
@@ -170,12 +209,25 @@ public final class JacksonRuleRepository implements RuleRepository {
             return null;
         }
         return new PlacementDto(
-                placement.requiresGround() == null ? null : placement.requiresGround().asString(),
-                placement.requiresLiquidNeighbor() ? Boolean.TRUE : null,
-                placement.water().name().toLowerCase(Locale.ROOT),
+                structureToDto(placement.structure()),
                 placement.minHeight(),
                 placement.maxHeight(),
                 placement.probability());
+    }
+
+    private StructureDto structureToDto(StructurePattern structure) {
+        Map<String, LegendEntryDto> legend = new LinkedHashMap<>();
+        for (Map.Entry<Character, LegendEntry> entry : structure.legend().entrySet()) {
+            LegendEntry value = entry.getValue();
+            legend.put(String.valueOf(entry.getKey()), new LegendEntryDto(
+                    value.block().asString(),
+                    value.state().isEmpty() ? null : new LinkedHashMap<>(value.state()),
+                    value.anchor() ? Boolean.TRUE : null));
+        }
+        return new StructureDto(
+                structure.filler() == null ? null : structure.filler().asString(),
+                legend,
+                structure.layers());
     }
 
     private static PhysicsMode physics(String raw, Path file) {
@@ -187,17 +239,6 @@ public final class JacksonRuleRepository implements RuleRepository {
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException("unknown physics '" + raw + "' in " + file.getFileName()
                     + " (use none, block_update or fluid_update)");
-        }
-    }
-
-    private static WaterMode water(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return WaterMode.NONE;
-        }
-        try {
-            return WaterMode.valueOf(raw.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalStateException("unknown water mode '" + raw + "' (use none, source or waterlogged)");
         }
     }
 }

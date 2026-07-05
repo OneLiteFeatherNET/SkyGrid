@@ -3,6 +3,7 @@ package net.onelitefeather.skygridng.platforms.common.injection;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.OptionalBinder;
 import jakarta.inject.Singleton;
 import net.onelitefeather.skygridng.api.SkyGridApi;
 import net.onelitefeather.skygridng.api.model.BiomeId;
@@ -10,9 +11,8 @@ import net.onelitefeather.skygridng.api.model.PresetCatalog;
 import net.onelitefeather.skygridng.api.model.RuleCatalog;
 import net.onelitefeather.skygridng.core.algorithm.IndependentSkyGridAlgorithm;
 import net.onelitefeather.skygridng.core.algorithm.NoiseSkyGridAlgorithm;
-import net.onelitefeather.skygridng.core.algorithm.WfcSurfaceAlgorithm;
 import net.onelitefeather.skygridng.ports.algorithm.AlgorithmFactory;
-import net.onelitefeather.skygridng.ports.in.GenerateRegionUseCase;
+import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Biomes;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.SkyGridDecorations;
@@ -26,16 +26,12 @@ import net.onelitefeather.skygridng.core.service.DefaultSkyGridDecorations;
 import net.onelitefeather.skygridng.core.service.DefaultTerrainAlgorithms;
 import net.onelitefeather.skygridng.core.service.PresetResolver;
 import net.onelitefeather.skygridng.core.service.PresetService;
-import net.onelitefeather.skygridng.core.service.RegionGenerationService;
 import net.onelitefeather.skygridng.core.service.SpiralSpawnService;
 import net.onelitefeather.skygridng.core.service.RuleAdminService;
 import net.onelitefeather.skygridng.core.service.SkyGridApiService;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
-import net.onelitefeather.skygridng.core.solver.ShannonEntropyHeuristic;
-import net.onelitefeather.skygridng.core.solver.WeightedRandomCollapse;
-import net.onelitefeather.skygridng.core.solver.WfcSolver;
 import net.onelitefeather.skygridng.core.state.RuleState;
 
 /**
@@ -52,16 +48,19 @@ public final class GeneratorModule extends AbstractModule {
     @Override
     protected void configure() {
         // The algorithm registry: one binding per algorithm, the single place new algorithms are
-        // added. A distribution could contribute its own here without touching the core catalog. The
-        // stateless SkyGrid factories are lambdas; WFC needs an injected region, so it is a class.
+        // added. A distribution could contribute its own here without touching the core catalog. Both
+        // factories are stateless lambdas built straight from the live configuration.
         MapBinder<String, AlgorithmFactory> algorithms =
                 MapBinder.newMapBinder(binder(), String.class, AlgorithmFactory.class);
         algorithms.addBinding(IndependentSkyGridAlgorithm.ID)
-                .toInstance((config, region) -> new IndependentSkyGridAlgorithm(config.skygrid()));
+                .toInstance(config -> new IndependentSkyGridAlgorithm(config.skygrid()));
         algorithms.addBinding(NoiseSkyGridAlgorithm.ID)
-                .toInstance((config, region) -> new NoiseSkyGridAlgorithm(config.skygrid()));
-        algorithms.addBinding(WfcSurfaceAlgorithm.ID)
-                .toInstance((config, region) -> new WfcSurfaceAlgorithm(region));
+                .toInstance(config -> new NoiseSkyGridAlgorithm(config.skygrid()));
+
+        // No default binding: challenges are an OLF-only mechanic. The public distribution's Guice
+        // graph resolves Optional<ChallengeAdminUseCase> to Optional.empty(); platforms/paper-olf's
+        // ChallengeModule sets the binding to ChallengeAdminService.
+        OptionalBinder.newOptionalBinder(binder(), ChallengeAdminUseCase.class);
     }
 
     @Provides
@@ -96,28 +95,9 @@ public final class GeneratorModule extends AbstractModule {
 
     @Provides
     @Singleton
-    WfcSolver provideSolver() {
-        return new WfcSolver(new ShannonEntropyHeuristic(), new WeightedRandomCollapse());
-    }
-
-    @Provides
-    @Singleton
-    RegionGenerationService provideRegionService(RuleState state, WfcSolver solver) {
-        return new RegionGenerationService(state, solver);
-    }
-
-    @Provides
-    @Singleton
-    GenerateRegionUseCase provideGenerateRegionUseCase(RegionGenerationService service) {
-        return service;
-    }
-
-    @Provides
-    @Singleton
     DefaultTerrainAlgorithms provideDefaultTerrainAlgorithms(RuleState state,
-                                                             java.util.Map<String, AlgorithmFactory> factories,
-                                                             GenerateRegionUseCase region) {
-        return new DefaultTerrainAlgorithms(state, factories, region);
+                                                             java.util.Map<String, AlgorithmFactory> factories) {
+        return new DefaultTerrainAlgorithms(state, factories);
     }
 
     @Provides

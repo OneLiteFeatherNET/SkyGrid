@@ -1,7 +1,6 @@
 # SkyGrid-ng
 
-A chunk generator plugin for Paper 26.1 that revives the classic **SkyGrid** and also ships an
-adjacency based **Wave Function Collapse** surface generator. Pure Java 25, hexagonal
+A chunk generator plugin for Paper 26.1 that revives the classic **SkyGrid**. Pure Java 25, hexagonal
 architecture, i18n through Adventure, JSON configuration, switchable at runtime via `/skygrid`.
 
 ## Algorithms
@@ -13,9 +12,7 @@ Selected by `algorithm` in `generator.json`, switchable in game with `/skygrid a
   weighted table by a coordinate hash. O(1) per cell, parallel, fastest. Faithful to SethBling's
   2012 SkyGrid.
 - **`noise_skygrid`**: same grid, but block choice follows a seed based value noise field so
-  similar blocks cluster into veins and themed regions. Also O(1) per cell, much faster than WFC.
-- **`wfc`**: the adjacency constrained surface generator with seamless regions and in game editable
-  rules.
+  similar blocks cluster into veins and themed regions. Also O(1) per cell.
 
 All algorithms are seed based and deterministic.
 

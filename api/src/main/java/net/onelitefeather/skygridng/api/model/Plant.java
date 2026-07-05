@@ -3,6 +3,10 @@ package net.onelitefeather.skygridng.api.model;
 /**
  * A plant decoration that grows in a column (for example sugar cane or cactus).
  *
+ * Used by the SkyGrid and noise SkyGrid decoration lookup (a self-contained plant scattered on the
+ * sparse grid); see {@code ports.in.SkyGridDecorations}. Not part of the (removed) Wave Function
+ * Collapse tile system.
+ *
  * @param material               the plant block, a namespaced id resolved by the adapter
  * @param requiresLiquidNeighbor true if a horizontal neighbor of the support must be liquid (reeds)
  * @param requiresGroundBlock    optional block the plant must stand on (also the support placed for a
@@ -21,7 +25,7 @@ public record Plant(
         int minHeight,
         int maxHeight,
         boolean providesWater
-) implements Decoration {
+) {
     public Plant {
         if (material == null) {
             throw new IllegalArgumentException("Plant.material must not be null");

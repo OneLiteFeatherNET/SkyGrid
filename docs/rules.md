@@ -22,12 +22,17 @@ state:                        # block-data properties, optional (empty = plain d
   persistent: true
 physics: none                 # none | block_update | fluid_update (default: none)
 placement:                    # optional; present only for a grown decoration
-  requiresGround: minecraft:sand
-  requiresLiquidNeighbor: false
-  water: source               # none | source | waterlogged (default: none)
   minHeight: 1
   maxHeight: 3
   probability: 0.04
+  structure:                  # the 3D footprint placed at generation time, see below
+    filler: minecraft:sandstone
+    legend:
+      S: { block: minecraft:sand, anchor: true }
+      W: { block: minecraft:water }
+    layers:                   # bottom-to-top; each layer is a list of rows (Z), each row a string of columns (X)
+      - ["###", "###", "###"]
+      - [" # ", "SW#", " # "]
 ```
 
 A rule with a `placement` section is a **decoration** (it grows a column somewhere on the grid). A
@@ -77,37 +82,60 @@ non-`none` mode on a decoration rule, not a palette one.
 
 Present only when the rule grows a decoration column. Fields:
 
-| Field                    | Type      | Meaning |
-|--------------------------|-----------|---------|
-| `requiresGround`         | block id  | The support block the plant must stand on. The adapter also lays this block as the support under the plant. Omit for none. |
-| `requiresLiquidNeighbor` | boolean   | If true, a horizontal neighbor of the support must be liquid. |
-| `water`                  | enum      | How the plant is watered: `none`, `source`, or `waterlogged`. Default `none`. |
-| `minHeight`              | integer   | Minimum column height in blocks (at least 1). |
-| `maxHeight`              | integer   | Maximum column height (at least `minHeight`). |
-| `probability`            | number    | Placement chance per eligible column, in `[0, 1]`. |
+| Field         | Type      | Meaning |
+|---------------|-----------|---------|
+| `structure`   | object    | The 3D footprint placed at generation time around the decoration: solid support, boxed water, waterlogged blocks, whatever the pattern declares. See [`structure`](#structure-the-3d-footprint) below. |
+| `minHeight`   | integer   | Minimum column height in blocks (at least 1). |
+| `maxHeight`   | integer   | Maximum column height (at least `minHeight`). |
+| `probability` | number   | Placement chance per eligible column, in `[0, 1]`. |
 
 The generator scans grid cells, rolls `probability` per cell (seeded, see
-[Determinism](#determinism)), and on a hit lays the support, provides water, grows the column, and
-applies the rule's physics.
+[Determinism](#determinism)), and on a hit places the `structure` pattern anchored at that cell,
+grows the column, and applies the rule's physics.
 
-## Water modes explained
+### `structure`: the 3D footprint
 
-`water` says how a plant gets the water it needs. The distinction matters because of one hard
-Minecraft fact: **sand cannot be waterlogged.**
+`structure` replaces what used to be `requiresGround`/`requiresLiquidNeighbor`/`water`: instead of a
+handful of fixed flags, it is a small, recipe-like pattern that declares exactly what should surround
+the decoration, laid out as stacked layers of single-character symbols. This is what makes the fix in
+the [sugar-cane worked example](#sugar_cane-grown-on-a-real-solid-footprint) possible: the pattern can
+demand a real solid floor under the whole footprint, not just under the one block the plant stands on.
 
-- **`none`**: provide no water. The plant is placed only where its other conditions already hold.
-- **`source`**: place a **contained still-water source** in a neighbor cell. The generator boxes a
-  single water source in on the floor and all four sides (the plant's own block is one wall, three
-  more walls and a floor are placed around it), leaving only the top open. A source with no air to
-  flow into never ticks, so it stays put, fires no update, and never floods the void, while still
-  being real water the plant can drink from. This is the correct mode for **sugar cane on sand**,
-  because sand cannot hold water itself.
-- **`waterlogged`**: waterlog the **support block itself**. This only works when the support is a
-  block that can actually hold water (a waterloggable block); on a support that cannot be waterlogged
-  (such as sand) it does nothing. Use it when the plant's support is genuinely waterloggable.
+| Field    | Type                        | Meaning |
+|----------|-----------------------------|---------|
+| `filler` | block id                    | The block used to fill `#` cells, and only when a `#` cell is currently air. Only needed if `#` appears anywhere in `layers`. |
+| `legend` | map of symbol to entry      | Maps a single character to `{ block, state, anchor }`. `block` is a namespaced id, `state` is the same string-map convention as the top-level [`state`](#state-block-data-properties) field, and `anchor: true` marks the one cell that is the decoration's own placement position, the same position `requiresGround` used to target. |
+| `layers` | list of layers, bottom-to-top | Each layer is itself a list of strings. Layers stack along Y (bottom-to-top); within a layer, each string is a row along Z, and each character in a row is a column along X. |
 
-Rule of thumb: use `waterlogged` when the support can hold water, and `source` when it cannot (the
-sand and sugar cane case).
+Three symbols are reserved, always available, and must never be redefined in `legend`:
+
+| Symbol | Meaning |
+|--------|---------|
+| `' '` (space) | Leave the cell exactly as generation already left it. Untouched, no read, no write. |
+| `'#'`  | Ensure solid. If the cell is currently air, fill it with `filler`; otherwise leave whatever is already there alone. |
+| `'.'`  | Must be air. The cell is cleared. |
+
+Every other character used anywhere in `layers` must have a matching `legend` entry, or the config
+fails to load with a clear error, the same fail-fast style as the old `PhysicsMode`/`WaterMode`
+validation. Layers and rows must be rectangular (every row in a layer the same length, every layer the
+same number of rows), and exactly one `legend` entry must be marked `anchor: true`, with that entry's
+symbol appearing exactly once across the whole pattern; anything else (no anchor, more than one
+anchor, more than one cell using the anchor symbol) also fails config load.
+
+## Water: expressed as pattern cells, not a mode
+
+There is no `water` field anymore. The old `none`/`source`/`waterlogged` modes are just specific
+`structure` shapes now, declared as data instead of hardcoded in Java:
+
+- What used to be **`water: source`** is now a `legend` entry mapping a symbol to `minecraft:water`,
+  boxed in on the floor and the sides by `#` (or other exact solid symbols), with only the top left
+  open. A water source with no air to flow into never ticks, so it stays put, fires no update, and
+  never floods the void, exactly the old behavior, just declared as a pattern instead of a Java helper.
+- What used to be **`water: waterlogged`** is now a `legend` entry with `state: { waterlogged: "true" }`
+  on a block that can actually hold water. This still only does something when that block is genuinely
+  waterloggable, the same hard Minecraft fact as before: **sand cannot be waterlogged**, which is why
+  the shipped sugar-cane rule boxes a water source next to the sand instead of trying to waterlog it.
+- What used to be **`water: none`** is simply a pattern with no water symbol in it at all.
 
 ## Worked examples from the shipped defaults
 
@@ -115,7 +143,7 @@ sand and sugar cane case).
 
 Leaves are pinned to `persistent=true` so they are never checked for decay, and `physics: none` so
 placement does not trigger that check. They survive on the grid even with no adjacent log. (The
-`modern` preset's `cherry_leaves` rule is identical in shape.)
+`standard` preset's `cherry_leaves` rule is identical in shape.)
 
 ```yaml
 # rules/oak_leaves.yml
@@ -138,28 +166,68 @@ state:
 physics: none
 ```
 
-### `sugar_cane`: grown on sand, watered by a contained source
+### `sugar_cane`: grown on a real solid footprint
 
-Sugar cane is a decoration column. It stands on sand (`requiresGround: minecraft:sand`) and is
-watered with `water: source`, because sand cannot be waterlogged, so a boxed-in still-water source in
-a neighbor is the correct way to water it without flooding. It is placed with `physics: none` so the
-support and water checks never break it off. `probability: 0.04` keeps it sparse, and it grows 1 to 3
-blocks tall.
+Sugar cane is a decoration column, and its `structure` fixes a real bug rather than just illustrating
+the format: earlier, sand placed at generation time as the plant's ground had nothing solid under it
+either, an unsupported "floating gravity block" that stayed put only until the first genuine block
+update (typically the sugar cane's own growth) reached it, at which point it fell as a `FallingBlock`
+entity. With many generated oases sharing the same latent defect, that could mean many blocks falling
+at once. The `structure` pattern below fixes this at the root, generically, for any decoration:
 
 ```yaml
 # rules/sugar_cane.yml
 block: minecraft:sugar_cane
 physics: none
 placement:
-  requiresGround: minecraft:sand
-  water: source
   minHeight: 1
   maxHeight: 3
   probability: 0.04
+  structure:
+    filler: minecraft:sandstone        # used for '#' cells only when the cell is currently air
+    legend:
+      S: { block: minecraft:sand, anchor: true }   # anchor: this cell is the plant's own foot
+      W: { block: minecraft:water }
+    layers:                            # bottom-to-top; each layer = rows (Z) of symbols (X)
+      - ["###", "###", "###"]         # floor, one Y below the ground layer
+      - [" # ", "SW#", " # "]         # ground layer: S=anchor/sand, W=boxed water, # = walls
 ```
 
+The floor layer places `minecraft:sandstone` filler under the entire footprint, so nothing in the
+structure can ever be an unsupported gravity block. The ground layer puts the sand at the anchor cell
+(the sugar cane's own placement position, the same cell `requiresGround` used to target), boxes a
+single water cell in with sandstone on the two remaining sides and the sand as the fourth wall, and
+leaves the top open. Because the walls and floor are `minecraft:sandstone`, not sand, the whole basin
+is immune to gravity too, unlike the old hardcoded basin that was built entirely out of
+`Material.SAND`. The water still never ticks (no air to flow into) and never floods the void, the same
+physical effect the old `water: source` mode had, just declared as data instead of hardcoded in Java.
+
 Note this rule has no `state` section: it does not need to pin any block-data property, so the sugar
-cane uses its default state.
+cane itself uses its default state.
+
+### `golden_dandelion`: a minimal one-cell anchor
+
+Unlike sugar cane, the golden dandelion needs no water and no growth column, just a single
+`grass_block` anchor cell for ground support, since `minHeight` and `maxHeight` are both 1.
+
+```yaml
+# rules/golden_dandelion.yml
+block: minecraft:golden_dandelion
+physics: none
+placement:
+  minHeight: 1
+  maxHeight: 1
+  probability: 0.03
+  structure:
+    filler: minecraft:dirt
+    legend:
+      G: { block: minecraft:grass_block, anchor: true }
+    layers:
+      - ["G"]
+```
+
+`filler` is present for consistency with the other rule files, but it is unused here since the
+pattern has no `#` (ENSURE_SOLID) cell.
 
 ## Determinism
 

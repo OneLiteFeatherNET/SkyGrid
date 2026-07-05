@@ -1,6 +1,5 @@
 package net.onelitefeather.skygridng.core.service;
 
-import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.api.model.SpawnConfig;
 import net.onelitefeather.skygridng.api.model.SpawnPoint;
 import net.onelitefeather.skygridng.core.state.RuleState;
@@ -22,8 +21,11 @@ class SpiralSpawnServiceTest {
 
     private static final int SPACING = 100;
 
+    private static final int SEARCH_RADIUS = 16;
+    private static final int MAX_ATTEMPTS = 32;
+
     private SpiralSpawnService service() {
-        SpawnConfig spawn = new SpawnConfig(true, SPACING, 70, BlockId.of("minecraft:stone"), 1, true);
+        SpawnConfig spawn = new SpawnConfig(true, SPACING, SEARCH_RADIUS, MAX_ATTEMPTS);
         RuleState state = new RuleState(Fixtures.config("skygrid").withSpawn(spawn), 4);
         return new SpiralSpawnService(state);
     }
@@ -67,9 +69,7 @@ class SpiralSpawnServiceTest {
     void exposesConfig() {
         SpiralSpawnService service = service();
         assertThat(service.spread()).isTrue();
-        assertThat(service.platformY()).isEqualTo(70);
-        assertThat(service.platformBlock()).isEqualTo(BlockId.of("minecraft:stone"));
-        assertThat(service.platformRadius()).isEqualTo(1);
-        assertThat(service.spawnVillager()).isTrue();
+        assertThat(service.searchRadius()).isEqualTo(SEARCH_RADIUS);
+        assertThat(service.maxAttempts()).isEqualTo(MAX_ATTEMPTS);
     }
 }

@@ -44,12 +44,12 @@ Examples:
 
 ```
 feat(skygrid): add per dimension block tables
-fix(wfc): correct seam anchor on negative coordinates
+fix(spawn): correct safe-location search near the void
 perf(noise): cache the value noise lattice per region
 docs(admin): document view-distance tuning for 100 players
 ```
 
-Scopes we use: `skygrid`, `noise`, `wfc`, `core`, `command`, `i18n`, `config`, `build`, `ci`.
+Scopes we use: `skygrid`, `noise`, `spawn`, `core`, `command`, `i18n`, `config`, `build`, `ci`.
 
 ## Local development
 

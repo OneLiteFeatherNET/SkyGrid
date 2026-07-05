@@ -1,10 +1,7 @@
 package net.onelitefeather.skygridng.ports.in;
 
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
-import net.onelitefeather.skygridng.api.model.TileType;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -17,7 +14,7 @@ public interface RuleAdminUseCase {
 
     GeneratorConfig current();
 
-    /** Active algorithm id ("wfc", "skygrid", "noise_skygrid"). */
+    /** Active algorithm id ("skygrid", "noise_skygrid"). */
     String algorithm();
 
     /** Switches the active algorithm. Returns false for an unknown id. */
@@ -26,21 +23,11 @@ public interface RuleAdminUseCase {
     /** All registered algorithm ids, for validation and tab completion. */
     Set<String> algorithmIds();
 
-    List<String> tileIds();
-
-    Optional<TileType> tile(String id);
-
     /** Reloads the preset catalog from disk, re-resolves the active preset, clears the undo history. */
     void reload();
 
     /** Flattens the current state into the active preset and persists the catalog. */
     void save();
-
-    boolean setWeight(String tileId, double weight);
-
-    boolean allow(String tileA, String tileB);
-
-    boolean disallow(String tileA, String tileB);
 
     /** Sets a SkyGrid block weight (adds the material if absent). */
     boolean setSkyGridWeight(String material, double weight);

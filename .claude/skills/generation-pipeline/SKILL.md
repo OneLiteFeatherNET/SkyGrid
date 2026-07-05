@@ -3,11 +3,11 @@ name: generation-pipeline
 description: >
   Use whenever working on what SkyGrid-ng actually generates in the world and how the Paper adapter
   realizes it: the chunk generator, block populators, biomes, block-entities (chests/loot tables,
-  spawners), entity spawns (villagers), plant placement (sugar cane near water), the End portal, and
-  the multiplayer first-join spawn. Read this before fixing "chests are empty", "spawners have no
-  mob", "no biomes", "no villagers / can't reach the End", "no water + sugar cane", or before adding
-  any decoration to the generation. It encodes the two-stage pipeline, the Paper API recipes, and the
-  rule that the core decides WHAT (deterministically) while the adapter decides HOW (Bukkit calls).
+  spawners), entity spawns, plant placement (sugar cane near water), the End portal, and the safe
+  first-join spawn search. Read this before fixing "chests are empty", "spawners have no mob", "no
+  biomes", "can't reach the End", "no water + sugar cane", or before adding any decoration to the
+  generation. It encodes the two-stage pipeline, the Paper API recipes, and the rule that the core
+  decides WHAT (deterministically) while the adapter decides HOW (Bukkit calls).
 ---
 
 # Generation pipeline for SkyGrid-ng
@@ -23,7 +23,7 @@ The generator runs in two stages, and which stage you use decides what is even p
    column here through `ColumnSink`.
 2. `BlockPopulator.populate(worldInfo, random, chunkX, chunkZ, LimitedRegion)` runs after, with a
    `LimitedRegion` that DOES expose block-entities and entity spawning. Everything richer than a
-   plain block (loot, spawners, villagers, plants needing neighbor checks) happens here.
+   plain block (loot, spawners, mob spawns, plants needing neighbor checks) happens here.
 
 So: a chest or spawner placed in stage 1 is always bare. To give it content you need a populator
 (stage 2). Place the block first, then decorate its block-entity.
@@ -35,7 +35,7 @@ Populators are concurrent: be thread-safe, touch only the `LimitedRegion` (never
 ## Hexagonal split (do not break it)
 
 The `core` decides WHAT to place, deterministically from the world seed: a `BlockId`, a loot-table
-id, a mob id, a biome id, a `Decoration`. The adapter decides HOW: it resolves those ids to Bukkit
+id, a mob id, a biome id, a `Plant`. The adapter decides HOW: it resolves those ids to Bukkit
 types and calls the API. No `org.bukkit` type, loot-table enum, or `EntityType` belongs in
 `api`/`ports`/`core` - express them as namespaced ids / domain values and resolve in the adapter
 (same rule as blocks, see the `core-platform-neutrality` memory). ArchUnit enforces this.
@@ -49,8 +49,8 @@ types and calls the API. No `org.bukkit` type, loot-table enum, or `EntityType` 
 - Biomes: override `ChunkGenerator.getDefaultBiomeProvider(WorldInfo)` and return a `BiomeProvider`
   whose `getBiome(WorldInfo,x,y,z)` is a pure function of `(seed,x,y,z)` and whose `getBiomes(...)`
   lists every biome it can return. Biome drives mob spawns and tints even with decorations off.
-- Entities (villager): in a populator, `region.spawn(loc, Villager.class, v -> {...})`; guard with
-  `isInRegion(loc)`.
+- Entities (a spawner's mob, for example): in a populator, `region.spawn(loc, entityClass, e -> {...})`;
+  guard with `isInRegion(loc)`.
 - Sugar cane: the SUPPORT block (sand/dirt/grass/...) needs WATER as a cardinal-horizontal neighbor
   at the support's own Y (not diagonal, not above/below, not relative to the cane). Cane stacks on
   top. No physics during generation, but wrong adjacency uproots on the next tick - get the geometry
@@ -58,23 +58,33 @@ types and calls the API. No `org.bukkit` type, loot-table enum, or `EntityType` 
 - End: a void world never gets a vanilla stronghold/portal. Build a 12-block `END_PORTAL_FRAME` ring
   and `EndPortalFrame.setEye(true)` on all 12 to auto-fill the portal; the End is a separate world.
   The SkyGrid-authentic alternative is to drop frames + spawn-eggs into the block table.
-- Multiplayer first-join spread: `PlayerSpawnLocationEvent` -> compute a spread cell (UUID hash on a
-  grid), persist it in the player's PDC, `getChunkAtAsync(loc,true)`, `setSpawnLocation(loc)` and
-  `setRespawnLocation(loc,true)`. Keep the assignment logic in a core service/port; the listener and
-  PDC live in the adapter.
+- Multiplayer first-join spread and safe landing: `PlayerSpawnLocationEvent` -> compute a spread cell
+  (a pure function of join order on a grid, `spacing` blocks apart), persist it in the player's PDC,
+  then search near that cell (bounded by `searchRadius`/`maxAttempts`) for a column with solid,
+  non-hazardous ground and passable space at foot and head height, `getChunkAtAsync(loc,true)`,
+  `setSpawnLocation(loc)` and `setRespawnLocation(loc,true)`. No block is placed and no entity is
+  spawned to make the landing safe; if the search exhausts its attempts, fall back to a fixed high
+  point above the cell rather than failing the join. Keep the assignment and search logic in a core
+  service/port; the listener and PDC live in the adapter.
 
-## Decorations as a discriminated union
+## Decorations as a query port, not a discriminated union
 
-Richer-than-a-block placements are modeled as a `sealed interface Decoration` permitting records
-(`BlockColumn`, `Plant`, `LootChest`, `Spawner`, and a `Group` for nested ones). The core emits
-`Decoration`s; the adapter consumes them with an exhaustive `switch` (no `default`), so adding a
-variant fails to compile until every site handles it. Prefer this sealed-switch over a Visitor here
-because the variant set grows more often than the operations. See the `hexagonal-architecture` skill
-for the registry/naming conventions and the `generation-roadmap` memory for the ordered plan.
+Richer-than-a-block placement is decided through `ports.in.SkyGridDecorations`, a plain query
+interface, not a sealed type. It has one deterministic method per decoration kind:
+`lootTableAt(seed,x,y,z)` and `spawnerMobAt(seed,x,y,z)` (both `Optional<BlockId>`, one per chest or
+spawner block the classic populator finds already placed) and `plantAt(seed,x,y,z)`
+(`Optional<Plant>`, a self-contained record with its own support/water/column data). The adapter
+populator asks each method for every eligible cell and applies whatever comes back; there is no
+sealed hierarchy or exhaustive switch here (that pattern was used by the WFC decoration union,
+which was removed along with `wfc`). Adding a new decoration kind means adding a new method to this
+port, a new field on the resolved config/catalog behind it, and a new populator branch, not a new
+`Decoration` subtype.
 
-## Classic vs WFC
+## Decorations apply to both algorithms
 
-The classic `skygrid`/`noise_skygrid` algorithms are O(1) random tables with no features; the `wfc`
-algorithm uses tiles + adjacency + a populator. When adding decorations, decide whether they apply to
-all algorithms (a shared block-entity/plant populator keyed off placed blocks) or only WFC tiles, and
-say so - "chests are empty" is usually because the classic algorithm has no decoration populator.
+Both `skygrid` and `noise_skygrid` are O(1) random tables with no features of their own; any richer
+placement (loot, spawners, plants) comes from a shared block-entity/plant populator keyed off placed
+blocks, not from the terrain algorithm itself. When adding a decoration, wire it into that shared
+populator so it works under either algorithm - "chests are empty" is usually because the populator was
+never keyed to that block, not because of which algorithm generated the column. (The `wfc` algorithm,
+which used to be the only one with its own tile-driven populator, was removed.)

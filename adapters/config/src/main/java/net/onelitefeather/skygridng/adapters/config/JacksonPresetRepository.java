@@ -2,44 +2,26 @@ package net.onelitefeather.skygridng.adapters.config;
 
 import net.onelitefeather.skygridng.adapters.config.ConfigDtos.BlockWeightDto;
 import net.onelitefeather.skygridng.adapters.config.ConfigDtos.ConfigDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.DecorationDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.LootChestDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.PlantDto;
 import net.onelitefeather.skygridng.adapters.config.ConfigDtos.PresetDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.SettingsDto;
 import net.onelitefeather.skygridng.adapters.config.ConfigDtos.SpawnDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.SpawnerDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.TileDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.WfcDto;
-import net.onelitefeather.skygridng.api.model.AllowedPair;
 import net.onelitefeather.skygridng.api.model.BiomeId;
 import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.api.model.BlockWeight;
-import net.onelitefeather.skygridng.api.model.Decoration;
-import net.onelitefeather.skygridng.api.model.GenerationSettings;
-import net.onelitefeather.skygridng.api.model.LootChest;
-import net.onelitefeather.skygridng.api.model.Plant;
 import net.onelitefeather.skygridng.api.model.Preset;
 import net.onelitefeather.skygridng.api.model.PresetCatalog;
-import net.onelitefeather.skygridng.api.model.RuleSet;
 import net.onelitefeather.skygridng.api.model.SpawnConfig;
-import net.onelitefeather.skygridng.api.model.Spawner;
-import net.onelitefeather.skygridng.api.model.TileType;
 import net.onelitefeather.skygridng.ports.out.PresetRepository;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
@@ -64,7 +46,7 @@ public final class JacksonPresetRepository implements PresetRepository {
     /** The bundled default file names (relative to the jar config root) seeded on first run. */
     private static final String DEFAULT_CONFIG_RESOURCE = "config.yml";
     private static final List<String> DEFAULT_PRESET_RESOURCES = List.of(
-            "presets/classic.yml", "presets/modern.yml", "presets/nether.yml");
+            "presets/classic.yml", "presets/standard.yml", "presets/nether.yml");
 
     private final Path dataFolder;
     private final BundledDefaults defaults;
@@ -216,8 +198,7 @@ public final class JacksonPresetRepository implements PresetRepository {
                 toWeights(dto.chestLoot()),
                 toWeights(dto.spawnerMobs()),
                 toBiomes(dto.biomes()),
-                toSpawn(dto.spawn()),
-                toRuleSet(dto.wfc()));
+                toSpawn(dto.spawn()));
     }
 
     private List<BlockWeight> toWeights(List<BlockWeightDto> dtos) {
@@ -249,90 +230,11 @@ public final class JacksonPresetRepository implements PresetRepository {
             return null;
         }
         SpawnConfig d = SpawnConfig.defaults();
-        BlockId platformBlock = blockId(dto.platformBlock());
         return new SpawnConfig(
                 dto.spread() != null ? dto.spread() : d.spread(),
                 dto.spacing() != null ? dto.spacing() : d.spacing(),
-                dto.platformY() != null ? dto.platformY() : d.platformY(),
-                platformBlock != null ? platformBlock : d.platformBlock(),
-                dto.platformRadius() != null ? dto.platformRadius() : d.platformRadius(),
-                dto.villager() != null ? dto.villager() : d.villager());
-    }
-
-    private RuleSet toRuleSet(WfcDto dto) {
-        if (dto == null) {
-            return null;
-        }
-        GenerationSettings settings = toSettings(dto.settings());
-        List<TileType> tiles = new ArrayList<>();
-        if (dto.tiles() != null) {
-            for (TileDto tile : dto.tiles()) {
-                tiles.add(toTile(tile));
-            }
-        }
-        Set<AllowedPair> allowed = new LinkedHashSet<>();
-        if (dto.allowed() != null) {
-            for (List<String> pair : dto.allowed()) {
-                if (pair.size() != 2) {
-                    throw new IllegalStateException("allowed entry needs exactly two ids: " + pair);
-                }
-                allowed.add(new AllowedPair(pair.get(0), pair.get(1)));
-            }
-        }
-        return new RuleSet(tiles, allowed, settings);
-    }
-
-    private GenerationSettings toSettings(SettingsDto dto) {
-        SettingsDto s = dto != null ? dto : new SettingsDto(null, null, null, null, null, null);
-        return new GenerationSettings(
-                s.cellSize() != null ? s.cellSize() : 4,
-                s.regionSize() != null ? s.regionSize() : 16,
-                s.surfaceY() != null ? s.surfaceY() : 64,
-                s.maxSolverAttempts() != null ? s.maxSolverAttempts() : 8,
-                s.fallbackTileId() != null ? s.fallbackTileId() : "grass",
-                s.allowSelf() == null || s.allowSelf());
-    }
-
-    private TileType toTile(TileDto dto) {
-        List<Decoration> features = new ArrayList<>();
-        if (dto.features() != null) {
-            for (DecorationDto feature : dto.features()) {
-                features.add(toDecoration(feature));
-            }
-        }
-        return new TileType(
-                dto.id(),
-                dto.weight() != null ? dto.weight() : 1.0,
-                dto.neutral() != null && dto.neutral(),
-                blockId(dto.surface()),
-                blockId(dto.fill()),
-                dto.liquid() != null && dto.liquid(),
-                features);
-    }
-
-    private Decoration toDecoration(DecorationDto dto) {
-        return switch (dto) {
-            case PlantDto plant -> new Plant(
-                    blockId(plant.material()),
-                    plant.requiresLiquidNeighbor() != null && plant.requiresLiquidNeighbor(),
-                    blockId(plant.requiresGroundBlock()),
-                    plant.probability() != null ? plant.probability() : 0.0,
-                    plant.minHeight() != null ? plant.minHeight() : 1,
-                    plant.maxHeight() != null ? plant.maxHeight() : 1,
-                    plant.providesWater() != null && plant.providesWater());
-            case LootChestDto chest -> new LootChest(
-                    blockId(chest.block()),
-                    blockId(chest.lootTable()),
-                    chest.probability() != null ? chest.probability() : 0.0);
-            case SpawnerDto spawner -> new Spawner(
-                    blockId(spawner.block()),
-                    blockId(spawner.mob()),
-                    spawner.probability() != null ? spawner.probability() : 0.0);
-        };
-    }
-
-    private static BlockId blockId(String raw) {
-        return raw == null || raw.isBlank() ? null : BlockId.of(raw);
+                dto.searchRadius() != null ? dto.searchRadius() : d.searchRadius(),
+                dto.maxAttempts() != null ? dto.maxAttempts() : d.maxAttempts());
     }
 
     // ----- domain -> DTO (only non-null override fields are written) -----
@@ -349,8 +251,7 @@ public final class JacksonPresetRepository implements PresetRepository {
                 weightsToDto(preset.chestLoot()),
                 weightsToDto(preset.spawnerMobs()),
                 biomesToDto(preset.biomes()),
-                spawnToDto(preset.spawn()),
-                ruleSetToDto(preset.wfc()));
+                spawnToDto(preset.spawn()));
     }
 
     private List<BlockWeightDto> weightsToDto(List<BlockWeight> weights) {
@@ -382,70 +283,7 @@ public final class JacksonPresetRepository implements PresetRepository {
         return new SpawnDto(
                 spawn.spread(),
                 spawn.spacing(),
-                spawn.platformY(),
-                spawn.platformBlock().asString(),
-                spawn.platformRadius(),
-                spawn.villager());
-    }
-
-    private WfcDto ruleSetToDto(RuleSet wfc) {
-        if (wfc == null) {
-            return null;
-        }
-        List<TileDto> tiles = new ArrayList<>();
-        for (TileType tile : wfc.tiles()) {
-            tiles.add(tileToDto(tile));
-        }
-        List<List<String>> allowed = new ArrayList<>();
-        for (AllowedPair pair : wfc.allowed()) {
-            allowed.add(List.of(pair.a(), pair.b()));
-        }
-        return new WfcDto(settingsToDto(wfc.settings()), tiles, allowed);
-    }
-
-    private SettingsDto settingsToDto(GenerationSettings settings) {
-        return new SettingsDto(
-                settings.cellSize(),
-                settings.regionSize(),
-                settings.surfaceY(),
-                settings.maxSolverAttempts(),
-                settings.fallbackTileId(),
-                settings.allowSelf());
-    }
-
-    private TileDto tileToDto(TileType tile) {
-        List<DecorationDto> features = new ArrayList<>();
-        for (Decoration decoration : tile.features()) {
-            features.add(decorationToDto(decoration));
-        }
-        return new TileDto(
-                tile.id(),
-                tile.weight(),
-                tile.neutral(),
-                tile.surface().asString(),
-                tile.fill().asString(),
-                tile.liquid(),
-                features);
-    }
-
-    private DecorationDto decorationToDto(Decoration decoration) {
-        return switch (decoration) {
-            case Plant plant -> new PlantDto(
-                    plant.material().asString(),
-                    plant.requiresLiquidNeighbor(),
-                    plant.requiresGroundBlock() == null ? null : plant.requiresGroundBlock().asString(),
-                    plant.probability(),
-                    plant.minHeight(),
-                    plant.maxHeight(),
-                    plant.providesWater());
-            case LootChest chest -> new LootChestDto(
-                    chest.block().asString(),
-                    chest.lootTable().asString(),
-                    chest.probability());
-            case Spawner spawner -> new SpawnerDto(
-                    spawner.block().asString(),
-                    spawner.mob().asString(),
-                    spawner.probability());
-        };
+                spawn.searchRadius(),
+                spawn.maxAttempts());
     }
 }

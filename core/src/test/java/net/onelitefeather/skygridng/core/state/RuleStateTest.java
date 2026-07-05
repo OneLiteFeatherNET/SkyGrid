@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RuleStateTest {
 
     private final GeneratorConfig sky = Fixtures.config("skygrid");
-    private final GeneratorConfig wfc = Fixtures.config("wfc");
+    private final GeneratorConfig other = Fixtures.config("other");
     private final GeneratorConfig noise = Fixtures.config("noise_skygrid");
 
     @Test
@@ -25,9 +25,9 @@ class RuleStateTest {
         AtomicInteger fired = new AtomicInteger();
         state.addChangeListener(fired::incrementAndGet);
 
-        state.apply(wfc);
+        state.apply(other);
 
-        assertThat(state.current().algorithm()).isEqualTo("wfc");
+        assertThat(state.current().algorithm()).isEqualTo("other");
         assertThat(fired).hasValue(1);
     }
 
@@ -38,7 +38,7 @@ class RuleStateTest {
         AtomicInteger fired = new AtomicInteger();
         state.addChangeListener(fired::incrementAndGet);
 
-        state.apply(wfc);
+        state.apply(other);
         boolean undone = state.undo();
 
         assertThat(undone).isTrue();
@@ -58,7 +58,7 @@ class RuleStateTest {
     @DisplayName("the undo history is bounded by maxUndo")
     void historyIsBounded() {
         RuleState state = new RuleState(sky, 2); // keep at most 2 mementos
-        state.apply(wfc);
+        state.apply(other);
         state.apply(noise);
         state.apply(sky);
         // Three applies, but only two mementos retained.
@@ -71,7 +71,7 @@ class RuleStateTest {
     @DisplayName("replace clears the undo history")
     void replaceClearsHistory() {
         RuleState state = new RuleState(sky, 4);
-        state.apply(wfc);
+        state.apply(other);
         state.replace(noise);
 
         assertThat(state.current().algorithm()).isEqualTo("noise_skygrid");

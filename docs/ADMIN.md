@@ -25,13 +25,8 @@ player's client language.
 
 | Command | Description |
 |---------|-------------|
-| `/skygrid algorithm [id]` | Show or switch the active algorithm (`wfc`, `skygrid`, `noise_skygrid`). |
+| `/skygrid algorithm [id]` | Show or switch the active algorithm (`skygrid`, `noise_skygrid`). |
 | `/skygrid skyweight <material> <value>` | Set a SkyGrid block weight (adds the material if absent). |
-| `/skygrid list` | List WFC tiles. |
-| `/skygrid info <tile>` | Show details of a WFC tile. |
-| `/skygrid weight <tile> <value>` | Change a WFC tile weight. |
-| `/skygrid allow <a> <b>` | Allow a WFC neighborship. |
-| `/skygrid disallow <a> <b>` | Remove a WFC neighborship. |
 | `/skygrid undo` | Revert the last change. |
 | `/skygrid reload` | Reload `generator.json`, clear caches. |
 | `/skygrid save` | Write the current state back to `generator.json`. |
@@ -45,7 +40,7 @@ shape (void vs solid), so recreate the world after switching rather than mixing 
 
 | Key | Type | Meaning |
 |-----|------|---------|
-| `algorithm` | string | `skygrid`, `noise_skygrid`, or `wfc`. |
+| `algorithm` | string | `skygrid` or `noise_skygrid`. |
 
 ### `skygrid` (used by `skygrid` and `noise_skygrid`)
 
@@ -58,22 +53,6 @@ shape (void vs solid), so recreate the world after switching rather than mixing 
 | `blocks` | list | see file | Weighted block table: `{ "material": "STONE", "weight": 28 }`. |
 
 Material names are Bukkit names. Unknown names fall back to a safe block instead of crashing.
-
-### `wfc`
-
-| Key | Meaning |
-|-----|---------|
-| `settings.cellSize` | Blocks per WFC cell. |
-| `settings.regionSize` | Cells per region (cache and seam granularity). |
-| `settings.surfaceY` | Fixed surface and water level. |
-| `settings.maxSolverAttempts` | Restarts before the fallback fill. |
-| `settings.fallbackTileId` | Tile used for fallback and as the seam anchor (must be self compatible). |
-| `settings.allowSelf` | Whether equal tiles may border each other. |
-| `tiles[]` | Tile types: `id`, `weight`, `neutral`, `surface`, `fill`, `liquid`, `features[]`. |
-| `tiles[].features[]` | Decorations: `material`, `requiresLiquidNeighbor`, `requiresGroundBlock`, `probability`, `minHeight`, `maxHeight`. |
-| `allowed[]` | Allowed neighbor pairs as `["idA", "idB"]`. |
-
-At most 64 WFC tile types (the domain is a 64 bit mask).
 
 ## SkyGrid caveats
 

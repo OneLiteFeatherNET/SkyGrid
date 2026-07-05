@@ -1,6 +1,9 @@
 package net.onelitefeather.skygridng.platforms.olf;
 
+import net.onelitefeather.skygridng.adapters.challenge.NoCraftingTableListener;
 import net.onelitefeather.skygridng.api.SkyGridApi;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.plugin.RegisteredListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,5 +51,32 @@ class OlfNetworkPluginTest {
         server.getPluginManager().disablePlugin(plugin);
 
         assertThat(plugin.isEnabled()).isFalse();
+    }
+
+    @Test
+    @DisplayName("ChallengeFeature registers the NoCraftingTableListener with the plugin manager on enable")
+    void challengeFeatureRegistersItsListener() {
+        MockBukkit.load(OlfNetworkPlugin.class);
+
+        boolean registered = false;
+        for (RegisteredListener registration : PlayerInteractEvent.getHandlerList().getRegisteredListeners()) {
+            if (registration.getListener() instanceof NoCraftingTableListener) {
+                registered = true;
+            }
+        }
+
+        assertThat(registered).isTrue();
+    }
+
+    @Test
+    @DisplayName("disabling the plugin unregisters the NoCraftingTableListener")
+    void disableUnregistersChallengeListener() {
+        OlfNetworkPlugin plugin = MockBukkit.load(OlfNetworkPlugin.class);
+
+        server.getPluginManager().disablePlugin(plugin);
+
+        for (RegisteredListener registration : PlayerInteractEvent.getHandlerList().getRegisteredListeners()) {
+            assertThat(registration.getListener()).isNotInstanceOf(NoCraftingTableListener.class);
+        }
     }
 }

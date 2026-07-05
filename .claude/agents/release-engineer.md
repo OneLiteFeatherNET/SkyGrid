@@ -18,7 +18,7 @@ Non-negotiable rules:
   regress this in `plugin.yml` config.
 - Commit messages and squash PR titles are Conventional Commits
   (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`), scopes are
-  `skygrid, noise, wfc, core, command, i18n, config, build, ci`. A breaking change uses `!` after
+  `skygrid, noise, spawn, core, command, i18n, config, build, ci`. A breaking change uses `!` after
   the type (`refactor!:`).
 - `platforms/paper-olf` is never published externally (the GitHub release jar attachment and
   CycloneDX SBOM apply to `platforms/paper` only).

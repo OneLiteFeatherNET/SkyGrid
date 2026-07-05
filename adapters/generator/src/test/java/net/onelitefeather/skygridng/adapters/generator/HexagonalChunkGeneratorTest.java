@@ -5,10 +5,6 @@ import net.onelitefeather.skygridng.api.model.RuleCatalog;
 import net.onelitefeather.skygridng.core.service.DefaultBiomes;
 import net.onelitefeather.skygridng.core.service.DefaultSkyGridDecorations;
 import net.onelitefeather.skygridng.core.service.DefaultTerrainAlgorithms;
-import net.onelitefeather.skygridng.core.service.RegionGenerationService;
-import net.onelitefeather.skygridng.core.solver.ShannonEntropyHeuristic;
-import net.onelitefeather.skygridng.core.solver.WeightedRandomCollapse;
-import net.onelitefeather.skygridng.core.solver.WfcSolver;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import net.onelitefeather.skygridng.testutil.Fixtures;
 import org.bukkit.block.data.BlockData;
@@ -53,10 +49,8 @@ class HexagonalChunkGeneratorTest {
 
     private HexagonalChunkGenerator skyGridGenerator() {
         RuleState state = new RuleState(Fixtures.config("skygrid"), 4);
-        RegionGenerationService region = new RegionGenerationService(
-                state, new WfcSolver(new ShannonEntropyHeuristic(), new WeightedRandomCollapse()));
-        DefaultTerrainAlgorithms algorithms = new DefaultTerrainAlgorithms(state, Fixtures.defaultAlgorithmFactories(), region);
-        return new HexagonalChunkGenerator(algorithms, region, new DefaultSkyGridDecorations(state),
+        DefaultTerrainAlgorithms algorithms = new DefaultTerrainAlgorithms(state, Fixtures.defaultAlgorithmFactories());
+        return new HexagonalChunkGenerator(algorithms, new DefaultSkyGridDecorations(state),
                 new DefaultBiomes(state, Set.copyOf(GeneratorConfig.DEFAULT_BIOMES)), RuleCatalog.empty());
     }
 
@@ -102,5 +96,19 @@ class HexagonalChunkGeneratorTest {
         HexagonalChunkGenerator generator = skyGridGenerator();
         assertThat(generator.getDefaultPopulators(mock(org.bukkit.World.class)))
                 .singleElement().isInstanceOf(SkyGridDecorationPopulator.class);
+    }
+
+    @Test
+    @DisplayName("the fixed spawn location is a constant high point, unconditionally")
+    void fixedSpawnLocationIsAConstantHighPoint() {
+        HexagonalChunkGenerator generator = skyGridGenerator();
+        org.bukkit.World world = mock(org.bukkit.World.class);
+
+        org.bukkit.Location location = generator.getFixedSpawnLocation(world, new Random(0));
+
+        assertThat(location.getWorld()).isSameAs(world);
+        assertThat(location.getX()).isEqualTo(0.5);
+        assertThat(location.getY()).isEqualTo(80.0);
+        assertThat(location.getZ()).isEqualTo(0.5);
     }
 }

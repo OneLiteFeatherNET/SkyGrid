@@ -1,6 +1,10 @@
 package net.onelitefeather.skygridng.api.model;
 
 import java.util.Locale;
+import java.util.Objects;
+import net.kyori.adventure.key.InvalidKeyException;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.key.Keyed;
 
 /**
  * A platform-neutral block identifier: a namespaced Minecraft id such as {@code minecraft:stone}.
@@ -12,17 +16,19 @@ import java.util.Locale;
  * {@code Registry.MATERIAL}). This mirrors WorldEdit's {@code BlockType}, which is also keyed by a
  * namespaced id.
  *
- * @param namespace the resource namespace, lowercase (defaults to {@code minecraft})
- * @param value     the resource path, lowercase (for example {@code grass_block})
+ * <p>Parsing and character validation delegate to Adventure's {@link Key}, which every supported
+ * platform already ships, instead of a hand-rolled regex. Implementing {@link Keyed} lets any
+ * Adventure-aware code treat a {@code BlockId} as a standard keyed resource.
+ *
+ * @param key the underlying namespace/value pair, lowercase
  */
-public record BlockId(String namespace, String value) {
+public record BlockId(Key key) implements Keyed {
 
     /** The default Minecraft namespace, used when {@link #of(String)} gets a bare id. */
-    public static final String DEFAULT_NAMESPACE = "minecraft";
+    public static final String DEFAULT_NAMESPACE = Key.MINECRAFT_NAMESPACE;
 
     public BlockId {
-        namespace = normalize(namespace, "namespace");
-        value = normalize(value, "value");
+        Objects.requireNonNull(key, "BlockId.key must not be null");
     }
 
     /**
@@ -33,35 +39,30 @@ public record BlockId(String namespace, String value) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("BlockId must not be blank");
         }
-        int colon = id.indexOf(':');
-        if (colon < 0) {
-            return new BlockId(DEFAULT_NAMESPACE, id);
+        try {
+            return new BlockId(Key.key(id.trim().toLowerCase(Locale.ROOT)));
+        } catch (InvalidKeyException e) {
+            throw new IllegalArgumentException("BlockId has invalid characters: " + id, e);
         }
-        return new BlockId(id.substring(0, colon), id.substring(colon + 1));
+    }
+
+    /** The resource namespace, lowercase (for example {@code minecraft}). */
+    public String namespace() {
+        return key.namespace();
+    }
+
+    /** The resource path, lowercase (for example {@code grass_block}). */
+    public String value() {
+        return key.value();
     }
 
     /** The canonical string form {@code namespace:value}, for example {@code minecraft:stone}. */
     public String asString() {
-        return namespace + ":" + value;
+        return key.asString();
     }
 
     @Override
     public String toString() {
         return asString();
-    }
-
-    private static String normalize(String part, String what) {
-        if (part == null) {
-            throw new IllegalArgumentException("BlockId." + what + " must not be null");
-        }
-        String trimmed = part.trim().toLowerCase(Locale.ROOT);
-        if (trimmed.isEmpty()) {
-            throw new IllegalArgumentException("BlockId." + what + " must not be blank");
-        }
-        if (!trimmed.matches("[a-z0-9_.\\-/]+")) {
-            throw new IllegalArgumentException(
-                    "BlockId." + what + " has invalid characters: " + part);
-        }
-        return trimmed;
     }
 }

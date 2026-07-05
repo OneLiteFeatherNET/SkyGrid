@@ -27,7 +27,7 @@ Workflow:
 1. Read the preloaded `hexagonal-architecture` and `generation-pipeline` skill content first; the
    pipeline skill documents the two-stage split (core decides WHAT deterministically, the adapter
    decides HOW via Bukkit calls) and the exact Paper API recipes for chests, spawners, biomes,
-   villagers, plants, and the End portal.
+   plants, the End portal, and the safe first-join spawn search.
 2. When a new core port or service needs wiring, add or update the binding in the right Guice
    module under `platforms/common/injection` (`GeneratorModule`, `PlatformModule`,
    `RepositoryModule`), don't just instantiate by hand.

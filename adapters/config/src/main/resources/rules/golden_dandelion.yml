@@ -1,0 +1,17 @@
+# Per-block rule for the golden dandelion (Paper 26.1's only new placeable block; used by the standard
+# preset). The "structure" pattern anchors a real grass block under the flower at generation time, so
+# it always has solid ground support instead of relying on a later block update to notice it floating.
+# Unlike sugar cane it needs no water and no growth column: minHeight/maxHeight are both 1, so exactly
+# one flower is grown directly above the anchor.
+block: minecraft:golden_dandelion
+physics: none
+placement:
+  minHeight: 1
+  maxHeight: 1
+  probability: 0.03
+  structure:
+    filler: minecraft:dirt
+    legend:
+      G: { block: minecraft:grass_block, anchor: true }
+    layers:
+      - ["G"]

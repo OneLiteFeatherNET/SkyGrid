@@ -1,5 +1,5 @@
 # Nether: a hostile nether-themed grid (netherrack, blackstone, crimson/warped, ancient debris)
-# with nether mobs and biomes, and a netherrack starter platform.
+# with nether mobs and biomes. Spawn settings are inherited from classic.
 extends: classic
 algorithm: skygrid
 blocks:
@@ -37,10 +37,3 @@ biomes:
   - minecraft:warped_forest
   - minecraft:soul_sand_valley
   - minecraft:basalt_deltas
-spawn:
-  spread: true
-  spacing: 512
-  platformY: 64
-  platformBlock: minecraft:netherrack
-  platformRadius: 2
-  villager: false

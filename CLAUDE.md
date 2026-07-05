@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # SkyGrid-ng
 
-A Paper 26.1 chunk generator plugin in pure Java 25 with a hexagonal architecture. It ships three
-generation algorithms (`skygrid`, `noise_skygrid`, `wfc`), a JSON config, an in game `/skygrid`
+A Paper 26.1 chunk generator plugin in pure Java 25 with a hexagonal architecture. It ships two
+generation algorithms (`skygrid`, `noise_skygrid`), a JSON config, an in game `/skygrid`
 admin command, and i18n. Maintained by OneLiteFeather (OLF).
 
 This file is the always on context for every session. The deeper, task specific knowledge lives in
@@ -50,8 +50,8 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
   (`GenerateRegionUseCase`, `RuleAdminUseCase`, `TerrainAlgorithmProvider`), `ports.out`
   (`PresetRepository`, `RuleRepository`), `ports.algorithm` (`TerrainAlgorithm`, `ColumnSink`).
   Depends on `api`.
-- `core/` (`core.*`, framework free): the domain. `algorithm` (the three terrain algorithm impls),
-  `solver` (the WFC solver and strategies), `service` (use case impls, incl. `SkyGridApiService`),
+- `core/` (`core.*`, framework free): the domain. `algorithm` (the two terrain algorithm impls),
+  `service` (use case impls, incl. `SkyGridApiService`),
   `state` (`RuleState`), `util` (`ValueNoise`, `WeightedTable`). Implements the ports; depends on
   `ports` + `api`.
 - `adapters/generator`, `adapters/command`, `adapters/config`, `adapters/spawn` (`adapters.*`): the
@@ -109,7 +109,7 @@ and is switchable at runtime via `/skygrid algorithm <id>`.
 
 - Build (all modules): `./gradlew build`
 - Test: `./gradlew test` (JUnit 5 + AssertJ + Mockito + MockBukkit v4); one module: `./gradlew :core:test`
-- Single test: `./gradlew :core:test --tests "net.onelitefeather.skygridng.core.solver.WfcSolverTest"`
+- Single test: `./gradlew :core:test --tests "net.onelitefeather.skygridng.core.algorithm.SkyGridAlgorithmsTest"`
   (append `.methodName` to run one method)
 - Run a test server: `./gradlew :platforms:paper:runServer` (creates `run/`, which is gitignored)
 - Build the shaded jar: `./gradlew :platforms:paper:shadowJar` (output

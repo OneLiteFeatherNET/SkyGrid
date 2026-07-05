@@ -1,13 +1,21 @@
 # Per-block rule for sugar cane, grown as a decoration column.
-# It stands on sand and is watered by a contained still-water source boxed into a neighbor cell, so no
-# water ever flows into the void (sand cannot be waterlogged, so "source" is the right water mode here;
-# "waterlogged" only fits a support block that can actually hold water). Placed update-free
-# (physics: none) so the support and water checks never break it off.
+# The "structure" pattern below guarantees real solid support at generation time: the floor layer is
+# entirely '#' (sandstone filler, not gravity-affected sand), so the sand the cane actually stands on
+# (S) never sits unsupported until a later block update makes it (and any nearby copies) fall as a
+# lag-causing FallingBlock. The ground layer boxes a still-water source (W) against the sand on 3 sides
+# with more solid filler, so the cane always has its required water neighbor. Placed update-free
+# (physics: none) so the support and water never break loose on their own.
 block: minecraft:sugar_cane
 physics: none
 placement:
-  requiresGround: minecraft:sand
-  water: source
   minHeight: 1
   maxHeight: 3
   probability: 0.04
+  structure:
+    filler: minecraft:sandstone
+    legend:
+      S: { block: minecraft:sand, anchor: true }
+      W: { block: minecraft:water }
+    layers:
+      - ["###", "###", "###"]
+      - [" # ", "SW#", " # "]

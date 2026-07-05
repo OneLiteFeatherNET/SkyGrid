@@ -2,11 +2,10 @@ package net.onelitefeather.skygridng.adapters.command;
 
 import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.api.model.BlockWeight;
-import net.onelitefeather.skygridng.api.model.GenerationSettings;
+import net.onelitefeather.skygridng.api.model.ChallengeRule;
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
-import net.onelitefeather.skygridng.api.model.RuleSet;
 import net.onelitefeather.skygridng.api.model.SkyGridConfig;
-import net.onelitefeather.skygridng.api.model.TileType;
+import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.kyori.adventure.text.Component;
@@ -48,16 +47,12 @@ class SkyGridCommandTest {
         presets = mock(Presets.class);
         sender = mock(CommandSender.class);
         command = mock(Command.class);
-        subject = new SkyGridCommand(admin, presets);
+        subject = new SkyGridCommand(admin, presets, Optional.empty());
     }
 
     private static GeneratorConfig minimalConfig(BlockWeight... blocks) {
-        TileType tile = new TileType("grass", 1.0, true,
-                BlockId.of("minecraft:grass_block"), BlockId.of("minecraft:dirt"), false, List.of());
-        RuleSet ruleSet = new RuleSet(List.of(tile), Set.of(),
-                new GenerationSettings(4, 8, 64, 8, "grass", true));
         SkyGridConfig sky = new SkyGridConfig(4, 0, 64, 0.03, List.of(blocks), List.of(), List.of());
-        return new GeneratorConfig("skygrid", ruleSet, sky);
+        return new GeneratorConfig("skygrid", sky);
     }
 
     @Test
@@ -65,7 +60,7 @@ class SkyGridCommandTest {
     void deniedWithoutPermission() {
         when(sender.hasPermission("skygridng.admin")).thenReturn(false);
 
-        boolean handled = subject.onCommand(sender, command, "skygrid", new String[]{"list"});
+        boolean handled = subject.onCommand(sender, command, "skygrid", new String[]{"undo"});
 
         assertThat(handled).isTrue();
         verify(sender).sendMessage(any(Component.class));
@@ -76,23 +71,11 @@ class SkyGridCommandTest {
     @DisplayName("'algorithm <id>' delegates to setAlgorithm")
     void algorithmDelegates() {
         when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        when(admin.setAlgorithm("wfc")).thenReturn(true);
+        when(admin.setAlgorithm("noise_skygrid")).thenReturn(true);
 
-        subject.onCommand(sender, command, "skygrid", new String[]{"algorithm", "wfc"});
+        subject.onCommand(sender, command, "skygrid", new String[]{"algorithm", "noise_skygrid"});
 
-        verify(admin).setAlgorithm("wfc");
-        verify(sender).sendMessage(any(Component.class));
-    }
-
-    @Test
-    @DisplayName("'list' reads the tile ids from the use case")
-    void listDelegates() {
-        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        when(admin.tileIds()).thenReturn(List.of("water", "sand"));
-
-        subject.onCommand(sender, command, "skygrid", new String[]{"list"});
-
-        verify(admin).tileIds();
+        verify(admin).setAlgorithm("noise_skygrid");
         verify(sender).sendMessage(any(Component.class));
     }
 
@@ -125,11 +108,88 @@ class SkyGridCommandTest {
         when(sender.hasPermission("skygridng.admin")).thenReturn(true);
 
         assertThat(subject.onTabComplete(sender, command, "skygrid", new String[]{""}))
-                .contains("list", "algorithm", "reload", "help");
+                .contains("algorithm", "skyweight", "reload", "help");
 
-        when(admin.algorithmIds()).thenReturn(Set.of("wfc", "skygrid", "noise_skygrid"));
+        when(admin.algorithmIds()).thenReturn(Set.of("skygrid", "noise_skygrid"));
         assertThat(subject.onTabComplete(sender, command, "skygrid", new String[]{"algorithm", ""}))
-                .containsExactlyInAnyOrder("wfc", "skygrid", "noise_skygrid");
+                .containsExactlyInAnyOrder("skygrid", "noise_skygrid");
+    }
+
+    // ----- challenge sub command -----
+
+    @Test
+    @DisplayName("'challenge list' delegates to the ChallengeAdminUseCase when the port is present")
+    void challengeListDelegatesWhenPresent() {
+        ChallengeAdminUseCase challenges = mock(ChallengeAdminUseCase.class);
+        subject = new SkyGridCommand(admin, presets, Optional.of(challenges));
+        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
+        when(challenges.list()).thenReturn(List.of(new ChallengeRule("no_crafting_table", "no tables", false)));
+
+        subject.onCommand(sender, command, "skygrid", new String[]{"challenge", "list"});
+
+        verify(challenges).list();
+        verify(sender).sendMessage(any(Component.class));
+    }
+
+    @Test
+    @DisplayName("'challenge toggle <id>' activates an inactive challenge")
+    void challengeToggleActivatesWhenInactive() {
+        ChallengeAdminUseCase challenges = mock(ChallengeAdminUseCase.class);
+        subject = new SkyGridCommand(admin, presets, Optional.of(challenges));
+        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
+        when(challenges.isActive("no_crafting_table")).thenReturn(false);
+        when(challenges.activate("no_crafting_table")).thenReturn(true);
+
+        subject.onCommand(sender, command, "skygrid", new String[]{"challenge", "toggle", "no_crafting_table"});
+
+        verify(challenges).isActive("no_crafting_table");
+        verify(challenges).activate("no_crafting_table");
+        verify(challenges, never()).deactivate(any());
+        verify(sender).sendMessage(any(Component.class));
+    }
+
+    @Test
+    @DisplayName("'challenge toggle <id>' deactivates an active challenge")
+    void challengeToggleDeactivatesWhenActive() {
+        ChallengeAdminUseCase challenges = mock(ChallengeAdminUseCase.class);
+        subject = new SkyGridCommand(admin, presets, Optional.of(challenges));
+        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
+        when(challenges.isActive("no_crafting_table")).thenReturn(true);
+        when(challenges.deactivate("no_crafting_table")).thenReturn(true);
+
+        subject.onCommand(sender, command, "skygrid", new String[]{"challenge", "toggle", "no_crafting_table"});
+
+        verify(challenges).isActive("no_crafting_table");
+        verify(challenges).deactivate("no_crafting_table");
+        verify(challenges, never()).activate(any());
+        verify(sender).sendMessage(any(Component.class));
+    }
+
+    @Test
+    @DisplayName("'challenge toggle <unknown id>' is handled without throwing")
+    void challengeToggleUnknownId() {
+        ChallengeAdminUseCase challenges = mock(ChallengeAdminUseCase.class);
+        subject = new SkyGridCommand(admin, presets, Optional.of(challenges));
+        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
+        when(challenges.isActive("bogus")).thenReturn(false);
+        when(challenges.activate("bogus")).thenReturn(false);
+
+        boolean handled = subject.onCommand(sender, command, "skygrid", new String[]{"challenge", "toggle", "bogus"});
+
+        assertThat(handled).isTrue();
+        verify(challenges).activate("bogus");
+        verify(sender).sendMessage(any(Component.class));
+    }
+
+    @Test
+    @DisplayName("'challenge' replies with the unavailable message when the port is absent")
+    void challengeUnavailableWhenPortAbsent() {
+        // subject was built in setUp() with Optional.empty()
+        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
+
+        subject.onCommand(sender, command, "skygrid", new String[]{"challenge", "list"});
+
+        verify(sender).sendMessage(any(Component.class));
     }
 
     @Test
@@ -168,47 +228,6 @@ class SkyGridCommandTest {
     }
 
     @Test
-    @DisplayName("'weight' with an unknown tile does not call setWeight")
-    void weightUnknownTile() {
-        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        when(admin.tile("nosuchtile")).thenReturn(Optional.empty());
-
-        subject.onCommand(sender, command, "skygrid", new String[]{"weight", "nosuchtile", "5"});
-
-        verify(sender).sendMessage(any(Component.class));
-        verify(admin, never()).setWeight(any(), anyDouble());
-    }
-
-    @Test
-    @DisplayName("'weight' with a non numeric value does not call setWeight")
-    void weightNotANumber() {
-        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        TileType water = new TileType("water", 6.0, true,
-                BlockId.of("minecraft:water"), BlockId.of("minecraft:sand"), true, List.of());
-        when(admin.tile("water")).thenReturn(Optional.of(water));
-
-        subject.onCommand(sender, command, "skygrid", new String[]{"weight", "water", "notanumber"});
-
-        verify(sender).sendMessage(any(Component.class));
-        verify(admin, never()).setWeight(any(), anyDouble());
-    }
-
-    @Test
-    @DisplayName("'weight' with a valid value reports failure when setWeight refuses")
-    void weightSetFails() {
-        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        TileType water = new TileType("water", 6.0, true,
-                BlockId.of("minecraft:water"), BlockId.of("minecraft:sand"), true, List.of());
-        when(admin.tile("water")).thenReturn(Optional.of(water));
-        when(admin.setWeight("water", 5.0)).thenReturn(false);
-
-        subject.onCommand(sender, command, "skygrid", new String[]{"weight", "water", "5"});
-
-        verify(admin).setWeight("water", 5.0);
-        verify(sender).sendMessage(any(Component.class));
-    }
-
-    @Test
     @DisplayName("'skyweight' with an invalid material id does not call setSkyGridWeight")
     void skyWeightInvalidMaterial() {
         when(sender.hasPermission("skygridng.admin")).thenReturn(true);
@@ -217,70 +236,6 @@ class SkyGridCommandTest {
 
         verify(sender).sendMessage(any(Component.class));
         verify(admin, never()).setSkyGridWeight(any(), anyDouble());
-    }
-
-    @Test
-    @DisplayName("'allow' with one unknown tile does not call allow")
-    void allowUnknownTile() {
-        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        TileType a = new TileType("a", 1.0, true,
-                BlockId.of("minecraft:stone"), BlockId.of("minecraft:stone"), false, List.of());
-        when(admin.tile("a")).thenReturn(Optional.of(a));
-        when(admin.tile("b")).thenReturn(Optional.empty());
-
-        subject.onCommand(sender, command, "skygrid", new String[]{"allow", "a", "b"});
-
-        verify(sender).sendMessage(any(Component.class));
-        verify(admin, never()).allow(any(), any());
-    }
-
-    @Test
-    @DisplayName("'allow' with both tiles known calls allow exactly once")
-    void allowBothKnown() {
-        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        TileType a = new TileType("a", 1.0, true,
-                BlockId.of("minecraft:stone"), BlockId.of("minecraft:stone"), false, List.of());
-        TileType b = new TileType("b", 1.0, true,
-                BlockId.of("minecraft:dirt"), BlockId.of("minecraft:dirt"), false, List.of());
-        when(admin.tile("a")).thenReturn(Optional.of(a));
-        when(admin.tile("b")).thenReturn(Optional.of(b));
-
-        subject.onCommand(sender, command, "skygrid", new String[]{"allow", "a", "b"});
-
-        verify(admin).allow("a", "b");
-        verify(sender).sendMessage(any(Component.class));
-    }
-
-    @Test
-    @DisplayName("'disallow' with one unknown tile does not call disallow")
-    void disallowUnknownTile() {
-        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        TileType a = new TileType("a", 1.0, true,
-                BlockId.of("minecraft:stone"), BlockId.of("minecraft:stone"), false, List.of());
-        when(admin.tile("a")).thenReturn(Optional.of(a));
-        when(admin.tile("b")).thenReturn(Optional.empty());
-
-        subject.onCommand(sender, command, "skygrid", new String[]{"disallow", "a", "b"});
-
-        verify(sender).sendMessage(any(Component.class));
-        verify(admin, never()).disallow(any(), any());
-    }
-
-    @Test
-    @DisplayName("'disallow' with both tiles known calls disallow exactly once")
-    void disallowBothKnown() {
-        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
-        TileType a = new TileType("a", 1.0, true,
-                BlockId.of("minecraft:stone"), BlockId.of("minecraft:stone"), false, List.of());
-        TileType b = new TileType("b", 1.0, true,
-                BlockId.of("minecraft:dirt"), BlockId.of("minecraft:dirt"), false, List.of());
-        when(admin.tile("a")).thenReturn(Optional.of(a));
-        when(admin.tile("b")).thenReturn(Optional.of(b));
-
-        subject.onCommand(sender, command, "skygrid", new String[]{"disallow", "a", "b"});
-
-        verify(admin).disallow("a", "b");
-        verify(sender).sendMessage(any(Component.class));
     }
 
     @Test
@@ -306,11 +261,11 @@ class SkyGridCommandTest {
     }
 
     @Test
-    @DisplayName("'help weight' shows the focused usage for a known sub command")
+    @DisplayName("'help skyweight' shows the focused usage for a known sub command")
     void helpForKnownSubcommand() {
         when(sender.hasPermission("skygridng.admin")).thenReturn(true);
 
-        subject.onCommand(sender, command, "skygrid", new String[]{"help", "weight"});
+        subject.onCommand(sender, command, "skygrid", new String[]{"help", "skyweight"});
 
         verify(sender).sendMessage(any(Component.class));
     }

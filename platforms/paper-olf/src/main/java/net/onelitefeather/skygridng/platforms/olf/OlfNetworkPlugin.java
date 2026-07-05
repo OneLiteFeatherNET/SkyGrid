@@ -25,6 +25,7 @@ public class OlfNetworkPlugin extends SkyGridNgPlugin {
     protected List<Module> modules() {
         List<Module> modules = super.modules();
         modules.add(new OlfModule());
+        modules.add(new ChallengeModule());
         return modules;
     }
 

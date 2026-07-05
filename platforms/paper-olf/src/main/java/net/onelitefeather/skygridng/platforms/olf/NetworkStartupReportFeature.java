@@ -29,7 +29,7 @@ final class NetworkStartupReportFeature implements OlfFeature {
     @Override
     public void enable() {
         plugin.getLogger().info("[OLF] Network distribution active. Algorithm: " + api.algorithm()
-                + ", tiles: " + api.tileIds().size() + ", api " + api.apiVersion() + ".");
+                + ", biomes: " + api.configuration().biomes().size() + ", api " + api.apiVersion() + ".");
     }
 
     @Override

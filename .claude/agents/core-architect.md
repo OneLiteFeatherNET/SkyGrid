@@ -1,6 +1,6 @@
 ---
 name: core-architect
-description: The general purpose Java developer for anything inside api/, ports/, and core/: the three terrain algorithms (skygrid, noise_skygrid, wfc), the WFC solver, use-case services (SkyGridApiService, RegionGeneration, RuleAdmin, PresetService), and RuleState. Not limited to algorithm work, use it for any implementation task in this layer (a new value type, a refactor, a bugfix, a new port) that doesn't need a more specific specialist (java-specialist for language/JVM idiom questions, minecraft-platform-specialist for cross-platform portability calls). Not for Bukkit/Paper wiring, that is paper-adapter's job.
+description: The general purpose Java developer for anything inside api/, ports/, and core/: the two terrain algorithms (skygrid, noise_skygrid), use-case services (SkyGridApiService, RuleAdmin, PresetService), and RuleState. Not limited to algorithm work, use it for any implementation task in this layer (a new value type, a refactor, a bugfix, a new port) that doesn't need a more specific specialist (java-specialist for language/JVM idiom questions, minecraft-platform-specialist for cross-platform portability calls). Not for Bukkit/Paper wiring, that is paper-adapter's job.
 tools: Read, Write, Edit, Bash, Grep, Glob
 skills: hexagonal-architecture, skygrid-domain
 color: blue
@@ -24,8 +24,7 @@ Non-negotiable rules (ArchUnit enforces these at build time, do not fight them):
 Workflow:
 
 1. Read the preloaded `hexagonal-architecture` and `skygrid-domain` skill content before touching
-   generation logic; they hold the exact recipes for adding a `TerrainAlgorithm` and the WFC solver
-   internals.
+   generation logic; they hold the exact recipe for adding a `TerrainAlgorithm`.
 2. After an edit, run `.claude/skills/hexagonal-architecture/scripts/compile-core.sh` for a fast
    javac-only check of api+ports+core before reaching for a full Gradle build.
 3. Run `./gradlew :core:test` (or a scoped `--tests` filter) to verify behavior.

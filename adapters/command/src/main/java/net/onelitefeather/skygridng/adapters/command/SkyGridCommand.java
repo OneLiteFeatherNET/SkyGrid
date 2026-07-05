@@ -1,7 +1,8 @@
 package net.onelitefeather.skygridng.adapters.command;
 
-import net.kyori.adventure.text.Component;
 import net.onelitefeather.skygridng.api.model.BlockId;
+import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import jakarta.inject.Inject;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * In adapter: the /skygrid command for runtime administration of the configuration.
@@ -25,31 +27,31 @@ import java.util.Map;
 public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = List.of(
-            "preset", "presets", "worlds", "list", "info", "weight", "allow", "disallow", "algorithm",
-            "skyweight", "reload", "save", "undo", "help");
+            "preset", "presets", "worlds", "algorithm", "skyweight", "reload", "save", "undo",
+            "challenge", "help");
 
     private static final Map<String, String> USAGE = Map.ofEntries(
-            Map.entry("weight", "/skygrid weight <tile> <value>"),
             Map.entry("reload", "/skygrid reload confirm"),
             Map.entry("algorithm", "/skygrid algorithm [id]"),
             Map.entry("presets", "/skygrid presets"),
             Map.entry("worlds", "/skygrid worlds"),
-            Map.entry("list", "/skygrid list"),
             Map.entry("undo", "/skygrid undo"),
             Map.entry("save", "/skygrid save"),
             Map.entry("preset", "/skygrid preset <name>"),
-            Map.entry("info", "/skygrid info <tile>"),
-            Map.entry("allow", "/skygrid allow <tileA> <tileB>"),
-            Map.entry("disallow", "/skygrid disallow <tileA> <tileB>"),
-            Map.entry("skyweight", "/skygrid skyweight <material> <value>"));
+            Map.entry("skyweight", "/skygrid skyweight <material> <value>"),
+            Map.entry("challenge", "/skygrid challenge <list|toggle> [id]"));
+
+    private static final List<String> CHALLENGE_SUBCOMMANDS = List.of("list", "toggle");
 
     private final RuleAdminUseCase admin;
     private final Presets presets;
+    private final Optional<ChallengeAdminUseCase> challenges;
 
     @Inject
-    public SkyGridCommand(RuleAdminUseCase admin, Presets presets) {
+    public SkyGridCommand(RuleAdminUseCase admin, Presets presets, Optional<ChallengeAdminUseCase> challenges) {
         this.admin = admin;
         this.presets = presets;
+        this.challenges = challenges;
     }
 
     @Override
@@ -71,11 +73,6 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             case "presets" -> sender.sendMessage(Messages.presetList(String.join(", ", presets.names()), presets.active()));
             case "preset" -> preset(sender, args);
             case "worlds" -> sender.sendMessage(Messages.worldList(formatWorlds()));
-            case "list" -> sender.sendMessage(Messages.list(String.join(", ", admin.tileIds())));
-            case "info" -> info(sender, args);
-            case "weight" -> weight(sender, args);
-            case "allow" -> allow(sender, args);
-            case "disallow" -> disallow(sender, args);
             case "algorithm" -> algorithm(sender, args);
             case "skyweight" -> skyWeight(sender, args);
             case "reload" -> reload(sender, args);
@@ -84,6 +81,7 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(Messages.saved());
             }
             case "undo" -> sender.sendMessage(admin.undo() ? Messages.undoDone() : Messages.undoEmpty());
+            case "challenge" -> challenge(sender, args);
             default -> sender.sendMessage(Messages.help());
         }
         return true;
@@ -127,73 +125,6 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
         return out.toString();
     }
 
-    private void info(CommandSender sender, String[] args) {
-        if (args.length < 2) {
-            sender.sendMessage(Messages.usage(USAGE.get("info")));
-            return;
-        }
-        admin.tile(args[1]).ifPresentOrElse(
-                tile -> sender.sendMessage(Messages.info(
-                        tile.id(), tile.weight(), tile.neutral(), tile.surface().asString(), tile.liquid(), tile.features().size())),
-                () -> sender.sendMessage(Messages.unknownTile(args[1])));
-    }
-
-    private void weight(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage(Messages.usage(USAGE.get("weight")));
-            return;
-        }
-        if (admin.tile(args[1]).isEmpty()) {
-            sender.sendMessage(Messages.unknownTile(args[1]));
-            return;
-        }
-        double value = parseDouble(args[2]);
-        if (Double.isNaN(value)) {
-            sender.sendMessage(Messages.notANumber(args[2]));
-            return;
-        }
-        sender.sendMessage(admin.setWeight(args[1], value)
-                ? Messages.weightSet(args[1], value)
-                : Messages.weightFail(args[2]));
-    }
-
-    private Component firstUnknownTile(String... ids) {
-        for (String id : ids) {
-            if (admin.tile(id).isEmpty()) {
-                return Messages.unknownTile(id);
-            }
-        }
-        return null;
-    }
-
-    private void allow(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage(Messages.usage(USAGE.get("allow")));
-            return;
-        }
-        Component unknown = firstUnknownTile(args[1], args[2]);
-        if (unknown != null) {
-            sender.sendMessage(unknown);
-            return;
-        }
-        admin.allow(args[1], args[2]);
-        sender.sendMessage(Messages.allowed(args[1], args[2]));
-    }
-
-    private void disallow(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage(Messages.usage(USAGE.get("disallow")));
-            return;
-        }
-        Component unknown = firstUnknownTile(args[1], args[2]);
-        if (unknown != null) {
-            sender.sendMessage(unknown);
-            return;
-        }
-        admin.disallow(args[1], args[2]);
-        sender.sendMessage(Messages.removed(args[1], args[2]));
-    }
-
     private void algorithm(CommandSender sender, String[] args) {
         if (args.length < 2) {
             sender.sendMessage(Messages.algorithmCurrent(admin.algorithm()));
@@ -233,6 +164,48 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Messages.reloaded());
     }
 
+    private void challenge(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle> [id]"));
+            return;
+        }
+        challenges.ifPresentOrElse(
+                useCase -> {
+                    switch (args[1].toLowerCase(Locale.ROOT)) {
+                        case "list" -> challengeList(sender, useCase);
+                        case "toggle" -> challengeToggle(sender, args, useCase);
+                        default -> sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle> [id]"));
+                    }
+                },
+                () -> sender.sendMessage(Messages.challengeUnavailable()));
+    }
+
+    private void challengeList(CommandSender sender, ChallengeAdminUseCase useCase) {
+        List<ChallengeRule> rules = useCase.list();
+        if (rules.isEmpty()) {
+            sender.sendMessage(Messages.challengeListEmpty());
+            return;
+        }
+        for (ChallengeRule rule : rules) {
+            sender.sendMessage(Messages.challengeListEntry(rule.id(), rule.active()));
+        }
+    }
+
+    private void challengeToggle(CommandSender sender, String[] args, ChallengeAdminUseCase useCase) {
+        if (args.length < 3) {
+            sender.sendMessage(Messages.usage("/skygrid challenge toggle <id>"));
+            return;
+        }
+        String id = args[2];
+        boolean currentlyActive = useCase.isActive(id);
+        boolean changed = currentlyActive ? useCase.deactivate(id) : useCase.activate(id);
+        if (!changed) {
+            sender.sendMessage(Messages.challengeUnknown(id));
+            return;
+        }
+        sender.sendMessage(Messages.challengeToggled(id, !currentlyActive));
+    }
+
     private double parseDouble(String raw) {
         try {
             return Double.parseDouble(raw);
@@ -253,15 +226,15 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
         if (args.length == 2) {
             return switch (sub) {
                 case "preset" -> filter(presets.names(), args[1]);
-                case "info", "weight", "allow", "disallow" -> filter(admin.tileIds(), args[1]);
                 case "algorithm" -> filter(List.copyOf(admin.algorithmIds()), args[1]);
                 case "skyweight" -> filter(materialIds(), args[1]);
                 case "reload" -> filter(List.of("confirm"), args[1]);
+                case "challenge" -> filter(CHALLENGE_SUBCOMMANDS, args[1]);
                 default -> List.of();
             };
         }
-        if (args.length == 3 && (sub.equals("allow") || sub.equals("disallow"))) {
-            return filter(admin.tileIds(), args[2]);
+        if (args.length == 3 && sub.equals("challenge") && args[1].equalsIgnoreCase("toggle")) {
+            return challenges.map(useCase -> filter(challengeIds(useCase), args[2])).orElseGet(List::of);
         }
         return List.of();
     }
@@ -270,6 +243,14 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
         return admin.current().skygrid().blocks().stream()
                 .map(blockWeight -> blockWeight.material().asString())
                 .toList();
+    }
+
+    private List<String> challengeIds(ChallengeAdminUseCase useCase) {
+        List<String> ids = new ArrayList<>();
+        for (ChallengeRule rule : useCase.list()) {
+            ids.add(rule.id());
+        }
+        return ids;
     }
 
     private List<String> filter(List<String> options, String prefix) {

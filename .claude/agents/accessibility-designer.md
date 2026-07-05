@@ -16,7 +16,7 @@ Focus areas:
   distinguishable under protanopia/deuteranopia. Prefer blocks that already differ in shape or
   context, flag ones that don't.
 - **Difficulty and comfort variants.** Not every player wants the default challenge level; propose
-  preset variants (denser useful blocks, gentler WFC tile mixes) for players who want a calmer or
+  preset variants (denser useful blocks, gentler decoration mixes) for players who want a calmer or
   more forgiving experience, without removing the default for everyone else.
 - **Clear, non-color-only feedback.** `/skygrid` command output and error messages must carry their
   meaning in text, not rely on chat color alone, so they work for players with limited color

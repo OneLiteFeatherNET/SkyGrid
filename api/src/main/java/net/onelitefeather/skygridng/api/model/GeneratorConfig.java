@@ -9,15 +9,13 @@ import java.util.List;
  * and the biome palette. Acts as a Memento for in game edits and undo. The {@code with...} methods
  * return new instances. A {@link Preset} resolves to one of these.
  *
- * @param algorithm one of "wfc", "skygrid", "noise_skygrid"
- * @param wfc       Wave Function Collapse configuration (tiles, adjacency, settings)
+ * @param algorithm one of "skygrid", "noise_skygrid"
  * @param skygrid   SkyGrid configuration (spacing, block table)
  * @param spawn     spread-spawn configuration (first-join placement)
  * @param biomes    the biome palette assigned across the world
  */
 public record GeneratorConfig(
         String algorithm,
-        RuleSet wfc,
         SkyGridConfig skygrid,
         SpawnConfig spawn,
         List<BiomeId> biomes
@@ -39,9 +37,6 @@ public record GeneratorConfig(
         if (algorithm == null || algorithm.isBlank()) {
             throw new IllegalArgumentException("algorithm must not be blank");
         }
-        if (wfc == null) {
-            throw new IllegalArgumentException("wfc config is required");
-        }
         if (skygrid == null) {
             throw new IllegalArgumentException("skygrid config is required");
         }
@@ -55,32 +50,28 @@ public record GeneratorConfig(
     }
 
     /** Convenience constructor that applies the default spawn and biome settings (older call sites). */
-    public GeneratorConfig(String algorithm, RuleSet wfc, SkyGridConfig skygrid) {
-        this(algorithm, wfc, skygrid, SpawnConfig.defaults(), DEFAULT_BIOMES);
+    public GeneratorConfig(String algorithm, SkyGridConfig skygrid) {
+        this(algorithm, skygrid, SpawnConfig.defaults(), DEFAULT_BIOMES);
     }
 
     /** Convenience constructor that applies the default biome palette. */
-    public GeneratorConfig(String algorithm, RuleSet wfc, SkyGridConfig skygrid, SpawnConfig spawn) {
-        this(algorithm, wfc, skygrid, spawn, DEFAULT_BIOMES);
+    public GeneratorConfig(String algorithm, SkyGridConfig skygrid, SpawnConfig spawn) {
+        this(algorithm, skygrid, spawn, DEFAULT_BIOMES);
     }
 
     public GeneratorConfig withAlgorithm(String newAlgorithm) {
-        return new GeneratorConfig(newAlgorithm, wfc, skygrid, spawn, biomes);
-    }
-
-    public GeneratorConfig withWfc(RuleSet newWfc) {
-        return new GeneratorConfig(algorithm, newWfc, skygrid, spawn, biomes);
+        return new GeneratorConfig(newAlgorithm, skygrid, spawn, biomes);
     }
 
     public GeneratorConfig withSkygrid(SkyGridConfig newSkygrid) {
-        return new GeneratorConfig(algorithm, wfc, newSkygrid, spawn, biomes);
+        return new GeneratorConfig(algorithm, newSkygrid, spawn, biomes);
     }
 
     public GeneratorConfig withSpawn(SpawnConfig newSpawn) {
-        return new GeneratorConfig(algorithm, wfc, skygrid, newSpawn, biomes);
+        return new GeneratorConfig(algorithm, skygrid, newSpawn, biomes);
     }
 
     public GeneratorConfig withBiomes(List<BiomeId> newBiomes) {
-        return new GeneratorConfig(algorithm, wfc, skygrid, spawn, newBiomes);
+        return new GeneratorConfig(algorithm, skygrid, spawn, newBiomes);
     }
 }

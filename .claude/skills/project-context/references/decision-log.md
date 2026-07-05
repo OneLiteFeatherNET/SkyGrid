@@ -71,3 +71,31 @@ work. Reversing increases maintenance burden. See `docs/MAINTENANCE.md`.
 uses `cyclonedxDirectBom` (the 3.x API moved `includeConfigs` there and removed the old setters).
 Why: correctness for a world generator and a build that configures cleanly. Reverting the CycloneDX
 config to the old setters breaks every Gradle invocation.
+
+## D11 (2026-07-05): Remove the WFC algorithm and the starter platform/villager first-join spawn
+
+Removed the `wfc` algorithm entirely: `core.solver` (`WfcSolver`, `EntropyHeuristic`,
+`CollapseStrategy`, `ShannonEntropyHeuristic`, `WeightedRandomCollapse`), `WfcSurfaceAlgorithm`,
+`RegionGenerationService`, and the `ports.in.GenerateRegionUseCase` port. Only `skygrid` and
+`noise_skygrid` remain; an unrecognized configured algorithm id (including a leftover `"wfc"`) falls
+back to `skygrid` with a warning. `SkyGridApi.tileIds()`/`tile(String)` and the `/skygrid
+list|info|weight|allow|disallow` WFC tile-admin subcommands are gone too, since there is no tile
+concept left to expose or administer (`API_VERSION` bumped `1.0.0` -> `2.0.0` for the breaking
+change).
+
+In the same effort, replaced the starter platform/villager first-join spawn with a safe-block-search
+teleport: `SpawnConfig` dropped `platformY`/`platformBlock`/`platformRadius`/`villager` in favor of
+`spread`/`spacing`/`searchRadius`/`maxAttempts`. First join still assigns the next slot in the
+existing outward spiral (unchanged), but instead of building a platform and spawning a villager, it
+searches near that slot for a column with solid, non-hazardous ground and passable space and
+teleports the player there; a failed search falls back to a fixed high point rather than failing the
+join.
+
+Why: the WFC solid-terrain and tile-admin surface area (a dedicated solver package, a mandatory
+config section, and public API surface for tile administration) cost more to maintain than the two
+void-grid algorithms needed, and no shipped preset relied on it as its primary algorithm. The starter
+platform/villager spawn permanently altered the generated world (a built structure plus a spawned
+entity) for a mechanic that only needed a safe landing spot; the search-based teleport achieves the
+same goal without leaving any trace in the world. Reversing either would reintroduce the removed
+surface area (solver, tile-admin API, platform building, villager spawning) for a feature this project
+decided was not worth the maintenance cost.

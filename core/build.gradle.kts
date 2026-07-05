@@ -13,6 +13,7 @@ dependencies {
     api(project(":ports"))
     api(project(":api"))
     compileOnly(libs.adventure.api)
+    testFixturesCompileOnly(libs.adventure.api)
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)

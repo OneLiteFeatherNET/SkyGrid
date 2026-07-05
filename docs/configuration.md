@@ -12,7 +12,7 @@ plugins/SkyGrid-ng/
   config.yml            # selector: only names the active preset
   presets/              # one file per preset
     classic.yml
-    modern.yml
+    standard.yml
     nether.yml
   rules/                # one file per block
     oak_leaves.yml

@@ -67,7 +67,6 @@ Pure Java 25, the public data contract, fully testable without a server.
 ### 2. Ports (`ports.*`)
 The contracts. Interfaces only, framework free, depending on `api`. Adapters compile against these.
 
-- `ports.in.GenerateRegionUseCase` what the world needs from the WFC core.
 - `ports.in.RuleAdminUseCase` the in game administration.
 - `ports.in.TerrainAlgorithmProvider` the active algorithm for the generator.
 - `ports.out.RuleRepository` where configuration comes from and goes to (Repository).
@@ -79,13 +78,11 @@ implemented by adapters (dependency inversion).
 ### 3. Core (`core.*`)
 Pure Java 25, the domain. Implements the ports; depends on `ports` + `api`.
 
-- `core.solver` the WFC algorithm. `WfcSolver` plus two Strategy interfaces (`EntropyHeuristic`,
-  `CollapseStrategy`). `core.util` `WeightedTable`, `ValueNoise`.
-- `core.algorithm` the three `TerrainAlgorithm` implementations: `WfcSurfaceAlgorithm`,
-  `IndependentSkyGridAlgorithm`, `NoiseSkyGridAlgorithm`.
+- `core.util` `WeightedTable`, `ValueNoise`.
+- `core.algorithm` the two `TerrainAlgorithm` implementations: `IndependentSkyGridAlgorithm`,
+  `NoiseSkyGridAlgorithm`.
 - `core.state.RuleState` holds the current `GeneratorConfig`, Memento (undo) plus Observer.
-- `core.service` the application services: `RegionGenerationService`, `AlgorithmService`,
-  `RuleAdminService`, `SkyGridApiService`.
+- `core.service` the application services, including `RuleAdminService` and `SkyGridApiService`.
 
 ### 4. Adapters (`adapters.*`)
 The translators to the outside world, one module each. Bukkit, Gson, and Adventure live here only;
@@ -123,7 +120,7 @@ Adding an algorithm: one class implementing `TerrainAlgorithm` plus one branch i
 
 | Pattern | Where | Purpose |
 |---------|-------|---------|
-| Strategy | `EntropyHeuristic`, `CollapseStrategy`, `TerrainAlgorithm` | swap behavior without changing callers |
+| Strategy | `TerrainAlgorithm` | swap behavior without changing callers |
 | Factory | `JsonRuleRepository`, `AlgorithmService` | build domain from JSON / build the active algorithm |
 | Repository | `RuleRepository` | abstract the config source |
 | Flyweight | `TileType`, `BlockWeight` | one shared instance per type |
@@ -131,13 +128,11 @@ Adding an algorithm: one class implementing `TerrainAlgorithm` plus one branch i
 | Memento | immutable `GeneratorConfig` + undo stack | in game undo |
 | Command | `SkyGridCommand` subcommands | encapsulate runtime operations |
 
-## Determinism and seamless WFC
+## Determinism
 
 Same world seed and coordinates always yield the same result. Seeds are derived reproducibly in
-`Seeds`. WFC region grid lines are solved first as 1D WFC with anchor endpoints, then 2D region
-interiors are solved against those fixed borders, so neighborships are always rule conformant
-(verified: 0 adjacency violations over thousands of edges, 0 determinism deviations). The SkyGrid
-algorithms are O(1) per grid cell and need no propagation.
+`Seeds`. The SkyGrid algorithms are O(1) per grid cell and need no propagation, so generation stays
+fast and parallel safe at any player count.
 
 ## Internationalization
 

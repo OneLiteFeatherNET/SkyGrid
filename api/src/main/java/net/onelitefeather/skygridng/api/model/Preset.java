@@ -8,7 +8,7 @@ import java.util.List;
  *
  * A {@code null} field means "inherit from the parents (or, at the root, fall back to the built-in
  * default)". The resolver flattens the {@code extends} graph into a complete {@link GeneratorConfig},
- * so a {@code modern} or {@code nether} preset can restate just its block palette or mob list on top
+ * so a {@code standard} or {@code nether} preset can restate just its block palette or mob list on top
  * of {@code classic}. This mirrors the inheritance model used by CMake presets and Minecraft world
  * presets (override only what differs).
  *
@@ -27,7 +27,6 @@ import java.util.List;
  * @param spawnerMobs override: mobs assigned to spawners
  * @param biomes      override: the biome palette
  * @param spawn       override: spread-spawn settings
- * @param wfc         override: the full WFC rule set
  */
 public record Preset(
         String name,
@@ -41,8 +40,7 @@ public record Preset(
         List<BlockWeight> chestLoot,
         List<BlockWeight> spawnerMobs,
         List<BiomeId> biomes,
-        SpawnConfig spawn,
-        RuleSet wfc
+        SpawnConfig spawn
 ) {
     public Preset {
         if (name == null || name.isBlank()) {

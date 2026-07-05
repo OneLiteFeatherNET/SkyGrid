@@ -32,18 +32,6 @@ final class Messages {
         return key("help");
     }
 
-    static Component list(String ids) {
-        return key("list", ids);
-    }
-
-    static Component info(String id, double weight, boolean neutral, String surface, boolean liquid, int features) {
-        return key("info", id, weight, neutral, surface, liquid, features);
-    }
-
-    static Component unknownTile(String id) {
-        return key("unknown_tile", id);
-    }
-
     static Component usage(String usage) {
         return key("usage", usage);
     }
@@ -52,20 +40,8 @@ final class Messages {
         return key("not_a_number", raw);
     }
 
-    static Component weightSet(String tile, double value) {
-        return key("weight.set", tile, value);
-    }
-
     static Component weightFail(String raw) {
         return key("weight.fail", raw);
-    }
-
-    static Component allowed(String a, String b) {
-        return key("allowed", a, b);
-    }
-
-    static Component removed(String a, String b) {
-        return key("removed", a, b);
     }
 
     static Component invalidMaterial(String raw) {
@@ -122,5 +98,25 @@ final class Messages {
 
     static Component worldList(String worlds) {
         return key("world.list", worlds);
+    }
+
+    static Component challengeUnavailable() {
+        return key("challenge.unavailable");
+    }
+
+    static Component challengeListEmpty() {
+        return key("challenge.list_empty");
+    }
+
+    static Component challengeListEntry(String id, boolean active) {
+        return key("challenge.list_entry", id, active);
+    }
+
+    static Component challengeUnknown(String id) {
+        return key("challenge.unknown", id);
+    }
+
+    static Component challengeToggled(String id, boolean active) {
+        return key("challenge.toggled", id, active);
     }
 }

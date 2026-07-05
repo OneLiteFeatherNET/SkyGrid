@@ -3,8 +3,8 @@ name: user-stories
 description: >
   Use whenever planning, implementing, reviewing, or prioritizing a feature for SkyGrid-ng, to keep
   it aligned with the functional requirements. Captures the user stories by role (server owner,
-  server admin, map maker, maintainer, developer) and epic (SkyGrid revival, switchable algorithms,
-  retained WFC, internationalization, architecture, admin command UX), each with its acceptance
+  server admin, maintainer, developer) and epic (SkyGrid revival, switchable algorithms, safe
+  first-join spawn, internationalization, architecture, admin command UX), each with its acceptance
   criteria. Read this
   before adding or changing a feature so it satisfies a real user need, and treat the acceptance
   criteria as the definition of done before calling a feature complete.
@@ -19,8 +19,8 @@ criteria hold and there are tests (see the `testing` skill).
 
 ## Roles
 
-Server owner (runs the server), server admin (configures and tunes), map maker (builds with WFC
-terrain), maintainer (keeps the code healthy), developer (extends the plugin).
+Server owner (runs the server), server admin (configures and tunes), maintainer (keeps the code
+healthy), developer (extends the plugin).
 
 ## Epic A: SkyGrid revival
 
@@ -34,19 +34,23 @@ terrain), maintainer (keeps the code healthy), developer (extends the plugin).
 
 ## Epic B: Switchable generation algorithms
 
-- B1 Choose by config: `algorithm` accepts `wfc`, `skygrid`, `noise_skygrid`; an unknown value falls
+- B1 Choose by config: `algorithm` accepts `skygrid`, `noise_skygrid`; an unknown value falls
   back to a documented default with a warning.
 - B2 Switch in game: `/skygrid algorithm <id>` changes the active algorithm; new chunks use it; the
   change is reversible with undo.
 - B3 Fast seed based generation: SkyGrid generation is O(1) per grid cell (no constraint
   propagation), deterministic and parallel safe.
 
-## Epic C: WFC terrain (retained)
+## Epic C: Safe first-join spawn (spread, no starter platform)
 
-- C1 Adjacency based surface terrain: configurable tiles, weights, and allowed neighbor pairs; region
-  seams are adjacency correct and seamless.
-- C2 In game rule editing: `/skygrid weight`, `allow`, `disallow`, `undo`, `reload`, `save`; changes
-  apply immediately to newly generated chunks.
+- C1 Spread new players apart: each new player gets a spiral-outward-assigned slot, one per join, per
+  world; the assignment is a pure function of join order; `spread: false` falls back to a single
+  shared spawn area.
+- C2 Land on a safe block, not a platform: first join searches near the assigned slot for a column
+  with solid, non-hazardous ground and passable space at foot and head height, and teleports the
+  player there; search breadth is configurable (`searchRadius`, `maxAttempts`), and a failed search
+  falls back to a fixed high point rather than failing the join. No block is placed and no entity is
+  spawned as part of the search.
 
 ## Epic D: Internationalization
 
