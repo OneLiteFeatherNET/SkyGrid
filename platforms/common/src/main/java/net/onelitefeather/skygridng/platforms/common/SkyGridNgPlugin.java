@@ -7,8 +7,13 @@ import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.TypeLiteral;
 import net.onelitefeather.skygridng.adapters.command.CloudCommandManagerFactory;
-import net.onelitefeather.skygridng.adapters.command.SkyGridCommand;
+import net.onelitefeather.skygridng.adapters.command.CloudCommandRegistrar;
+import net.onelitefeather.skygridng.adapters.command.handler.AlgorithmCommands;
+import net.onelitefeather.skygridng.adapters.command.handler.ChallengeCommands;
 import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
+import net.onelitefeather.skygridng.adapters.command.handler.HelpCommands;
+import net.onelitefeather.skygridng.adapters.command.handler.MaintenanceCommands;
+import net.onelitefeather.skygridng.adapters.command.handler.PresetCommands;
 import net.onelitefeather.skygridng.adapters.spawn.SpreadSpawnListener;
 import net.onelitefeather.skygridng.platforms.common.injection.GeneratorModule;
 import net.onelitefeather.skygridng.platforms.common.injection.PlatformModule;
@@ -17,9 +22,11 @@ import net.onelitefeather.skygridng.platforms.olf.ChallengeModule;
 import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
 import net.onelitefeather.skygridng.platforms.olf.OlfModule;
 import net.onelitefeather.skygridng.api.SkyGridApi;
+import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.Presets;
+import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 import net.onelitefeather.skygridng.core.state.RuleState;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -96,24 +103,25 @@ public class SkyGridNgPlugin extends JavaPlugin {
             getLogger().warning("Unknown algorithm '" + algorithm + "', falling back to skygrid.");
         }
 
-        PluginCommand command = getCommand("skygrid");
-        if (command != null) {
-            SkyGridCommand executor = injector.getInstance(SkyGridCommand.class);
-            command.setExecutor(executor);
-            command.setTabCompleter(executor);
-        } else {
-            getLogger().warning("Command 'skygrid' is not registered in plugin.yml.");
-        }
-
-        // Cloud command framework migration, stage 1: build the sender-mapped manager so it exists
-        // side by side with the legacy executor above. Its constructor eagerly reflects into the
-        // server's real Brigadier argument type registry; a test double (MockBukkit) or a server
-        // fork without that registry throws a LinkageError (ExceptionInInitializerError or
-        // NoClassDefFoundError) from a static initializer, not a plain exception. Guard it the same
-        // way the missing "skygrid" registration above is guarded, so a construction failure never
-        // takes down the rest of the plugin. Stage 2 registers the migrated subcommands here.
+        // Cloud command framework migration, stage 2: build the sender-mapped manager and register
+        // the migrated annotated subcommands (preset, presets, worlds, algorithm, skyweight,
+        // reload, save, undo, challenge, help) on it. The manager's constructor eagerly reflects
+        // into the server's real Brigadier argument type registry; a test double (MockBukkit) or a
+        // server fork without that registry throws a LinkageError (ExceptionInInitializerError or
+        // NoClassDefFoundError) from a static initializer, not a plain exception. Guard both steps
+        // so a construction or registration failure never takes down the rest of the plugin.
         try {
             cloudCommandManager = CloudCommandManagerFactory.create(this);
+            CloudCommandRegistrar.register(
+                    cloudCommandManager,
+                    injector.getInstance(Presets.class),
+                    injector.getInstance(RuleAdminUseCase.class),
+                    injector.getInstance(ChallengeAdminUseCase.class),
+                    injector.getInstance(PresetCommands.class),
+                    injector.getInstance(AlgorithmCommands.class),
+                    injector.getInstance(MaintenanceCommands.class),
+                    injector.getInstance(ChallengeCommands.class),
+                    injector.getInstance(HelpCommands.class));
         } catch (RuntimeException | LinkageError e) {
             getLogger().log(Level.WARNING, "Failed to build the Cloud command manager.", e);
         }

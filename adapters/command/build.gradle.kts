@@ -13,6 +13,8 @@ dependencies {
     // Stage 1 of the Cloud command framework migration: infrastructure only, no subcommands yet.
     // Declared as `api` so it flows through platforms/common into the platforms/paper shaded jar.
     api(libs.cloud.paper)
+    // Stage 2: annotation-driven subcommands (@Command/@Argument/@Permission, AnnotationParser).
+    api(libs.cloud.annotations)
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)

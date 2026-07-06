@@ -64,13 +64,8 @@ bukkit {
     authors = listOf("TheMeinerLP", "OneLiteFeatherNET")
     website = "https://github.com/OneLiteFeatherNET/SkyGrid-ng"
 
-    commands {
-        register("skygrid") {
-            description = "Manages the generator configuration at runtime."
-            usage = "/skygrid help"
-            permission = "skygridng.admin"
-        }
-    }
+    // Commands are no longer declared here: Incendo Cloud registers them at runtime
+    // (its own guidance is not to also register commands in plugin.yml).
 
     permissions {
         register("skygridng.admin") {
