@@ -138,8 +138,31 @@ code.
 ### I2: Goal and achievement tracking within a challenge
 As a **player**, I want visible goals within an active challenge, so that I know what I'm working
 toward beyond surviving under restrictions.
-- Backlog. Needs a per-player durable state store (see `challenge-season-system` skill); not
-  implemented yet.
+- The per-player durable state store this needed is now built (see I2a below), but full
+  goal/achievement tracking and display beyond a single tier counter is still backlog.
+
+### I2a: Per-player challenge tier persistence (`one_life` first slice)
+As a **player**, I want my progress in a challenge to survive server restarts and be visible on
+request, so that repeated play is recognized instead of forgotten every reboot.
+- First database-backed persistence in the project: a PostgreSQL-backed
+  `ports.out.ChallengeProgressRepository` (`adapters/challenge-progress`, HikariCP pooled,
+  parameterized JDBC only, Flyway-migrated `challenge_tier` table keyed on `(player_id,
+  challenge_id)`), fronted by `ports.in.ChallengeProgressUseCase` /
+  `core.service.ChallengeProgressService`.
+- Wired end to end for exactly one challenge, `one_life`: when it transitions from active to
+  inactive, every online, non-eliminated player's tier increments by one and they get a
+  translatable chat message announcing it; eliminated players keep their tier unchanged.
+- `/skygrid challenge tier [player]` reports a tier; `/skygrid challenge tier reset confirm`
+  (admin-only, same confirmation convention as F2) clears every player's tier for every challenge,
+  standing in for a real season boundary until I3 exists.
+- Explicitly deferred (tracked separately, not part of this slice): tier does not yet change
+  challenge difficulty or enforcement (that is I4's job once it has its own dark-pattern review
+  per I5); the other three challenges (`no_crafting_table`, `no_natural_regeneration`,
+  `level_is_border`) are not wired to tiers yet, though the mechanism generalizes to them; there is
+  no real Season model yet, `reset` is a deliberately minimal stand-in so it is not confused with
+  I3 once that gets designed.
+- Credentials (`SKYGRID_DB_HOST`/`PORT`/`NAME`/`USER`/`PASSWORD`) come from environment variables,
+  never a config file.
 
 ### I3: Season lifecycle
 As a **server owner**, I want challenges bundled into fixed-duration Seasons with their own content
@@ -170,5 +193,6 @@ goods/trade layer.
 - Do not use JSR 354 (`javax.money`/Moneta): it hard-requires `jakarta.annotation` and `okhttp3` at
   runtime, violating the framework-free-core rule. Use a small `Money`-style record in `api.model`
   instead (same pattern as `BlockId`).
-- Shares the per-player persistence gap with Epic I2-I4; solve that once, generically.
->>>>>>> main
+- The per-player persistence gap it shared with Epic I2-I4 has a first concrete solution now (see
+  I2a); this economy sketch would follow the same repository/use-case pattern rather than
+  reinventing one.
