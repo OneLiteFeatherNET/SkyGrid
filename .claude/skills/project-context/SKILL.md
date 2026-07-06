@@ -63,7 +63,8 @@ term plan see `docs/MAINTENANCE.md`. The detailed, dated decision log is in
 Strategy (`TerrainAlgorithm`), Factory (`AlgorithmFactory`, the config repositories), Repository
 (`RuleRepository`, `PresetRepository`), Flyweight (shared immutable `BlockWeight`), Observer
 (`RuleState` listeners for cache invalidation and algorithm rebuild), Memento (immutable
-`GeneratorConfig` plus undo stack), Command (`SkyGridCommand` subcommands). The Wave Function
+`GeneratorConfig` plus undo stack), Command (Incendo Cloud `@Command` handlers in
+`adapters.command.handler`). The Wave Function
 Collapse era added a second Strategy pair (`EntropyHeuristic`, `CollapseStrategy`) and a Flyweight
 (`TileType`); both were removed with the `wfc` algorithm.
 

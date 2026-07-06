@@ -40,6 +40,12 @@ module graph already blocks most violations at compile time, but ArchUnit is the
 build-file drift (add paper-api to the core and it compiles, but the framework-free rule fails). If
 you add a legitimately new layer or package, update `ArchitectureTest` in the same change.
 
+A second, narrower rule (`commandHandlerStaysPlatformFree`) keeps `adapters.command.handler` free of
+`org.bukkit..`, `io.papermc..`, `org.incendo.cloud.paper..`, and `org.incendo.cloud.brigadier..`, so
+the `@Command`-annotated subcommand handler classes stay testable without Bukkit/MockBukkit; only
+`adapters.command` itself (the `SenderMapper`/`PaperCommandManager` binding) may touch those
+packages.
+
 ## Module layout
 
 The build is multi-module, grouped under category folders. The dependency rule is enforced at the
@@ -98,7 +104,14 @@ The second package segment matches the module: `api.*`, `ports.*`, `core.*`, `ad
 - `core.service`: `DefaultTerrainAlgorithms`, `RuleAdminService`, `SkyGridApiService` (the
   implementors of the in ports and the facade).
 - `adapters.generator`: `HexagonalChunkGenerator`, `MaterialPopulator`, `MaterialResolver`.
-- `adapters.command`: `SkyGridCommand`, `Messages` (translatable components).
+- `adapters.command`: `CloudCommandManagerFactory`/`PaperCommandSource` (the Incendo Cloud/Paper
+  binding via `SenderMapper`), `CloudCommandRegistrar` (suggestion providers, permission-denied
+  handling, parses every `adapters.command.handler.CloudCommandHandler`), and `Messages`
+  (translatable components). `adapters.command.handler`: `PresetCommands`, `AlgorithmCommands`,
+  `MaintenanceCommands`, `ChallengeCommands`, `HelpCommands`, the `@Command`-annotated subcommand
+  handlers, plus the platform-neutral `CommandSource`/`CloudCommandHandler` types they compile
+  against. Enforced Bukkit/Paper/cloud-paper/cloud-brigadier free by an ArchUnit rule (see
+  `references/extending.md`).
 - `adapters.json`: `JsonRuleRepository`, `GeneratorConfigDto`, and the bundled default
   `generator.json` resource.
 - `platforms.common`: `SkyGridNgPlugin` (composition root), `I18n`, the `injection/` modules
@@ -179,8 +192,13 @@ fixed recipe. Read `references/extending.md` and follow it step by step. The sho
 
 - New algorithm: add one class in `core.algorithm` implementing `ports.algorithm.TerrainAlgorithm`,
   register an `AlgorithmFactory` for its id in the composition root's `MapBinder` (read by
-  `DefaultTerrainAlgorithms`'s registry), and add the id to the command tab completion. The
-  generator adapter never changes.
+  `DefaultTerrainAlgorithms`'s registry). Command tab completion for `/skygrid algorithm` reads
+  straight from that registry (`RuleAdminUseCase.algorithmIds()`), so it updates automatically; no
+  command file to touch. The generator adapter never changes.
+- New command subcommand: add one `@Command`/`@Argument`/`@Permission` annotated method to an
+  existing (or new) class in `adapters.command.handler` implementing `CloudCommandHandler`, bind it
+  in `platforms.common.injection.CommandModule`'s set binder. `CloudCommandRegistrar` picks it up
+  automatically; no change to the registrar or `SkyGridNgPlugin`.
 - New out adapter: implement the existing `ports.out` interface (in a new or existing adapter
   module), bind it in `RepositoryModule`. The core does not change.
 - New OLF-only mechanic (`platforms.olf` inside `platforms/common`): implement `OlfFeature`

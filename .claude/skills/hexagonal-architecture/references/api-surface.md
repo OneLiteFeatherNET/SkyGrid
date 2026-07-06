@@ -110,18 +110,30 @@ The former `RegionGenerationService` (implemented `GenerateRegionUseCase` with a
   decorations are no longer tied to a specific algorithm.
 - `adapter/in/paper/MaterialResolver` (package private): `MaterialResolver(Material fallback)`;
   `Material resolve(String name)` (cached; unknown name maps to the fallback).
-- `adapter/in/command/SkyGridCommand(RuleAdminUseCase)` implements `CommandExecutor, TabCompleter`,
-  `@Inject`. `onCommand` checks `sender.hasPermission("skygridng.admin")`, then dispatches the
-  subcommands `presets, preset, worlds, algorithm, skyweight, reload, save, undo, help`. The WFC tile
-  admin subcommands (`list, info, weight, allow, disallow`) are gone.
+- `adapters.command.CloudCommandManagerFactory.create(JavaPlugin)` builds an Incendo Cloud
+  `PaperCommandManager<CommandSource>` via `SenderMapper.create(PaperCommandSource::new,
+  PaperCommandSource::stack)`, so the command tree never touches a raw Paper `CommandSourceStack`.
+  `adapters.command.CloudCommandRegistrar.register(manager, presets, admin, challenges,
+  Set<CloudCommandHandler>)` registers the dynamic suggestion providers (`preset-names`,
+  `algorithm-ids`, `material-ids`, `challenge-ids`), a `NoPermissionException` handler that renders
+  `Messages.noPermission()`, and parses every handler in the set via `AnnotationParser`.
+- `adapters.command.handler` (Bukkit/Paper/cloud-paper/cloud-brigadier free, ArchUnit enforced):
+  `CommandSource` (`sendMessage(Component)`, `hasPermission(String)`), `CloudCommandHandler` (marker,
+  bound in `platforms.common.injection.CommandModule`'s `Multibinder`), and the five
+  `@Command`/`@Argument`/`@Permission`-annotated handler classes: `PresetCommands` (`preset`,
+  `presets`, `worlds`), `AlgorithmCommands` (`algorithm`, `skyweight`), `MaintenanceCommands`
+  (`reload`, `reload confirm`, `save`, `undo`), `ChallengeCommands` (`challenge list`,
+  `challenge toggle`), `HelpCommands` (bare `skygrid`, `skygrid help`, `skygrid help <subcommand>`).
 - `adapter/out/json/JsonRuleRepository(Path file, String defaultJson)` implements `RuleRepository`.
 
 ## Bootstrap and Guice modules (`bootstrap`)
 
 - `SkyGridNgPlugin extends JavaPlugin`. `onLoad` builds the injector
   (`Guice.createInjector(Stage.PRODUCTION, new PlatformModule(this), new RepositoryModule(),
-  new GeneratorModule())`). `onEnable` registers the i18n store, sets the `skygrid` command executor,
-  and logs. `getDefaultWorldGenerator` returns `injector.getInstance(HexagonalChunkGenerator.class)`.
+  new GeneratorModule())`). `onEnable` registers the i18n store, builds the Cloud command manager and
+  registers its handlers (guarded: a construction/registration failure is logged, not fatal, see
+  `CloudCommandManagerFactory`/`CloudCommandRegistrar`), and logs. `getDefaultWorldGenerator` returns
+  `injector.getInstance(HexagonalChunkGenerator.class)`.
 - `injection/PlatformModule(JavaPlugin)` binds `JavaPlugin` and provides the data folder `Path`.
 - `injection/RepositoryModule` provides `RuleRepository` from `plugin.getResource("generator.json")`.
 - `injection/GeneratorModule` provides the core services and binds each in port to its service. The

@@ -29,7 +29,7 @@ adapter module has no `core` on its classpath):
 | `ports` | `ports.in`, `ports.out`, `ports.algorithm` | no | library (depends on api) |
 | `core` | `core.*` | no | library (depends on ports, api) |
 | `adapters/generator` | `adapters.generator` | yes (Bukkit) | library (depends on ports, api) |
-| `adapters/command` | `adapters.command` | yes (Bukkit, Adventure) | library (depends on ports, api) |
+| `adapters/command` | `adapters.command`, `adapters.command.handler` | yes (Bukkit, Adventure, Incendo Cloud) | library (depends on ports, api) |
 | `adapters/json` | `adapters.json` | yes (Gson) | library (depends on ports, api) |
 | `platforms/common` | `platforms.common`, `platforms.olf` | yes (Bukkit, Guice) | library (composition root) |
 | `platforms/paper` | (none) | yes | `skygrid-ng-<version>.jar` |
@@ -93,8 +93,14 @@ they depend on `ports` + `api`, never on `core`.
 - `adapters.generator` `HexagonalChunkGenerator` and `MaterialPopulator` call the use cases;
   `MaterialResolver` resolves a platform-neutral `BlockId` (`minecraft:stone`) to a Bukkit `Material`
   via `NamespacedKey` + `Registry.MATERIAL`. The core never names a Bukkit block (WorldEdit pattern).
-- `adapters.command` `SkyGridCommand` calls `RuleAdminUseCase`; `Messages` builds translatable
-  components.
+- `adapters.command` runs `/skygrid` on the Incendo Cloud command framework: `CloudCommandManagerFactory`
+  builds a `PaperCommandManager<CommandSource>` (Cloud's Paper sender mapped to our own
+  platform-neutral `CommandSource` via `SenderMapper`), `CloudCommandRegistrar` wires suggestion
+  providers and permission handling and parses the `@Command`-annotated handler classes in
+  `adapters.command.handler` (`PresetCommands`, `AlgorithmCommands`, `MaintenanceCommands`,
+  `ChallengeCommands`, `HelpCommands`), each calling `RuleAdminUseCase`/`Presets`/
+  `ChallengeAdminUseCase`; `Messages` builds translatable components (MiniMessage, not
+  `java.text.MessageFormat`).
 - `adapters.json` `JsonRuleRepository` (plus `GeneratorConfigDto`) implements `RuleRepository` via
   Gson (Factory: JSON to domain), and owns the bundled default `generator.json`.
 
@@ -103,7 +109,10 @@ they depend on `ports` + `api`, never on `core`.
 `platforms.common.injection` (`PlatformModule`, `RepositoryModule`, `GeneratorModule`) and connects
 adapters to ports. The core carries no injection annotations: its services are constructed in the
 modules' `@Provides` methods, so the core stays framework free while the wiring is Guice managed.
-Adapters (`HexagonalChunkGenerator`, `SkyGridCommand`) use constructor `@Inject`. `platforms.common`
+Adapters (`HexagonalChunkGenerator`, the `adapters.command.handler` classes) use constructor
+`@Inject`; the Cloud handler set is a Guice `Multibinder` (`CommandModule`), parsed as a whole by
+`CloudCommandRegistrar` (see `hexagonal-architecture`'s "Add a command subcommand" recipe).
+`platforms.common`
 `I18n` registers the Adventure translation store. `platforms/paper` builds on this shared root.
 Swapping an adapter changes a module binding, not the core.
 
@@ -127,7 +136,7 @@ Adding an algorithm: one class implementing `TerrainAlgorithm` plus one branch i
 | Flyweight | `TileType`, `BlockWeight` | one shared instance per type |
 | Observer | `RuleState` listeners | cache invalidation and algorithm rebuild |
 | Memento | immutable `GeneratorConfig` + undo stack | in game undo |
-| Command | `SkyGridCommand` subcommands | encapsulate runtime operations |
+| Command | Incendo Cloud `@Command` handlers (`adapters.command.handler`) | encapsulate runtime operations |
 
 ## Determinism
 
@@ -138,6 +147,7 @@ fast and parallel safe at any player count.
 ## Internationalization
 
 The core stays text free: services return data, the command adapter renders messages. `Messages`
-builds `Component.translatable(key, args)`, `platforms.common` `I18n` registers the resource bundles as an
-Adventure `TranslationStore` on the `GlobalTranslator`, and Paper renders each component in the
-client locale.
+builds `Component.translatable(key, args)`, `platforms.common` `I18n` registers the resource bundles
+as a `MiniMessageTranslationStore` on the `GlobalTranslator` (bundle values are MiniMessage, not
+`java.text.MessageFormat`; arguments are `<arg:0>`/`<arg:1>`), and Paper renders each component in
+the client locale.

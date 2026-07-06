@@ -71,18 +71,25 @@ config over a 16x16 chunk and y range 0..63, exactly 256 blocks are placed (4 x 
 
 ## Mockito patterns
 
-Command test against the port, no MockBukkit and no message rendering:
+Command handler test against the port, no MockBukkit and no message rendering: call the
+`@Command`-annotated method directly (Cloud's argument parsing and permission gate are not part of
+what this test exercises) with a `CommandSource` test double instead of a mocked Bukkit
+`CommandSender`. `adapters/command/src/test/java/.../adapters/command/handler/RecordingCommandSource.java`
+is that double: it just records every `Component` sent, in order.
 
 ```java
 RuleAdminUseCase admin = mock(RuleAdminUseCase.class);
-CommandSender sender = mock(CommandSender.class);
-SkyGridCommand cmd = new SkyGridCommand(admin);
+MaintenanceCommands subject = new MaintenanceCommands(admin);
+RecordingCommandSource source = new RecordingCommandSource();
 
-when(sender.hasPermission("skygridng.admin")).thenReturn(false);
-cmd.onCommand(sender, mock(Command.class), "skygrid", new String[]{"reload"});
-verify(sender).sendMessage(any(net.kyori.adventure.text.Component.class));
-verifyNoInteractions(admin);
+subject.reload(source);
+
+verify(admin, never()).reload();
+assertThat(source.messages()).containsExactly(Messages.reloadConfirm());
 ```
+
+See `MaintenanceCommandsTest` (and its four sibling `*CommandsTest` classes in the same package) for
+the full pattern across all five migrated handler classes.
 
 In memory repository for service tests:
 
