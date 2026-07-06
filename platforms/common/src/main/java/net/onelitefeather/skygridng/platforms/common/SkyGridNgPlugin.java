@@ -18,6 +18,7 @@ import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
 import net.onelitefeather.skygridng.platforms.olf.OlfModule;
 import net.onelitefeather.skygridng.api.SkyGridApi;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
+import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.generator.ChunkGenerator;
@@ -130,6 +131,19 @@ public class SkyGridNgPlugin extends JavaPlugin {
     public void onDisable() {
         onExtensionDisable();
         i18n.unregister();
+
+        // ChallengeProgressRepository's Postgres adapter lazily opens a HikariCP pool on first use;
+        // whether or not it was ever used this run, ask the injector for the bound singleton (Guice
+        // memoizes it, so this never reopens or duplicates anything) and close it if it is
+        // AutoCloseable, so a reload or server stop never leaks pooled connections or Hikari's
+        // housekeeping threads.
+        if (injector.getInstance(ChallengeProgressRepository.class) instanceof AutoCloseable closeable) {
+            try {
+                closeable.close();
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "Failed to close the challenge progress repository.", e);
+            }
+        }
     }
 
     /**
