@@ -3,13 +3,17 @@ package net.onelitefeather.skygridng.adapters.command;
 import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import jakarta.inject.Inject;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +29,15 @@ import java.util.Map;
  */
 public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
+    /**
+     * The only challenge this command's {@code tier} subcommand reports on today. Tier progress is
+     * per challenge, but only {@code one_life} has a wired {@link ChallengeProgressUseCase} producer
+     * ({@code OneLifeListener}) so far; a future revision could add a challenge id argument once more
+     * challenges record progress. Deliberately hardcoded here rather than taken from the command line,
+     * matching that scope.
+     */
+    private static final String ONE_LIFE_CHALLENGE_ID = "one_life";
+
     private static final List<String> SUBCOMMANDS = List.of(
             "preset", "presets", "worlds", "algorithm", "skyweight", "reload", "save", "undo",
             "challenge", "help");
@@ -38,19 +51,22 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
             Map.entry("save", "/skygrid save"),
             Map.entry("preset", "/skygrid preset <name>"),
             Map.entry("skyweight", "/skygrid skyweight <material> <value>"),
-            Map.entry("challenge", "/skygrid challenge <list|toggle> [id]"));
+            Map.entry("challenge", "/skygrid challenge <list|toggle|tier> [id|player|reset confirm]"));
 
-    private static final List<String> CHALLENGE_SUBCOMMANDS = List.of("list", "toggle");
+    private static final List<String> CHALLENGE_SUBCOMMANDS = List.of("list", "toggle", "tier");
 
     private final RuleAdminUseCase admin;
     private final Presets presets;
     private final ChallengeAdminUseCase challenges;
+    private final ChallengeProgressUseCase progress;
 
     @Inject
-    public SkyGridCommand(RuleAdminUseCase admin, Presets presets, ChallengeAdminUseCase challenges) {
+    public SkyGridCommand(RuleAdminUseCase admin, Presets presets, ChallengeAdminUseCase challenges,
+                           ChallengeProgressUseCase progress) {
         this.admin = admin;
         this.presets = presets;
         this.challenges = challenges;
+        this.progress = progress;
     }
 
     @Override
@@ -169,13 +185,14 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
 
     private void challenge(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle> [id]"));
+            sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle|tier> [id|player|reset confirm]"));
             return;
         }
         switch (args[1].toLowerCase(Locale.ROOT)) {
             case "list" -> challengeList(sender, challenges);
             case "toggle" -> challengeToggle(sender, args, challenges);
-            default -> sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle> [id]"));
+            case "tier" -> challengeTier(sender, args);
+            default -> sender.sendMessage(Messages.usage("/skygrid challenge <list|toggle|tier> [id|player|reset confirm]"));
         }
     }
 
@@ -205,6 +222,45 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Messages.challengeToggled(id, !currentlyActive));
     }
 
+    /**
+     * {@code /skygrid challenge tier [player]}: checks the invoking player's own
+     * {@value #ONE_LIFE_CHALLENGE_ID} tier when called with no third argument (an invocation from
+     * the console with no player argument is rejected instead, since the console has no tier of
+     * its own), or the named player's tier when a third argument is given. {@code /skygrid
+     * challenge tier reset} is the one destructive form: it clears every player's progress for
+     * every challenge, gated by the same {@code skygridng.admin} permission this whole command
+     * already requires. Like {@code reload}, it requires an explicit {@code confirm} argument
+     * ({@code /skygrid challenge tier reset confirm}) before it actually runs; without it, the
+     * player only sees a warning naming what will be lost.
+     */
+    private void challengeTier(CommandSender sender, String[] args) {
+        if (args.length >= 3 && args[2].equalsIgnoreCase("reset")) {
+            if (args.length < 4 || !args[3].equalsIgnoreCase("confirm")) {
+                sender.sendMessage(Messages.challengeTierResetConfirm());
+                return;
+            }
+            progress.resetAll();
+            sender.sendMessage(Messages.challengeTierReset());
+            return;
+        }
+        if (args.length < 3) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(Messages.challengeTierConsole());
+                return;
+            }
+            int tier = progress.tierOf(player.getUniqueId(), ONE_LIFE_CHALLENGE_ID);
+            sender.sendMessage(Messages.challengeTierSelf(tier));
+            return;
+        }
+        String targetName = args[2];
+        // Bukkit.getOfflinePlayer(String) resolves an online player instantly; for a name that was
+        // never seen before it may block on a Mojang UUID lookup. Accepted here since this is a
+        // rarely used admin command, not a hot path.
+        OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
+        int tier = progress.tierOf(target.getUniqueId(), ONE_LIFE_CHALLENGE_ID);
+        sender.sendMessage(Messages.challengeTierOther(targetName, tier));
+    }
+
     private double parseDouble(String raw) {
         try {
             return Double.parseDouble(raw);
@@ -232,10 +288,28 @@ public final class SkyGridCommand implements CommandExecutor, TabCompleter {
                 default -> List.of();
             };
         }
-        if (args.length == 3 && sub.equals("challenge") && args[1].equalsIgnoreCase("toggle")) {
-            return filter(challengeIds(challenges), args[2]);
+        if (args.length == 3 && sub.equals("challenge")) {
+            return switch (args[1].toLowerCase(Locale.ROOT)) {
+                case "toggle" -> filter(challengeIds(challenges), args[2]);
+                case "tier" -> filter(tierTabOptions(), args[2]);
+                default -> List.of();
+            };
+        }
+        if (args.length == 4 && sub.equals("challenge") && args[1].equalsIgnoreCase("tier")
+                && args[2].equalsIgnoreCase("reset")) {
+            return filter(List.of("confirm"), args[3]);
         }
         return List.of();
+    }
+
+    /** {@code reset} plus every online player's name, offered for {@code /skygrid challenge tier <tab>}. */
+    private List<String> tierTabOptions() {
+        List<String> options = new ArrayList<>();
+        options.add("reset");
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            options.add(online.getName());
+        }
+        return options;
     }
 
     private List<String> materialIds() {

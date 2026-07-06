@@ -6,17 +6,24 @@ import net.onelitefeather.skygridng.api.model.ChallengeRule;
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
 import net.onelitefeather.skygridng.api.model.SkyGridConfig;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,12 +38,16 @@ import static org.mockito.Mockito.when;
 /**
  * Black-box tests for the command adapter against the {@link RuleAdminUseCase} port. Mockito
  * mocks the sender and the port; we assert the command delegates correctly and guards permission.
+ * The named-player {@code challenge tier} case statically mocks {@link Bukkit} (no MockBukkit
+ * dependency in this module) since {@code Bukkit.getOfflinePlayer} is a static call the command
+ * adapter uses directly.
  */
 class SkyGridCommandTest {
 
     private RuleAdminUseCase admin;
     private Presets presets;
     private ChallengeAdminUseCase challenges;
+    private ChallengeProgressUseCase progress;
     private CommandSender sender;
     private Command command;
     private SkyGridCommand subject;
@@ -46,9 +57,10 @@ class SkyGridCommandTest {
         admin = mock(RuleAdminUseCase.class);
         presets = mock(Presets.class);
         challenges = mock(ChallengeAdminUseCase.class);
+        progress = mock(ChallengeProgressUseCase.class);
         sender = mock(CommandSender.class);
         command = mock(Command.class);
-        subject = new SkyGridCommand(admin, presets, challenges);
+        subject = new SkyGridCommand(admin, presets, challenges, progress);
     }
 
     private static GeneratorConfig minimalConfig(BlockWeight... blocks) {
@@ -260,5 +272,85 @@ class SkyGridCommandTest {
         subject.onCommand(sender, command, "skygrid", new String[]{"help", "notasubcommand"});
 
         verify(sender, times(Messages.help().size())).sendMessage(any(Component.class));
+    }
+
+    // ----- challenge tier sub command -----
+
+    @Test
+    @DisplayName("'challenge tier' with no player name reports the invoking player's own tier")
+    void challengeTierSelfReportsOwnTier() {
+        Player self = mock(Player.class);
+        UUID selfId = UUID.randomUUID();
+        when(self.hasPermission("skygridng.admin")).thenReturn(true);
+        when(self.getUniqueId()).thenReturn(selfId);
+        when(progress.tierOf(selfId, "one_life")).thenReturn(2);
+
+        subject.onCommand(self, command, "skygrid", new String[]{"challenge", "tier"});
+
+        verify(progress).tierOf(selfId, "one_life");
+        verify(self).sendMessage(any(Component.class));
+    }
+
+    @Test
+    @DisplayName("'challenge tier' invoked from the console (not a player) never queries a tier")
+    void challengeTierFromConsoleNeverQueriesTier() {
+        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
+
+        subject.onCommand(sender, command, "skygrid", new String[]{"challenge", "tier"});
+
+        verify(progress, never()).tierOf(any(), any());
+        verify(sender).sendMessage(any(Component.class));
+    }
+
+    @Test
+    @DisplayName("'challenge tier <player>' reports the named player's tier")
+    void challengeTierNamedPlayerReportsTheirTier() {
+        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
+        UUID targetId = UUID.randomUUID();
+        OfflinePlayer target = mock(OfflinePlayer.class);
+        when(target.getUniqueId()).thenReturn(targetId);
+        when(progress.tierOf(targetId, "one_life")).thenReturn(5);
+
+        try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getOfflinePlayer("Steve")).thenReturn(target);
+
+            subject.onCommand(sender, command, "skygrid", new String[]{"challenge", "tier", "Steve"});
+        }
+
+        verify(progress).tierOf(targetId, "one_life");
+        verify(sender).sendMessage(any(Component.class));
+    }
+
+    @Test
+    @DisplayName("'challenge tier reset' without 'confirm' asks for confirmation and does not reset")
+    void challengeTierResetRequiresConfirmation() {
+        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
+
+        subject.onCommand(sender, command, "skygrid", new String[]{"challenge", "tier", "reset"});
+
+        verify(progress, never()).resetAll();
+        verify(sender).sendMessage(any(Component.class));
+    }
+
+    @Test
+    @DisplayName("'challenge tier reset confirm' calls resetAll exactly once and responds with the confirmation message")
+    void challengeTierResetWithConfirmationCallsResetAllOnce() {
+        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
+
+        subject.onCommand(sender, command, "skygrid", new String[]{"challenge", "tier", "reset", "confirm"});
+
+        verify(progress, times(1)).resetAll();
+        verify(sender).sendMessage(any(Component.class));
+    }
+
+    @Test
+    @DisplayName("'challenge tier reset' tab completion offers only 'confirm'")
+    void challengeTierResetTabCompletion() {
+        when(sender.hasPermission("skygridng.admin")).thenReturn(true);
+
+        List<String> result = subject.onTabComplete(sender, command, "skygrid",
+                new String[]{"challenge", "tier", "reset", ""});
+
+        assertThat(result).containsExactly("confirm");
     }
 }

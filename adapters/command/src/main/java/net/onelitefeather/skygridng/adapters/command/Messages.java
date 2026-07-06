@@ -141,4 +141,25 @@ final class Messages {
     static Component challengeToggled(String id, boolean active) {
         return key("challenge.toggled", id, active);
     }
+
+    static Component challengeTierSelf(int tier) {
+        return key("challenge.tier.self", tier);
+    }
+
+    static Component challengeTierOther(String player, int tier) {
+        return key("challenge.tier.other", player, tier);
+    }
+
+    static Component challengeTierConsole() {
+        return key("challenge.tier.console");
+    }
+
+    static Component challengeTierReset() {
+        return key("challenge.tier.reset");
+    }
+
+    /** Shown instead of resetting when {@code /skygrid challenge tier reset} is missing {@code confirm}. */
+    static Component challengeTierResetConfirm() {
+        return key("challenge.tier.reset.confirm");
+    }
 }
