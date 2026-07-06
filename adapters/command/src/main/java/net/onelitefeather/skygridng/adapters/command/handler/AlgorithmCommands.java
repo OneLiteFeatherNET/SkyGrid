@@ -19,7 +19,7 @@ import java.util.Locale;
  * an invalid number must still produce {@link Messages#notANumber(String)} exactly as before,
  * rather than a generic Cloud parse-failure message.
  */
-public final class AlgorithmCommands {
+public final class AlgorithmCommands implements CloudCommandHandler {
 
     private final RuleAdminUseCase admin;
 

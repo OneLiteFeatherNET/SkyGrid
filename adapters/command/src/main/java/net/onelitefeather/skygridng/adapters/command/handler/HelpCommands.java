@@ -16,7 +16,7 @@ import java.util.Map;
  *
  * Has no port dependency at all, unlike the old monolithic command.
  */
-public final class HelpCommands {
+public final class HelpCommands implements CloudCommandHandler {
 
     private static final Map<String, String> USAGE = Map.ofEntries(
             Map.entry("reload", "/skygrid reload confirm"),

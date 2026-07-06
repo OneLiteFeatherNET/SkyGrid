@@ -16,7 +16,7 @@ import org.incendo.cloud.annotations.Permission;
  * (including no second argument) routes to the warning, mirroring the old code's
  * {@code args.length < 2 || !args[1].equalsIgnoreCase("confirm")} check.
  */
-public final class MaintenanceCommands {
+public final class MaintenanceCommands implements CloudCommandHandler {
 
     private final RuleAdminUseCase admin;
 

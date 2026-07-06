@@ -14,7 +14,7 @@ import java.util.Map;
  * {@code SkyGridCommand}: {@code /skygrid preset <name>}, {@code /skygrid presets},
  * {@code /skygrid worlds}.
  */
-public final class PresetCommands {
+public final class PresetCommands implements CloudCommandHandler {
 
     private final Presets presets;
 

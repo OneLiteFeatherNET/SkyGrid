@@ -8,13 +8,10 @@ import com.google.inject.Stage;
 import com.google.inject.TypeLiteral;
 import net.onelitefeather.skygridng.adapters.command.CloudCommandManagerFactory;
 import net.onelitefeather.skygridng.adapters.command.CloudCommandRegistrar;
-import net.onelitefeather.skygridng.adapters.command.handler.AlgorithmCommands;
-import net.onelitefeather.skygridng.adapters.command.handler.ChallengeCommands;
+import net.onelitefeather.skygridng.adapters.command.handler.CloudCommandHandler;
 import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
-import net.onelitefeather.skygridng.adapters.command.handler.HelpCommands;
-import net.onelitefeather.skygridng.adapters.command.handler.MaintenanceCommands;
-import net.onelitefeather.skygridng.adapters.command.handler.PresetCommands;
 import net.onelitefeather.skygridng.adapters.spawn.SpreadSpawnListener;
+import net.onelitefeather.skygridng.platforms.common.injection.CommandModule;
 import net.onelitefeather.skygridng.platforms.common.injection.GeneratorModule;
 import net.onelitefeather.skygridng.platforms.common.injection.PlatformModule;
 import net.onelitefeather.skygridng.platforms.common.injection.RepositoryModule;
@@ -57,6 +54,8 @@ import java.util.logging.Level;
 public class SkyGridNgPlugin extends JavaPlugin {
 
     private static final Key<Set<OlfFeature>> FEATURES = Key.get(new TypeLiteral<Set<OlfFeature>>() {});
+    private static final Key<Set<CloudCommandHandler>> COMMAND_HANDLERS =
+            Key.get(new TypeLiteral<Set<CloudCommandHandler>>() {});
 
     private final I18n i18n = new I18n();
     private Injector injector;
@@ -79,6 +78,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
         modules.add(new PlatformModule(this));
         modules.add(new RepositoryModule());
         modules.add(new GeneratorModule());
+        modules.add(new CommandModule());
         modules.add(new OlfModule());
         modules.add(new ChallengeModule());
         return modules;
@@ -117,11 +117,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
                     injector.getInstance(Presets.class),
                     injector.getInstance(RuleAdminUseCase.class),
                     injector.getInstance(ChallengeAdminUseCase.class),
-                    injector.getInstance(PresetCommands.class),
-                    injector.getInstance(AlgorithmCommands.class),
-                    injector.getInstance(MaintenanceCommands.class),
-                    injector.getInstance(ChallengeCommands.class),
-                    injector.getInstance(HelpCommands.class));
+                    injector.getInstance(COMMAND_HANDLERS));
         } catch (RuntimeException | LinkageError e) {
             getLogger().log(Level.WARNING, "Failed to build the Cloud command manager.", e);
         }

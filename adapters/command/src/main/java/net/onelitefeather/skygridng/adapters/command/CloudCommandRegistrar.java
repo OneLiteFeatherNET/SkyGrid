@@ -1,11 +1,7 @@
 package net.onelitefeather.skygridng.adapters.command;
 
-import net.onelitefeather.skygridng.adapters.command.handler.AlgorithmCommands;
-import net.onelitefeather.skygridng.adapters.command.handler.ChallengeCommands;
+import net.onelitefeather.skygridng.adapters.command.handler.CloudCommandHandler;
 import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
-import net.onelitefeather.skygridng.adapters.command.handler.HelpCommands;
-import net.onelitefeather.skygridng.adapters.command.handler.MaintenanceCommands;
-import net.onelitefeather.skygridng.adapters.command.handler.PresetCommands;
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
@@ -14,6 +10,8 @@ import org.incendo.cloud.annotations.AnnotationParser;
 import org.incendo.cloud.exception.NoPermissionException;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.suggestion.SuggestionProvider;
+
+import java.util.Set;
 
 /**
  * Registers stage 2's Cloud annotated subcommand handlers on the manager built by
@@ -27,6 +25,10 @@ import org.incendo.cloud.suggestion.SuggestionProvider;
  * challenge subcommands are all Cloud command tree literals now, not free-form arguments, so Cloud
  * suggests them natively; only the genuinely dynamic argument values (preset names, algorithm ids,
  * material ids, challenge ids) need a custom {@link SuggestionProvider} registered here.
+ *
+ * The handler set comes from Guice's {@code CloudCommandHandler} set binder (see
+ * {@code CommandModule}), so adding a subcommand group is one new class plus one binding line
+ * there, never a change to this method's signature.
  */
 public final class CloudCommandRegistrar {
 
@@ -37,16 +39,12 @@ public final class CloudCommandRegistrar {
                                  Presets presets,
                                  RuleAdminUseCase admin,
                                  ChallengeAdminUseCase challenges,
-                                 PresetCommands presetCommands,
-                                 AlgorithmCommands algorithmCommands,
-                                 MaintenanceCommands maintenanceCommands,
-                                 ChallengeCommands challengeCommands,
-                                 HelpCommands helpCommands) {
+                                 Set<CloudCommandHandler> handlers) {
         registerSuggestionProviders(manager, presets, admin, challenges);
         registerNoPermissionHandler(manager);
 
         AnnotationParser<CommandSource> parser = new AnnotationParser<>(manager, CommandSource.class);
-        parser.parse(presetCommands, algorithmCommands, maintenanceCommands, challengeCommands, helpCommands);
+        parser.parse(handlers.toArray());
     }
 
     private static void registerSuggestionProviders(PaperCommandManager<CommandSource> manager,

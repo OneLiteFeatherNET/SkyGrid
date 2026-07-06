@@ -14,7 +14,7 @@ import java.util.List;
  * Cloud annotated subcommands for challenge administration, ported 1:1 from the legacy
  * {@code SkyGridCommand}: {@code /skygrid challenge list}, {@code /skygrid challenge toggle <id>}.
  */
-public final class ChallengeCommands {
+public final class ChallengeCommands implements CloudCommandHandler {
 
     private final ChallengeAdminUseCase challenges;
 
