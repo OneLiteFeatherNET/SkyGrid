@@ -1,11 +1,11 @@
-package net.onelitefeather.skygridng.adapters.challengeprogress;
+package net.onelitefeather.skygridng.adapters.persistence;
 
 import java.util.Optional;
 
 /**
- * Connection settings for the challenge progress database, read from environment variables only:
- * never a config file, never hardcoded, never logged. {@code user} and {@code password} have no
- * safe default and must be provided.
+ * Connection settings for a Postgres-backed adapter's database, read from environment variables
+ * only: never a config file, never hardcoded, never logged. {@code user} and {@code password} have
+ * no safe default and must be provided.
  *
  * @param host     the database host, defaults to {@code localhost}
  * @param port     the database port, defaults to {@code 5432}
