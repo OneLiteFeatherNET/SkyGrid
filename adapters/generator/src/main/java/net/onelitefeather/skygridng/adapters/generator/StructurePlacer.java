@@ -1,10 +1,9 @@
 package net.onelitefeather.skygridng.adapters.generator;
 
+import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.api.model.LegendEntry;
 import net.onelitefeather.skygridng.api.model.StructurePattern;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.generator.LimitedRegion;
+import net.onelitefeather.skygridng.ports.algorithm.RegionWriter;
 
 /**
  * Places a {@link StructurePattern} around a decoration's anchor cell, guaranteeing the solid support
@@ -17,26 +16,28 @@ import org.bukkit.generator.LimitedRegion;
  */
 final class StructurePlacer {
 
+    private static final BlockId AIR = BlockId.of("minecraft:air");
+
     private StructurePlacer() {
     }
 
     /**
      * Applies {@code pattern} anchored at {@code (x, y, z)}. First checks that every cell the pattern
-     * would actually touch (everything but {@link StructurePattern#IGNORE}) fits inside {@code area};
-     * if any does not, places nothing and returns {@code false} so the caller can consume the roll
-     * without a half-placed structure (the same contract {@link StillWater#place} has). Only then does
-     * it place: {@link StructurePattern#CLEAR_AIR} clears the cell, {@link StructurePattern#ENSURE_SOLID}
+     * would actually touch (everything but {@link StructurePattern#IGNORE}) fits inside {@code writer}'s
+     * region; if any does not, places nothing and returns {@code false} so the caller can consume the
+     * roll without a half-placed structure (the same contract {@link StillWater#place} has). Only then
+     * does it place: {@link StructurePattern#CLEAR_AIR} clears the cell, {@link StructurePattern#ENSURE_SOLID}
      * fills an air cell with the pattern's {@code filler} and leaves existing terrain alone, and every
-     * other symbol resolves its legend entry to block data and places it.
+     * other symbol resolves its legend entry (state included) and places it through {@code writer}.
      */
-    static boolean place(LimitedRegion area, RuleResolver rules, StructurePattern pattern, int x, int y, int z) {
+    static boolean place(RegionWriter writer, StructurePattern pattern, int x, int y, int z) {
         int[] anchor = pattern.anchorOffset();
         for (StructurePattern.Cell cell : pattern.cells()) {
             if (cell.symbol() == StructurePattern.IGNORE) {
                 continue;
             }
             int[] offset = cell.offsetFrom(anchor);
-            if (!area.isInRegion(x + offset[0], y + offset[1], z + offset[2])) {
+            if (!writer.isInRegion(x + offset[0], y + offset[1], z + offset[2])) {
                 return false;
             }
         }
@@ -50,18 +51,17 @@ final class StructurePlacer {
             int wy = y + offset[1];
             int wz = z + offset[2];
             if (symbol == StructurePattern.CLEAR_AIR) {
-                area.setType(wx, wy, wz, Material.AIR);
+                writer.place(wx, wy, wz, AIR);
             } else if (symbol == StructurePattern.ENSURE_SOLID) {
-                if (area.getType(wx, wy, wz) == Material.AIR) {
-                    area.setBlockData(wx, wy, wz, rules.blockData(pattern.filler()));
+                if (writer.blockAt(wx, wy, wz).equals(AIR)) {
+                    writer.place(wx, wy, wz, pattern.filler());
                 }
             } else {
                 LegendEntry entry = pattern.legendEntry(symbol)
                         .orElseThrow(() -> new IllegalStateException(
                                 "StructurePattern uses symbol '" + symbol + "' with no legend entry, "
                                         + "unreachable after validation"));
-                BlockData data = rules.blockData(entry.block(), entry.state());
-                area.setBlockData(wx, wy, wz, data);
+                writer.place(wx, wy, wz, entry.block(), entry.state());
             }
         }
         return true;

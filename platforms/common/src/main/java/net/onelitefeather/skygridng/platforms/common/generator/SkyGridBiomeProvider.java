@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.generator;
+package net.onelitefeather.skygridng.platforms.common.generator;
 
 import net.onelitefeather.skygridng.ports.in.Biomes;
 import org.bukkit.block.Biome;

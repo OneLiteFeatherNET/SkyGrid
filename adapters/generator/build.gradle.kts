@@ -2,20 +2,18 @@ plugins {
     id("skygrid.java-conventions")
 }
 
-// Driving adapter: the Paper chunk generator and material resolution. It compiles against the ports
-// and the public api only, never the core. Bukkit and jakarta.inject are provided by the platform at
-// runtime, so they are compileOnly here.
+// The decoration/structure/still-water logic: framework-free, like core. It compiles against the
+// ports and the public api only, resolving everything through ports.algorithm.RegionWriter instead
+// of a Bukkit type directly (the Bukkit implementation of that port lives in platforms/common).
 dependencies {
-    compileOnly(libs.paper.api)
-    compileOnly(libs.jakarta.inject)
     implementation(project(":ports"))
     implementation(project(":api"))
+    // BlockId implements Adventure's Keyed; the platform provides Adventure at runtime.
+    compileOnly(libs.adventure.api)
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
-    testImplementation(libs.paper.api)
-    testImplementation(libs.mockbukkit)
-    testImplementation(libs.mockito.core)
     testImplementation(libs.assertj.core)
-    testImplementation(testFixtures(project(":core")))
+    testImplementation(libs.adventure.api)
+    testImplementation(libs.mockito.core)
 }

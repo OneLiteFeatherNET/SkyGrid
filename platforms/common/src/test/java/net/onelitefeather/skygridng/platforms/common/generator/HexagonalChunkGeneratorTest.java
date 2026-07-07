@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.generator;
+package net.onelitefeather.skygridng.platforms.common.generator;
 
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
 import net.onelitefeather.skygridng.api.model.RuleCatalog;

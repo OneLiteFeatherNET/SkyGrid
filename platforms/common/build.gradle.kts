@@ -26,4 +26,5 @@ dependencies {
     testImplementation(libs.mockbukkit)
     testImplementation(libs.mockito.core)
     testImplementation(libs.assertj.core)
+    testImplementation(testFixtures(project(":core")))
 }

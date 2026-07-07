@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.generator;
+package net.onelitefeather.skygridng.platforms.common.generator;
 
 import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.api.model.PhysicsMode;
@@ -7,7 +7,6 @@ import net.onelitefeather.skygridng.api.model.RuleCatalog;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.generator.LimitedRegion;
 
 import java.util.List;
 import java.util.Map;
@@ -18,8 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Resolves a platform-neutral {@link BlockId} to the Bukkit {@link BlockData} the generator should
  * place, applying the block's per-block {@link Rule}: its {@code state} map (for example
  * {@code persistent=true} leaves or a {@code level=0} water source) becomes a native block state, and
- * its {@link PhysicsMode} becomes a scheduled update (or none). The core speaks ids and neutral rule
- * intent; this is the one place that intent is turned into Bukkit vocabulary.
+ * its {@link PhysicsMode} becomes a scheduled update (or none, applied by {@link LimitedRegionWriter}).
+ * The core speaks ids and neutral rule intent; this is the one place that intent is turned into Bukkit
+ * vocabulary.
  *
  * <p>Resolved block data is cached per id and treated as read only: {@code setBlockData} copies it, so
  * the cached instance is safe to hand out repeatedly; a caller that needs to mutate a property (for
@@ -63,7 +63,7 @@ final class RuleResolver {
 
     /**
      * The block's data with an explicit state map applied instead of its rule's own (used by
-     * {@link StructurePlacer} for a {@link net.onelitefeather.skygridng.api.model.LegendEntry} that
+     * {@code StructurePlacer} for a {@link net.onelitefeather.skygridng.api.model.LegendEntry} that
      * carries its own state overrides). Falls back to the plain default state on an invalid property,
      * same as {@link #blockData(BlockId)}. Not cached: a legend's state is typically distinct per rule.
      */
@@ -103,14 +103,5 @@ final class RuleResolver {
             first = false;
         }
         return sb.append(']').toString();
-    }
-
-    /** Schedules the block or fluid update a rule asks for after placement (none for the safe default). */
-    static void applyPhysics(LimitedRegion area, PhysicsMode mode, int x, int y, int z) {
-        switch (mode) {
-            case NONE -> { }
-            case BLOCK_UPDATE -> area.scheduleBlockUpdate(x, y, z);
-            case FLUID_UPDATE -> area.scheduleFluidUpdate(x, y, z);
-        }
     }
 }

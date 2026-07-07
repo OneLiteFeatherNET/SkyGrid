@@ -2,7 +2,7 @@ package net.onelitefeather.skygridng.platforms.common;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import net.onelitefeather.skygridng.adapters.generator.HexagonalChunkGenerator;
+import net.onelitefeather.skygridng.platforms.common.generator.HexagonalChunkGenerator;
 import net.onelitefeather.skygridng.core.service.PresetService;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
