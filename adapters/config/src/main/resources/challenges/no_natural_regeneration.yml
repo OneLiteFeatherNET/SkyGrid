@@ -1,3 +1,10 @@
 id: no_natural_regeneration
 description: Health no longer regenerates from a full hunger bar while this challenge is active.
 active: false
+sequential: false
+tasks:
+  - id: endured_the_round
+    description: Stay online for an entire no_natural_regeneration round.
+    reward:
+      type: message
+      message: "<green>You endured the round without natural regeneration!"

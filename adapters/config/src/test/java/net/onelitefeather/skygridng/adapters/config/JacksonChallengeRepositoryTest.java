@@ -2,6 +2,9 @@ package net.onelitefeather.skygridng.adapters.config;
 
 import net.onelitefeather.skygridng.api.model.ChallengeCatalog;
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.api.model.ItemId;
+import net.onelitefeather.skygridng.api.model.Reward;
+import net.onelitefeather.skygridng.api.model.Task;
 import net.onelitefeather.skygridng.ports.out.ChallengeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,8 +14,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Black-box tests for the Jackson challenge adapter against the {@link ChallengeRepository}
@@ -135,5 +140,109 @@ class JacksonChallengeRepositoryTest {
 
         ChallengeCatalog reloaded = repository(dir).load();
         assertThat(reloaded).isEqualTo(loaded);
+    }
+
+    @Test
+    @DisplayName("a challenge with no 'tasks' key loads with an empty, non-null tasks list")
+    void absentTasksLoadAsEmptyList(@TempDir Path dir) throws IOException {
+        writeChallenge(dir, "level_is_border.yml", """
+                id: level_is_border
+                description: Periodically reminds players that their experience level sets their allowed travel radius.
+                active: false
+                """);
+
+        ChallengeRule rule = repository(dir).load().forId("level_is_border").orElseThrow();
+
+        assertThat(rule.tasks()).isNotNull().isEmpty();
+        assertThat(rule.sequential()).isFalse();
+    }
+
+    @Test
+    @DisplayName("a challenge with sequential tasks round trips")
+    void sequentialTasksRoundTrip(@TempDir Path dir) throws IOException {
+        writeChallenge(dir, "quest_challenge.yml", """
+                id: quest_challenge
+                description: A challenge with an ordered quest.
+                active: true
+                sequential: true
+                tasks:
+                  - id: first_step
+                    description: Do the first thing.
+                  - id: second_step
+                    description: Do the second thing.
+                """);
+
+        ChallengeRepository repository = repository(dir);
+        ChallengeRule loaded = repository.load().forId("quest_challenge").orElseThrow();
+
+        assertThat(loaded.sequential()).isTrue();
+        assertThat(loaded.tasks()).extracting(Task::id).containsExactly("first_step", "second_step");
+        assertThat(loaded.tasks()).extracting(Task::reward).containsOnlyNulls();
+
+        repository.save(repository.load());
+        ChallengeRule reloaded = repository(dir).load().forId("quest_challenge").orElseThrow();
+        assertThat(reloaded).isEqualTo(loaded);
+    }
+
+    @Test
+    @DisplayName("all three reward shapes round trip to the matching Reward variant")
+    void rewardShapesRoundTrip(@TempDir Path dir) throws IOException {
+        writeChallenge(dir, "reward_challenge.yml", """
+                id: reward_challenge
+                description: A challenge whose tasks grant every reward kind.
+                active: true
+                tasks:
+                  - id: item_task
+                    description: Grants an item.
+                    reward:
+                      type: item
+                      itemId: minecraft:diamond
+                      quantity: 3
+                  - id: command_task
+                    description: Grants a command.
+                    reward:
+                      type: command
+                      command: "give {player} minecraft:emerald 1"
+                  - id: message_task
+                    description: Grants a message.
+                    reward:
+                      type: message
+                      message: "<gold>Well done!"
+                """);
+
+        ChallengeRepository repository = repository(dir);
+        ChallengeRule loaded = repository.load().forId("reward_challenge").orElseThrow();
+
+        List<Task> tasks = loaded.tasks();
+        assertThat(tasks).hasSize(3);
+
+        assertThat(tasks.get(0).reward()).isEqualTo(new Reward.ItemGrant(ItemId.of("minecraft:diamond"), 3));
+        assertThat(tasks.get(1).reward())
+                .isEqualTo(new Reward.CommandDispatch("give {player} minecraft:emerald 1"));
+        assertThat(tasks.get(2).reward()).isEqualTo(new Reward.PlayerMessage("<gold>Well done!"));
+
+        repository.save(repository.load());
+        ChallengeRule reloaded = repository(dir).load().forId("reward_challenge").orElseThrow();
+        assertThat(reloaded).isEqualTo(loaded);
+    }
+
+    @Test
+    @DisplayName("a task with an unrecognized reward type fails fast, naming the file and the bad type")
+    void unrecognizedRewardTypeFailsFast(@TempDir Path dir) throws IOException {
+        writeChallenge(dir, "broken_challenge.yml", """
+                id: broken_challenge
+                description: A challenge with a bogus reward type.
+                active: true
+                tasks:
+                  - id: broken_task
+                    description: A task with a bogus reward.
+                    reward:
+                      type: teleport
+                """);
+
+        assertThatThrownBy(() -> repository(dir).load())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("broken_challenge.yml")
+                .hasMessageContaining("teleport");
     }
 }
