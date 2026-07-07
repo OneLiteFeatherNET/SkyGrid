@@ -66,4 +66,24 @@ class ChallengeTierTest {
                 .isThrownBy(() -> new ChallengeTier(PLAYER_ID, "one_life", -1))
                 .withMessageContaining("tier must not be negative");
     }
+
+    @Test
+    @DisplayName("a challengeId at the maximum length is valid")
+    void challengeIdAtMaxLengthIsValid() {
+        String id = "a".repeat(ChallengeRule.MAX_ID_LENGTH);
+
+        ChallengeTier tier = new ChallengeTier(PLAYER_ID, id, 0);
+
+        assertThat(tier.challengeId()).hasSize(ChallengeRule.MAX_ID_LENGTH);
+    }
+
+    @Test
+    @DisplayName("a challengeId over the maximum length throws")
+    void challengeIdOverMaxLengthThrows() {
+        String tooLong = "a".repeat(ChallengeRule.MAX_ID_LENGTH + 1);
+
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new ChallengeTier(PLAYER_ID, tooLong, 0))
+                .withMessageContaining("challengeId must be at most " + ChallengeRule.MAX_ID_LENGTH + " characters");
+    }
 }
