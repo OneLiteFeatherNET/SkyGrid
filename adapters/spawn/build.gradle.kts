@@ -2,18 +2,17 @@ plugins {
     id("skygrid.java-conventions")
 }
 
-// Driving adapter: a Bukkit listener that places first-join players on their own spread-spawn
-// platform via the SpawnPoints in-port. It compiles against the ports and the public api only,
-// never the core. Bukkit is provided by the platform at runtime, so it is compileOnly.
+// The first-join safe-spawn search: framework-free, like core. It compiles against the ports and
+// the public api only, resolving everything through ports.algorithm.GroundReader instead of a
+// Bukkit type directly (the Bukkit implementation of that port lives in platforms/common).
 dependencies {
-    compileOnly(libs.paper.api)
     implementation(project(":ports"))
     implementation(project(":api"))
+    // BlockId implements Adventure's Keyed; the platform provides Adventure at runtime.
+    compileOnly(libs.adventure.api)
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
-    testImplementation(libs.paper.api)
-    testImplementation(libs.mockbukkit)
-    testImplementation(libs.mockito.core)
     testImplementation(libs.assertj.core)
+    testImplementation(libs.adventure.api)
 }

@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.spawn;
+package net.onelitefeather.skygridng.platforms.common.spawn;
 
 import net.onelitefeather.skygridng.api.model.SpawnPoint;
 import net.onelitefeather.skygridng.ports.in.SpawnPoints;

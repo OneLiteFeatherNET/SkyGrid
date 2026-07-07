@@ -3,8 +3,8 @@ package net.onelitefeather.skygridng.platforms.common.injection;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import jakarta.inject.Singleton;
-import net.onelitefeather.skygridng.adapters.generator.HexagonalChunkGenerator;
-import net.onelitefeather.skygridng.adapters.spawn.SpreadSpawnListener;
+import net.onelitefeather.skygridng.platforms.common.generator.HexagonalChunkGenerator;
+import net.onelitefeather.skygridng.platforms.common.spawn.SpreadSpawnListener;
 import net.onelitefeather.skygridng.ports.in.SpawnPoints;
 import org.bukkit.plugin.java.JavaPlugin;
 

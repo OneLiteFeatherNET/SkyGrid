@@ -1,5 +1,6 @@
-package net.onelitefeather.skygridng.adapters.spawn;
+package net.onelitefeather.skygridng.platforms.common.spawn;
 
+import net.onelitefeather.skygridng.adapters.spawn.SafeLocationFinder;
 import net.onelitefeather.skygridng.api.model.SpawnPoint;
 import net.onelitefeather.skygridng.api.util.Seeds;
 import net.onelitefeather.skygridng.ports.in.SpawnPoints;
@@ -14,6 +15,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.spigotmc.event.player.PlayerSpawnLocationEvent;
 
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
@@ -60,8 +62,11 @@ public final class SpreadSpawnListener implements Listener {
         int ordinal = nextOrdinal(world);
         SpawnPoint slot = spawnPoints.at(ordinal);
         RandomGenerator rng = Seeds.rng(Seeds.mix(world.getSeed(), slot.x(), slot.z()));
-        Location location = SafeLocationFinder.find(
-                        world, slot.x(), slot.z(), spawnPoints.searchRadius(), spawnPoints.maxAttempts(), rng)
+        BukkitGroundReader ground = new BukkitGroundReader(world);
+        Optional<SafeLocationFinder.Spot> spot = SafeLocationFinder.find(
+                ground, slot.x(), slot.z(), spawnPoints.searchRadius(), spawnPoints.maxAttempts(), rng);
+        Location location = spot
+                .map(s -> new Location(world, s.x() + 0.5, s.y(), s.z() + 0.5))
                 .orElseGet(() -> fallback(world, slot));
         playerData.set(ordinalKey, PersistentDataType.INTEGER, ordinal);
         event.setSpawnLocation(location);

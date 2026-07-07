@@ -57,6 +57,7 @@ class ArchitectureTest {
                     .because("an adapter compiles against the ports and the api only, never the core");
 
     private static final String GENERATOR_ADAPTER = "net.onelitefeather.skygridng.adapters.generator..";
+    private static final String SPAWN_ADAPTER = "net.onelitefeather.skygridng.adapters.spawn..";
 
     @ArchTest
     static final ArchRule generatorAdapterIsFrameworkFree =
@@ -64,6 +65,15 @@ class ArchitectureTest {
                     .should().dependOnClassesThat().resideInAnyPackage(PLATFORM_AND_FRAMEWORK_PACKAGES)
                     .because("adapters.generator is framework-free like core: it resolves everything "
                             + "through ports.algorithm.RegionWriter instead of a native Bukkit type, so "
+                            + "the Bukkit implementation of that port can live in platforms.common "
+                            + "without pulling Bukkit, Guice, or jakarta.inject back into this adapter");
+
+    @ArchTest
+    static final ArchRule spawnAdapterIsFrameworkFree =
+            noClasses().that().resideInAPackage(SPAWN_ADAPTER)
+                    .should().dependOnClassesThat().resideInAnyPackage(PLATFORM_AND_FRAMEWORK_PACKAGES)
+                    .because("adapters.spawn is framework-free like core: it resolves everything "
+                            + "through ports.algorithm.GroundReader instead of a native Bukkit type, so "
                             + "the Bukkit implementation of that port can live in platforms.common "
                             + "without pulling Bukkit, Guice, or jakarta.inject back into this adapter");
 

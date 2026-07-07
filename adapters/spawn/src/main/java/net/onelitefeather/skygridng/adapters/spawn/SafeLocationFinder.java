@@ -1,33 +1,48 @@
 package net.onelitefeather.skygridng.adapters.spawn;
 
-import org.bukkit.HeightMap;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.Block;
+import net.onelitefeather.skygridng.api.model.BlockId;
+import net.onelitefeather.skygridng.ports.algorithm.GroundReader;
 
-import java.util.EnumSet;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.random.RandomGenerator;
 
 /**
- * In adapter: a SkyBlock/EssentialsX-RTP style safe-block search.
+ * Framework-free: a SkyBlock/EssentialsX-RTP style safe-block search, driven entirely through
+ * {@link GroundReader} instead of a native Bukkit type.
  *
  * A sparse SkyGrid world has no continuous terrain, so a single floating block is valid "ground":
- * {@link World#getHighestBlockYAt(int, int, HeightMap)} with {@link HeightMap#MOTION_BLOCKING} finds
- * it directly, no vertical scan needed. The first candidate whose ground is solid and safe, and whose
- * foot and head space is clear, wins.
+ * {@link GroundReader#highestGroundY(int, int)} finds it directly, no vertical scan needed. The
+ * first candidate whose ground is solid and safe, and whose foot and head space is clear, wins.
  */
-final class SafeLocationFinder {
+public final class SafeLocationFinder {
 
     /** Solid or non-solid blocks that are technically "clear" but unsafe to spawn on or in. */
-    private static final Set<Material> UNSAFE = EnumSet.of(
-            Material.LAVA, Material.FIRE, Material.SOUL_FIRE, Material.MAGMA_BLOCK, Material.CACTUS,
-            Material.SWEET_BERRY_BUSH, Material.WITHER_ROSE, Material.POWDER_SNOW, Material.NETHER_PORTAL,
-            Material.END_PORTAL, Material.END_GATEWAY, Material.CAMPFIRE, Material.SOUL_CAMPFIRE);
+    private static final BlockId LAVA = BlockId.of("minecraft:lava");
+    private static final BlockId FIRE = BlockId.of("minecraft:fire");
+    private static final BlockId SOUL_FIRE = BlockId.of("minecraft:soul_fire");
+    private static final BlockId MAGMA_BLOCK = BlockId.of("minecraft:magma_block");
+    private static final BlockId CACTUS = BlockId.of("minecraft:cactus");
+    private static final BlockId SWEET_BERRY_BUSH = BlockId.of("minecraft:sweet_berry_bush");
+    private static final BlockId WITHER_ROSE = BlockId.of("minecraft:wither_rose");
+    private static final BlockId POWDER_SNOW = BlockId.of("minecraft:powder_snow");
+    private static final BlockId NETHER_PORTAL = BlockId.of("minecraft:nether_portal");
+    private static final BlockId END_PORTAL = BlockId.of("minecraft:end_portal");
+    private static final BlockId END_GATEWAY = BlockId.of("minecraft:end_gateway");
+    private static final BlockId CAMPFIRE = BlockId.of("minecraft:campfire");
+    private static final BlockId SOUL_CAMPFIRE = BlockId.of("minecraft:soul_campfire");
+
+    private static final Set<BlockId> UNSAFE = Set.of(
+            LAVA, FIRE, SOUL_FIRE, MAGMA_BLOCK, CACTUS,
+            SWEET_BERRY_BUSH, WITHER_ROSE, POWDER_SNOW, NETHER_PORTAL,
+            END_PORTAL, END_GATEWAY, CAMPFIRE, SOUL_CAMPFIRE);
 
     private SafeLocationFinder() {
+    }
+
+    /** A found safe landing spot, in world block coordinates. */
+    public record Spot(int x, int y, int z) {
     }
 
     /**
@@ -37,8 +52,8 @@ final class SafeLocationFinder {
      * {@code rng.nextInt(-searchRadius, searchRadius + 1)} on both axes, so the same rng (and thus the
      * same seed) always retries the same candidate sequence.
      */
-    static Optional<Location> find(World world, int centerX, int centerZ, int searchRadius, int maxAttempts,
-                                    RandomGenerator rng) {
+    public static Optional<Spot> find(GroundReader ground, int centerX, int centerZ, int searchRadius,
+                                       int maxAttempts, RandomGenerator rng) {
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             int x = centerX;
             int z = centerZ;
@@ -46,7 +61,7 @@ final class SafeLocationFinder {
                 x += rng.nextInt(-searchRadius, searchRadius + 1);
                 z += rng.nextInt(-searchRadius, searchRadius + 1);
             }
-            Optional<Location> candidate = probe(world, x, z);
+            Optional<Spot> candidate = probe(ground, x, z);
             if (candidate.isPresent()) {
                 return candidate;
             }
@@ -54,25 +69,23 @@ final class SafeLocationFinder {
         return Optional.empty();
     }
 
-    private static Optional<Location> probe(World world, int x, int z) {
-        int groundY = world.getHighestBlockYAt(x, z, HeightMap.MOTION_BLOCKING);
-        if (groundY <= world.getMinHeight()) {
+    private static Optional<Spot> probe(GroundReader ground, int x, int z) {
+        OptionalInt groundY = ground.highestGroundY(x, z);
+        if (groundY.isEmpty()) {
             return Optional.empty(); // void column, not worth reading blocks
         }
-        Block ground = world.getBlockAt(x, groundY, z);
-        Block foot = world.getBlockAt(x, groundY + 1, z);
-        Block head = world.getBlockAt(x, groundY + 2, z);
-        if (!isSafeGround(ground) || !isSafeSpace(foot) || !isSafeSpace(head)) {
+        int y = groundY.getAsInt();
+        if (!isSafeGround(ground, x, y, z) || !isSafeSpace(ground, x, y + 1, z) || !isSafeSpace(ground, x, y + 2, z)) {
             return Optional.empty();
         }
-        return Optional.of(new Location(world, x + 0.5, groundY + 1.0, z + 0.5));
+        return Optional.of(new Spot(x, y + 1, z));
     }
 
-    private static boolean isSafeGround(Block block) {
-        return block.getType().isSolid() && !UNSAFE.contains(block.getType());
+    private static boolean isSafeGround(GroundReader ground, int x, int y, int z) {
+        return ground.isSolid(x, y, z) && !UNSAFE.contains(ground.blockAt(x, y, z));
     }
 
-    private static boolean isSafeSpace(Block block) {
-        return block.isPassable() && !UNSAFE.contains(block.getType());
+    private static boolean isSafeSpace(GroundReader ground, int x, int y, int z) {
+        return ground.isPassable(x, y, z) && !UNSAFE.contains(ground.blockAt(x, y, z));
     }
 }
