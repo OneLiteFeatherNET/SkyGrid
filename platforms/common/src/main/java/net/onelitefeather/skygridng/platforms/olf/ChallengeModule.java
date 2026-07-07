@@ -9,6 +9,7 @@ import net.onelitefeather.skygridng.adapters.challenge.LevelBorderWarningTask;
 import net.onelitefeather.skygridng.adapters.challenge.NoCraftingTableListener;
 import net.onelitefeather.skygridng.adapters.challenge.NoNaturalRegenerationListener;
 import net.onelitefeather.skygridng.adapters.challenge.OneLifeListener;
+import net.onelitefeather.skygridng.adapters.challenge.RewardGrantorImpl;
 import net.onelitefeather.skygridng.adapters.config.BundledDefaults;
 import net.onelitefeather.skygridng.adapters.config.JacksonChallengeRepository;
 import net.onelitefeather.skygridng.adapters.generator.HexagonalChunkGenerator;
@@ -16,6 +17,7 @@ import net.onelitefeather.skygridng.core.service.ChallengeAdminService;
 import net.onelitefeather.skygridng.core.state.ChallengeState;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.out.ChallengeRepository;
+import net.onelitefeather.skygridng.ports.out.RewardGrantor;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -34,6 +36,7 @@ public final class ChallengeModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(ChallengeAdminUseCase.class).to(ChallengeAdminService.class);
+        bind(RewardGrantor.class).to(RewardGrantorImpl.class);
 
         Multibinder<ChallengeBehavior> behaviors = Multibinder.newSetBinder(binder(), ChallengeBehavior.class);
         behaviors.addBinding().to(NoCraftingTableListener.class);

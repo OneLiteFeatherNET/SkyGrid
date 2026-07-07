@@ -8,18 +8,25 @@ import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
 import net.onelitefeather.skygridng.adapters.config.BundledDefaults;
 import net.onelitefeather.skygridng.adapters.config.JacksonPresetRepository;
 import net.onelitefeather.skygridng.adapters.config.JacksonRuleRepository;
+import net.onelitefeather.skygridng.adapters.taskprogress.PostgresTaskCompletionRepository;
 import net.onelitefeather.skygridng.core.service.ChallengeProgressService;
+import net.onelitefeather.skygridng.core.service.TaskProgressService;
+import net.onelitefeather.skygridng.core.state.ChallengeState;
 import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
+import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
 import net.onelitefeather.skygridng.ports.out.PresetRepository;
+import net.onelitefeather.skygridng.ports.out.RewardGrantor;
 import net.onelitefeather.skygridng.ports.out.RuleRepository;
+import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Path;
 
 /**
- * Binds the out ports {@link PresetRepository}, {@link RuleRepository} and
- * {@link ChallengeProgressRepository} to their concrete adapters.
+ * Binds the out ports {@link PresetRepository}, {@link RuleRepository},
+ * {@link ChallengeProgressRepository} and {@link TaskCompletionRepository} to their concrete
+ * adapters.
  *
  * The config is split three ways: a {@code config.<ext>} selector, a {@code presets/} directory (one
  * file per preset) and a {@code rules/} directory (one file per block). On first run the adapters seed
@@ -73,6 +80,31 @@ public final class RepositoryModule extends AbstractModule {
     @Provides
     @Singleton
     ChallengeProgressUseCase provideChallengeProgressUseCase(ChallengeProgressService service) {
+        return service;
+    }
+
+    /**
+     * Construction is cheap for the same reason as {@link #provideChallengeProgressRepository}:
+     * {@code PostgresTaskCompletionRepository} extends the same {@code AbstractJpaRepository} base,
+     * so the environment lookup, the HikariCP pool and the Flyway migration are all deferred to the
+     * first real call.
+     */
+    @Provides
+    @Singleton
+    TaskCompletionRepository provideTaskCompletionRepository() {
+        return new PostgresTaskCompletionRepository(DatabaseConfig::fromEnvironment);
+    }
+
+    @Provides
+    @Singleton
+    TaskProgressService provideTaskProgressService(ChallengeState challengeState, TaskCompletionRepository repository,
+                                                     RewardGrantor grantor) {
+        return new TaskProgressService(challengeState, repository, grantor);
+    }
+
+    @Provides
+    @Singleton
+    TaskProgressUseCase provideTaskProgressUseCase(TaskProgressService service) {
         return service;
     }
 }
