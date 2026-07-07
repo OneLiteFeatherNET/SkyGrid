@@ -1,5 +1,6 @@
 package net.onelitefeather.skygridng.adapters.challengeprogress;
 
+import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

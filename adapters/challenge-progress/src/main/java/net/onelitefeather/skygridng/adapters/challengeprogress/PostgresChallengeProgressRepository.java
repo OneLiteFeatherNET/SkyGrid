@@ -1,25 +1,22 @@
 package net.onelitefeather.skygridng.adapters.challengeprogress;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.LockModeType;
-import jakarta.persistence.Persistence;
 import jakarta.persistence.criteria.CriteriaDelete;
+import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
+import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
-import org.flywaydb.core.Flyway;
 import org.hibernate.exception.ConstraintViolationException;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
  * PostgreSQL-backed {@link ChallengeProgressRepository}, persisted through Jakarta Persistence
- * (JSR 338) via Hibernate ORM, bootstrapped standalone with no Spring, Micronaut, or application
- * server: the standard {@link Persistence#createEntityManagerFactory(String, Map)} entry point is
- * the actual code path, not just {@code META-INF/persistence.xml} kept for decoration. Every query
- * goes through the {@link jakarta.persistence.EntityManager}, so no {@code java.sql} statement is
- * ever built by concatenating or interpolating a caller supplied value.
+ * (JSR 338) via Hibernate ORM. The factory-bootstrap and transaction-lifecycle plumbing (lazy
+ * {@link jakarta.persistence.EntityManagerFactory} construction, Flyway migration, transaction
+ * begin/commit/rollback) is inherited from {@link AbstractJpaRepository}; this class only adds the
+ * behavior specific to the {@code challenge_tier} table.
  *
  * <p>The schema is owned by the Flyway migration bundled at
  * {@code classpath:db/migration/V1__create_challenge_tier.sql}, never a hand-edited
@@ -27,117 +24,27 @@ import java.util.function.Supplier;
  * itself ({@code hibernate.hbm2ddl.auto=validate} in {@code persistence.xml}), it only validates the
  * {@link ChallengeTierEntity} mapping against the table Flyway already created.
  *
- * <p>Construction is cheap and side effect free: the {@code configSupplier} passed to the
- * constructor is not invoked, no connection pool is opened, and no Flyway migration runs until the
- * first actual call to {@link #tierOf}, {@link #recordCompletion}, or {@link #resetAll}. That first
- * call resolves the config, runs the migration, and then builds the {@link EntityManagerFactory}
- * (under a double-checked lock, so concurrent first calls still initialize exactly once); every
- * later call reuses the already-built factory without touching the supplier, Flyway, or
- * {@link Persistence} again. This keeps a Guice {@code Stage.PRODUCTION} eager singleton binding of
- * this class cheap to construct: an environment that never configures a database, or a test that
- * never exercises this repository, pays nothing for a connection attempt it never asked for.
- *
- * <p>This is the only place in the project that touches {@code jakarta.persistence}, Hibernate,
- * HikariCP or Flyway types; they must never appear in {@code api}, {@code ports}, or {@code core}.
- * The first call to any method does blocking I/O (running a migration, opening a pool, building the
- * entity manager factory); callers should expect that cost once, on whichever call happens first.
+ * <p>Construction is cheap and side effect free, per {@link AbstractJpaRepository}'s contract:
+ * nothing is resolved, connected, or migrated until the first call to {@link #tierOf},
+ * {@link #recordCompletion}, or {@link #resetAll}.
  */
-public final class PostgresChallengeProgressRepository implements ChallengeProgressRepository, AutoCloseable {
-
-    private static final String PERSISTENCE_UNIT_NAME = "challenge-progress";
-
-    private final Supplier<DatabaseConfig> configSupplier;
-    private volatile EntityManagerFactory entityManagerFactory;
+public final class PostgresChallengeProgressRepository extends AbstractJpaRepository
+        implements ChallengeProgressRepository {
 
     /**
-     * Stores {@code configSupplier} for later use. Nothing is resolved, connected, or migrated
-     * yet: that all happens lazily, on the first call to {@link #tierOf}, {@link #recordCompletion},
-     * or {@link #resetAll}.
-     *
      * @param configSupplier supplies the connection settings on first use, normally
-     *                       {@code DatabaseConfig::fromEnvironment}. Deferring this to a supplier
-     *                       (rather than accepting a resolved {@link DatabaseConfig}) means the
-     *                       required-environment-variable check inside
-     *                       {@link DatabaseConfig#fromEnvironment()} is not run at construction
-     *                       time either.
+     *                       {@code DatabaseConfig::fromEnvironment}.
      */
     public PostgresChallengeProgressRepository(Supplier<DatabaseConfig> configSupplier) {
-        this.configSupplier = configSupplier;
-    }
-
-    /**
-     * Returns the built {@link EntityManagerFactory}, initializing it on the first call only. Uses
-     * double-checked locking on {@code this}: a cheap unsynchronized read handles every call after
-     * the first, and the synchronized block guarantees that concurrent first calls (for example two
-     * players completing a challenge at nearly the same moment) run the migration and build the
-     * factory exactly once. The Flyway migration always runs first and against its own short-lived,
-     * unpooled JDBC connection (Flyway needs a data source regardless of Hibernate); if it fails,
-     * nothing is left open and {@link #entityManagerFactory} is never assigned, so a bad migration
-     * or a briefly unreachable Postgres does not leak a connection pool on every retry.
-     */
-    private EntityManagerFactory entityManagerFactory() {
-        var existing = entityManagerFactory;
-        if (existing != null) {
-            return existing;
-        }
-        synchronized (this) {
-            if (entityManagerFactory == null) {
-                var config = configSupplier.get();
-                migrate(config);
-                entityManagerFactory = createEntityManagerFactory(config);
-            }
-            return entityManagerFactory;
-        }
-    }
-
-    private static void migrate(DatabaseConfig config) {
-        try {
-            Flyway.configure()
-                    .dataSource(config.jdbcUrl(), config.user(), config.password())
-                    .locations("classpath:db/migration")
-                    .load()
-                    .migrate();
-        } catch (RuntimeException e) {
-            throw new ChallengeProgressPersistenceException(
-                    "Failed to migrate the challenge progress schema", e);
-        }
-    }
-
-    /**
-     * Builds the entity manager factory through the standard
-     * {@link Persistence#createEntityManagerFactory(String, Map)} entry point, overriding
-     * {@code persistence.xml} with the connection settings from {@code config}: Hibernate's own
-     * HikariCP connection provider owns the pool ({@code hibernate.connection.provider_class}), fed
-     * with the Hikari specific {@code hibernate.hikari.*} properties. These values are only known at
-     * runtime (read from environment variables via {@link DatabaseConfig}), so they cannot live in
-     * the static {@code persistence.xml} file; {@code hibernate.hbm2ddl.auto=validate} does live in
-     * {@code persistence.xml} since it never depends on the environment.
-     */
-    private static EntityManagerFactory createEntityManagerFactory(DatabaseConfig config) {
-        var overrides = Map.<String, Object>of(
-                "hibernate.connection.provider_class",
-                "org.hibernate.hikaricp.internal.HikariCPConnectionProvider",
-                "hibernate.hikari.jdbcUrl", config.jdbcUrl(),
-                "hibernate.hikari.dataSource.user", config.user(),
-                "hibernate.hikari.dataSource.password", config.password(),
-                "hibernate.hikari.poolName", "skygridng-challenge-progress");
-        try {
-            return Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME, overrides);
-        } catch (RuntimeException e) {
-            throw new ChallengeProgressPersistenceException(
-                    "Failed to build the challenge progress entity manager factory", e);
-        }
+        super("challenge-progress", "classpath:db/migration", configSupplier);
     }
 
     @Override
     public int tierOf(UUID playerId, String challengeId) {
-        try (var entityManager = entityManagerFactory().createEntityManager()) {
+        return read(entityManager -> {
             var entity = entityManager.find(ChallengeTierEntity.class, new ChallengeTierId(playerId, challengeId));
             return entity == null ? 0 : entity.getTier();
-        } catch (RuntimeException e) {
-            throw new ChallengeProgressPersistenceException(
-                    "Failed to read the challenge tier for player " + playerId + ", challenge " + challengeId, e);
-        }
+        });
     }
 
     /**
@@ -168,20 +75,16 @@ public final class PostgresChallengeProgressRepository implements ChallengeProgr
     @Override
     public int recordCompletion(UUID playerId, String challengeId) {
         var id = new ChallengeTierId(playerId, challengeId);
-        try {
-            return recordCompletionAttempt(id, true);
-        } catch (RuntimeException e) {
-            throw new ChallengeProgressPersistenceException(
-                    "Failed to record a challenge completion for player " + playerId + ", challenge " + challengeId, e);
-        }
+        return recordCompletionAttempt(id, true);
     }
 
     /**
-     * Runs one attempt at recording a completion, in its own {@link EntityManager} and its own
-     * transaction. A retry always opens a brand new {@link EntityManager} rather than reusing the one
-     * whose transaction just rolled back: after a rollback the persistence context can be left with
-     * the entity this attempt tried to insert in an inconsistent, no-longer-managed state, so reusing
-     * it risks a stale {@code find} instead of a real read of the row the other transaction committed.
+     * Runs one attempt at recording a completion, in its own transaction via {@link #inTransaction}.
+     * A retry always opens a brand new {@link EntityManager} (a fresh call to {@link #inTransaction})
+     * rather than reusing the one whose transaction just rolled back: after a rollback the
+     * persistence context can be left with the entity this attempt tried to insert in an
+     * inconsistent, no-longer-managed state, so reusing it risks a stale {@code find} instead of a
+     * real read of the row the other transaction committed.
      *
      * <p>{@code allowInsertRetry} bounds the retry to exactly one: only a fresh insert (the
      * {@code entity == null} branch) can lose the primary key race described on
@@ -191,31 +94,22 @@ public final class PostgresChallengeProgressRepository implements ChallengeProgr
      * which prevents any risk of unbounded recursion.
      */
     private int recordCompletionAttempt(ChallengeTierId id, boolean allowInsertRetry) {
-        try (var entityManager = entityManagerFactory().createEntityManager()) {
-            var transaction = entityManager.getTransaction();
-            transaction.begin();
-            try {
+        try {
+            return inTransaction(entityManager -> {
                 var entity = entityManager.find(ChallengeTierEntity.class, id, LockModeType.PESSIMISTIC_WRITE);
-                int newTier;
                 if (entity == null) {
                     entityManager.persist(new ChallengeTierEntity(id, 1));
                     entityManager.flush();
-                    newTier = 1;
-                } else {
-                    entity.incrementTier();
-                    newTier = entity.getTier();
+                    return 1;
                 }
-                transaction.commit();
-                return newTier;
-            } catch (RuntimeException e) {
-                if (transaction.isActive()) {
-                    transaction.rollback();
-                }
-                if (allowInsertRetry && isUniqueConstraintViolation(e)) {
-                    return recordCompletionAttempt(id, false);
-                }
-                throw e;
+                entity.incrementTier();
+                return entity.getTier();
+            });
+        } catch (RuntimeException e) {
+            if (allowInsertRetry && isUniqueConstraintViolation(e)) {
+                return recordCompletionAttempt(id, false);
             }
+            throw e;
         }
     }
 
@@ -246,38 +140,12 @@ public final class PostgresChallengeProgressRepository implements ChallengeProgr
      */
     @Override
     public void resetAll() {
-        try (var entityManager = entityManagerFactory().createEntityManager()) {
-            var transaction = entityManager.getTransaction();
-            transaction.begin();
-            try {
-                var builder = entityManager.getCriteriaBuilder();
-                CriteriaDelete<ChallengeTierEntity> delete = builder.createCriteriaDelete(ChallengeTierEntity.class);
-                var root = delete.from(ChallengeTierEntity.class);
-                delete.where(builder.ge(root.get(ChallengeTierEntity_.tier), 0));
-                entityManager.createQuery(delete).executeUpdate();
-                transaction.commit();
-            } catch (RuntimeException e) {
-                if (transaction.isActive()) {
-                    transaction.rollback();
-                }
-                throw e;
-            }
-        } catch (RuntimeException e) {
-            throw new ChallengeProgressPersistenceException("Failed to reset all challenge progress", e);
-        }
-    }
-
-    /**
-     * Closes the entity manager factory (and with it, Hibernate's HikariCP pool), if one was ever
-     * built. Call once, on plugin disable. Safe to call even if this repository's methods were never
-     * invoked (the factory was never initialized), in which case this is a no-op rather than a null
-     * pointer exception.
-     */
-    @Override
-    public void close() {
-        var existing = entityManagerFactory;
-        if (existing != null) {
-            existing.close();
-        }
+        inTransaction(entityManager -> {
+            var builder = entityManager.getCriteriaBuilder();
+            CriteriaDelete<ChallengeTierEntity> delete = builder.createCriteriaDelete(ChallengeTierEntity.class);
+            var root = delete.from(ChallengeTierEntity.class);
+            delete.where(builder.ge(root.get(ChallengeTierEntity_.tier), 0));
+            return entityManager.createQuery(delete).executeUpdate();
+        });
     }
 }
