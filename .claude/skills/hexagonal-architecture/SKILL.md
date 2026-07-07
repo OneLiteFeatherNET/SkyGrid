@@ -60,7 +60,17 @@ ArchUnit in `:verification`:
   ports; depends on `ports` + `api` with the `api` configuration.
 - `adapters/generator`, `adapters/command`, `adapters/json` (`adapters.*`): the Bukkit/Gson edges,
   one module each. Each depends on `ports` + `api` only. Bukkit and jakarta.inject are `compileOnly`
-  (the platform provides them at runtime); Gson is bundled by the platform.
+  (the platform provides them at runtime); Gson is bundled by the platform. (This list is stale in
+  places: the real config adapter is `adapters/config`, Jackson-backed, not `adapters/json`/Gson, and
+  several other adapters, e.g. `adapters/challenge` and `adapters/challenge-progress`, are missing
+  here too; a full rewrite of this section is out of scope for now.)
+- `adapters/persistence` (`adapters.persistence.*`): shared, reusable Jakarta Persistence (JSR 338)
+  via Hibernate ORM infrastructure (`DatabaseConfig`, `AbstractJpaRepository`: the lazy
+  `EntityManagerFactory` bootstrap, Flyway migration, and `read`/`inTransaction` helpers), depends on
+  `ports` + `api` only. Every Postgres-backed adapter (for example `adapters/challenge-progress`'s
+  `PostgresChallengeProgressRepository`) extends `AbstractJpaRepository` instead of writing a new
+  factory-bootstrap/transaction-lifecycle from scratch; a new one only needs its own `@Entity`,
+  migration, and a small repository built on `read`/`inTransaction`.
 - `platforms/common` (`platforms.common.*`, `platforms.olf.*`): the shared Bukkit composition root
   and the single distribution's home. `SkyGridNgPlugin`, `I18n`, the Guice modules, the message
   bundles. `platforms.olf` (`OlfModule`, `OlfFeature`, `ChallengeModule`, `ChallengeFeature`) is a

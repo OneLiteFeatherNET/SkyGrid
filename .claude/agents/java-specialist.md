@@ -18,17 +18,25 @@ Jakarta EE dependency to a framework-free module, ArchUnit already bans `jakarta
 - **Bean Validation**: this codebase validates in compact record constructors instead of
   annotations (`@NotNull` etc.). Keep using that idiom, don't introduce a validation framework.
 - **JPA / Jakarta Persistence**: Jakarta Persistence (JSR 338) via Hibernate ORM is now this
-  project's standard for a Postgres-backed adapter, proven out in `adapters/challenge-progress`
-  (`PostgresChallengeProgressRepository`). It is bootstrapped standalone, no Spring Boot, no
-  Micronaut, no application server, through the plain `Persistence.createEntityManagerFactory` entry
-  point; Hibernate owns the HikariCP pool directly (`hibernate.connection.provider_class` plus
+  project's standard for a Postgres-backed adapter. The factory-bootstrap and
+  transaction-lifecycle plumbing (lazy `EntityManagerFactory` construction under double-checked
+  locking, Flyway migration, the `read`/`inTransaction` helpers) now lives once in a shared base
+  class, `AbstractJpaRepository` in `adapters/persistence`, not as one-off code to imitate by eye.
+  `adapters/challenge-progress`'s `PostgresChallengeProgressRepository` is the worked example: it
+  extends `AbstractJpaRepository` and keeps only the `challenge_tier`-specific query logic (the
+  pessimistic-lock-plus-one-retry `recordCompletionAttempt`, and the `CriteriaDelete` bulk reset). A
+  new Postgres-backed adapter extends `AbstractJpaRepository` too, supplying only its own `@Entity`,
+  Flyway migration location, and persistence-unit name, rather than re-deriving the
+  bootstrap/transaction plumbing. It is bootstrapped standalone, no Spring Boot, no Micronaut, no
+  application server, through the plain `Persistence.createEntityManagerFactory` entry point;
+  Hibernate owns the HikariCP pool directly (`hibernate.connection.provider_class` plus
   `hibernate.hikari.*` overrides), Flyway still owns the schema
   (`hibernate.hbm2ddl.auto=validate`, Hibernate never generates or alters DDL). Reach for the
   Hibernate static metamodel generator (`hibernate-jpamodelgen`, an annotation processor, unrelated
   to GraalVM native-image) only where Criteria genuinely earns its keep, a bulk operation like a
   typed `CriteriaDelete`, not for a simple primary-key lookup (plain `EntityManager.find` there).
-  `live-ops-analyst`'s future analytics adapter should follow this precedent rather than defaulting
-  back to raw JDBC.
+  `live-ops-analyst`'s future analytics adapter should follow this precedent (extend
+  `AbstractJpaRepository`) rather than defaulting back to raw JDBC.
 - **`@Transactional` / unit-of-work**: if a persistence adapter needs multi-statement atomicity,
   suggest a small explicit unit-of-work class (open connection, do work, commit/rollback) rather
   than pulling in a transaction management framework.

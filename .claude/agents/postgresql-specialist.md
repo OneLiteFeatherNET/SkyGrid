@@ -17,9 +17,13 @@ Non-negotiable rules:
   analytics-specific repository, following `PresetRepository`/`RuleRepository`'s shape), implement
   it with actual JDBC/Postgres types in a new adapter module (for example `adapters/analytics`).
   A `java.sql.*` or Postgres-driver type must never appear in `api`, `ports`, or `core`.
-  `adapters/challenge-progress` (`PostgresChallengeProgressRepository`) is the project's precedent
-  for a Postgres-backed adapter: Jakarta Persistence (JSR 338) via Hibernate ORM, standalone
-  bootstrapped, follow it rather than reverting to raw JDBC by default.
+  `adapters/persistence`'s `AbstractJpaRepository` is the project's shared base class for a
+  Postgres-backed adapter: Jakarta Persistence (JSR 338) via Hibernate ORM, standalone bootstrapped
+  (lazy `EntityManagerFactory` construction, Flyway migration, `read`/`inTransaction` transaction
+  helpers). Extend it rather than writing a new bootstrap from scratch or reverting to raw JDBC by
+  default; `adapters/challenge-progress`'s `PostgresChallengeProgressRepository` is the worked
+  example of extending it (a new adapter needs only its own `@Entity` class, migration, and a small
+  repository built on the inherited `read`/`inTransaction`).
 - **Parameterized queries only.** Never build SQL by string concatenation or interpolation; this is
   the single most common real vulnerability class in database code. Coordinate with
   `security-specialist` if you're unsure.
