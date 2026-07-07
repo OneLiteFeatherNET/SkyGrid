@@ -3,20 +3,29 @@ plugins {
 }
 
 // Driving adapter: the /skygrid command and its Adventure messages. It compiles against the ports
-// only. Bukkit (which bundles Adventure) and jakarta.inject are provided by the platform at runtime.
+// only, framework-free: no Bukkit, no Guice/jakarta.inject. Cloud command classes here are
+// annotated (@Command, @Argument, @Parser) but platform-neutral; the Paper/Bukkit binding
+// (cloud-paper) lives in platforms/common instead.
 dependencies {
-    compileOnly(libs.paper.api)
-    compileOnly(libs.jakarta.inject)
     implementation(project(":ports"))
     implementation(project(":api"))
 
-    // Stage 1 of the Cloud command framework migration: infrastructure only, no subcommands yet.
-    // Declared as `api` so it flows through platforms/common into the platforms/paper shaded jar.
-    api(libs.cloud.paper)
+    // Messages and the neutral CommandSource use Adventure's platform-neutral text API directly
+    // (Component). Previously reached transitively through paper-api/cloud-paper; now that neither
+    // is on this module's compile classpath, it needs its own compileOnly, matching api/build.gradle.kts's
+    // own compileOnly(libs.adventure.api). The platform (Paper) provides the real implementation at
+    // runtime.
+    compileOnly(libs.adventure.api)
+
+    // Cloud command framework: annotation processing and the platform-neutral command core.
+    // Declared as `api` so it flows through platforms/common into the platforms/paper shaded jar,
+    // same reasoning as the stage-1 cloud-paper dependency this replaced.
+    api(libs.cloud.core)
+    api(libs.cloud.annotations)
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
-    testImplementation(libs.paper.api)
     testImplementation(libs.mockito.core)
     testImplementation(libs.assertj.core)
+    testImplementation(libs.adventure.api)
 }

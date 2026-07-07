@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.command;
+package net.onelitefeather.skygridng.platforms.common.command;
 
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;

@@ -38,6 +38,10 @@ dependencyResolutionManagement {
             version("guice", "7.0.0")
             version("jakartaInject", "2.0.1")
             version("cloudPaper", "2.0.0-beta.17") // Incendo Cloud command framework, Paper module
+            // cloud-core and cloud-annotations reached GA at 2.0.0 while the Paper/Bukkit/Brigadier
+            // integration modules of the same release line are still beta (see cloudPaper above),
+            // hence the separate version key.
+            version("cloud", "2.0.0")
 
             version("shadow", "9.4.2")
             version("runPaper", "3.0.2")
@@ -62,6 +66,8 @@ dependencyResolutionManagement {
             library("guice", "com.google.inject", "guice").versionRef("guice")
             library("jakarta-inject", "jakarta.inject", "jakarta.inject-api").versionRef("jakartaInject")
             library("cloud-paper", "org.incendo", "cloud-paper").versionRef("cloudPaper")
+            library("cloud-core", "org.incendo", "cloud-core").versionRef("cloud")
+            library("cloud-annotations", "org.incendo", "cloud-annotations").versionRef("cloud")
 
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit")
             library("junit-launcher", "org.junit.platform", "junit-platform-launcher").version("1.11.3")

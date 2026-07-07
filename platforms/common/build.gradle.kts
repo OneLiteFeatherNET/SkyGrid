@@ -19,6 +19,12 @@ dependencies {
     api(libs.guice)
     api(libs.jakarta.inject)
 
+    // cloud-paper is the Bukkit/Paper binding for the Cloud command framework, it belongs on the
+    // composition root, not in the framework-free adapters/command (which only depends on
+    // cloud-core/cloud-annotations). This module hosts PaperCommandSource, CloudCommandManagerFactory
+    // and CloudCommandRegistrar, all of which need org.incendo.cloud.paper.* types.
+    api(libs.cloud.paper)
+
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
     // Paper API is compileOnly for main, so tests need it explicitly (MockBukkit does not export it).

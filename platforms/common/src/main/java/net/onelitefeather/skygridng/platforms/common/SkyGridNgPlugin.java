@@ -6,20 +6,19 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.TypeLiteral;
-import net.onelitefeather.skygridng.adapters.command.CloudCommandManagerFactory;
-import net.onelitefeather.skygridng.adapters.command.SkyGridCommand;
 import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
-import net.onelitefeather.skygridng.adapters.spawn.SpreadSpawnListener;
+import net.onelitefeather.skygridng.platforms.common.command.CloudCommandManagerFactory;
+import net.onelitefeather.skygridng.platforms.common.command.CloudCommandRegistrar;
 import net.onelitefeather.skygridng.platforms.common.injection.GeneratorModule;
 import net.onelitefeather.skygridng.platforms.common.injection.PlatformModule;
 import net.onelitefeather.skygridng.platforms.common.injection.RepositoryModule;
+import net.onelitefeather.skygridng.platforms.common.spawn.SpreadSpawnListener;
 import net.onelitefeather.skygridng.platforms.olf.ChallengeModule;
 import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
 import net.onelitefeather.skygridng.platforms.olf.OlfModule;
 import net.onelitefeather.skygridng.api.SkyGridApi;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 import net.onelitefeather.skygridng.core.state.RuleState;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -96,24 +95,19 @@ public class SkyGridNgPlugin extends JavaPlugin {
             getLogger().warning("Unknown algorithm '" + algorithm + "', falling back to skygrid.");
         }
 
-        PluginCommand command = getCommand("skygrid");
-        if (command != null) {
-            SkyGridCommand executor = injector.getInstance(SkyGridCommand.class);
-            command.setExecutor(executor);
-            command.setTabCompleter(executor);
-        } else {
-            getLogger().warning("Command 'skygrid' is not registered in plugin.yml.");
-        }
-
-        // Cloud command framework migration, stage 1: build the sender-mapped manager so it exists
-        // side by side with the legacy executor above. Its constructor eagerly reflects into the
-        // server's real Brigadier argument type registry; a test double (MockBukkit) or a server
-        // fork without that registry throws a LinkageError (ExceptionInInitializerError or
-        // NoClassDefFoundError) from a static initializer, not a plain exception. Guard it the same
-        // way the missing "skygrid" registration above is guarded, so a construction failure never
-        // takes down the rest of the plugin. Stage 2 registers the migrated subcommands here.
+        // Cloud command framework migration, stage 2 (live): build the sender-mapped manager and
+        // parse the migrated /skygrid subcommands onto it. The manager's constructor eagerly
+        // reflects into the server's real Brigadier argument type registry; a test double
+        // (MockBukkit) or a server fork without that registry throws a LinkageError
+        // (ExceptionInInitializerError or NoClassDefFoundError) from a static initializer, not a
+        // plain exception, so both the manager build and the command registration stay inside one
+        // guarded try block: a failure anywhere in Cloud setup never takes down the rest of the
+        // plugin. There is no hand-rolled fallback executor anymore (stage 1's legacy
+        // getCommand("skygrid") wiring is gone for good), so a failure here means no /skygrid
+        // command at all, logged clearly instead of crashing enable.
         try {
             cloudCommandManager = CloudCommandManagerFactory.create(this);
+            injector.getInstance(CloudCommandRegistrar.class).registerOn(cloudCommandManager);
         } catch (RuntimeException | LinkageError e) {
             getLogger().log(Level.WARNING, "Failed to build the Cloud command manager.", e);
         }

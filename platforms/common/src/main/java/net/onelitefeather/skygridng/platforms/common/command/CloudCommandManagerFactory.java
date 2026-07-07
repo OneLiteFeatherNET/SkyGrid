@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.command;
+package net.onelitefeather.skygridng.platforms.common.command;
 
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
@@ -9,8 +9,8 @@ import org.incendo.cloud.paper.PaperCommandManager;
 
 /**
  * Builds the Incendo Cloud command manager, mapped to the platform-neutral {@link CommandSource}
- * so that subcommand handlers (migration stage 2) never see a Paper {@code CommandSourceStack}
- * directly. Stage 1 only constructs the manager; no command is registered on it yet.
+ * so that subcommand handlers ({@code adapters.command.SkyGridCommands}) never see a Paper
+ * {@code CommandSourceStack} directly.
  */
 public final class CloudCommandManagerFactory {
 

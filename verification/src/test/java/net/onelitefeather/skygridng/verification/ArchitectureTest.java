@@ -23,7 +23,7 @@ class ArchitectureTest {
     private static final String CORE = "net.onelitefeather.skygridng.core..";
     private static final String ADAPTERS = "net.onelitefeather.skygridng.adapters..";
     private static final String PLATFORMS = "net.onelitefeather.skygridng.platforms..";
-    private static final String COMMAND_HANDLER = "net.onelitefeather.skygridng.adapters.command.handler..";
+    private static final String COMMAND_ADAPTER = "net.onelitefeather.skygridng.adapters.command..";
 
     /**
      * Packages no platform-neutral layer may ever depend on. Adventure (net.kyori.adventure) is
@@ -78,14 +78,16 @@ class ArchitectureTest {
                             + "without pulling Bukkit, Guice, or jakarta.inject back into this adapter");
 
     /**
-     * Packages the command handler abstraction (CommandSource, the Adventure Component based,
-     * Bukkit-free seam that stage 2 subcommand logic compiles against) must never depend on.
-     * Only the Paper and Brigadier bindings of Incendo Cloud are banned here; plain cloud core
-     * packages (annotations, context, and the like) stay allowed, so the negative matcher targets
-     * org.incendo.cloud.paper.. and org.incendo.cloud.brigadier.. specifically rather than all of
-     * org.incendo.cloud...
+     * Packages the whole command adapter (the neutral CommandSource seam, the Cloud-annotated
+     * SkyGridCommands subcommand methods, and the SkyGridArgumentParsers suggestion providers, all
+     * introduced across the stage 1 and stage 2 Incendo Cloud migration) must never depend on. Only
+     * the Paper and Brigadier bindings of Incendo Cloud are banned here; plain cloud core and
+     * annotation packages (AnnotationParser, @Command, @Argument, @Parser, @Suggestions,
+     * ExceptionHandler, and the like, which SkyGridCommands and SkyGridArgumentParsers actually use)
+     * stay allowed, so the negative matcher targets org.incendo.cloud.paper.. and
+     * org.incendo.cloud.brigadier.. specifically rather than all of org.incendo.cloud...
      */
-    private static final String[] COMMAND_HANDLER_FORBIDDEN_PACKAGES = {
+    private static final String[] COMMAND_ADAPTER_FORBIDDEN_PACKAGES = {
             "org.bukkit..",
             "io.papermc..",
             "org.incendo.cloud.paper..",
@@ -93,14 +95,14 @@ class ArchitectureTest {
     };
 
     @ArchTest
-    static final ArchRule commandHandlerStaysPlatformFree =
-            noClasses().that().resideInAPackage(COMMAND_HANDLER)
-                    .should().dependOnClassesThat().resideInAnyPackage(COMMAND_HANDLER_FORBIDDEN_PACKAGES)
-                    .because("CommandSource must stay Bukkit and cloud-platform free so stage 2 "
-                            + "subcommand handler logic can compile against it without pulling in "
-                            + "Paper or Brigadier directly; plain cloud core packages, ports, api, "
-                            + "and Adventure text (excluding its platform bindings) remain allowed")
-                    .allowEmptyShould(true);
+    static final ArchRule commandAdapterIsFrameworkFree =
+            noClasses().that().resideInAPackage(COMMAND_ADAPTER)
+                    .should().dependOnClassesThat().resideInAnyPackage(COMMAND_ADAPTER_FORBIDDEN_PACKAGES)
+                    .because("adapters.command must stay Bukkit and cloud-platform free like core so "
+                            + "its Cloud-annotated subcommand and suggestion-provider logic can compile "
+                            + "without pulling in Paper or Brigadier directly; plain cloud core and "
+                            + "annotation packages, ports, api, and Adventure text (excluding its "
+                            + "platform bindings) remain allowed");
 
     @ArchTest
     static final ArchRule layeredArchitectureIsRespected =
