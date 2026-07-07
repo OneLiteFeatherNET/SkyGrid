@@ -138,8 +138,41 @@ code.
 ### I2: Goal and achievement tracking within a challenge
 As a **player**, I want visible goals within an active challenge, so that I know what I'm working
 toward beyond surviving under restrictions.
-- The per-player durable state store this needed is now built (see I2a below), but full
-  goal/achievement tracking and display beyond a single tier counter is still backlog.
+- Each Challenge now optionally holds an ordered list of Tasks (`api.model.Task`: `id`,
+  `description`, an optional `reward`), config-defined per challenge
+  (`challenges/<id>.<ext>`'s `tasks` list, `sequential: true|false`). `sequential: true` enforces
+  that a later task only counts once every earlier task in the configured list order is complete
+  for that player (a safety net, not the primary mechanism: task completion is still decided by
+  each challenge's own `ChallengeBehavior` Java logic, never a config condition DSL); `false`
+  accepts any task in any order.
+- A reward is config-defined per task (`api.model.Reward`, a sealed interface: `ItemGrant`,
+  `CommandDispatch`, `PlayerMessage`) and grants exactly once per player per task, the moment
+  `ports.in.TaskProgressUseCase#completeTask` records a genuinely new completion (idempotent: a
+  repeat call, or a sequential-order rejection, is a no-op, never a duplicate grant).
+- Task completion is durable per player (PostgreSQL, `adapters/task-progress`,
+  `ports.out.TaskCompletionRepository`, Flyway-migrated `task_completion` table keyed on
+  `(player_id, challenge_id, task_id)`, row existence is the only fact stored, same
+  data-minimization stance as `challenge_tier`), fronted by `TaskProgressUseCase` /
+  `core.service.TaskProgressService`; independent of and unaffected by the pre-existing tier
+  counter (I2a).
+- A player's task progress for the first active challenge (catalog order, a display
+  simplification when more than one challenge is active) is always visible in-game via a live
+  per-player scoreboard sidebar (`adapters/scoreboard`, `platforms.olf.ChallengeSidebarFeature`):
+  built on join from `TaskProgressUseCase#tasksFor`, updated in place (no repeating task, no
+  full re-render) via `TaskProgressUseCase#addCompletionListener` whenever a task flips to done.
+- Wired for three challenges in this slice: `one_life` (`survive_the_round`, extending the
+  existing round-boundary hook in `OneLifeListener`), `no_crafting_table`
+  (`no_crafting_table_round`, a new round-boundary hook plus a per-round violation set),
+  `no_natural_regeneration` (`endured_the_round`, a new round-boundary hook, every online
+  matching-world player qualifies, an accepted attendance-not-achievement skeleton for this
+  slice). `level_is_border` intentionally ships with no tasks: it has no round/elimination/
+  violation concept today.
+- Reward-granting (`ports.out.RewardGrantor`, implemented by `adapters.challenge.RewardGrantorImpl`)
+  is Bukkit-aware only in the adapter: an item into the player's inventory, a server command with
+  `{player}` substituted (run as console, scheduled onto the main thread), or an admin-authored
+  MiniMessage chat line. Only the `message` reward type ships real content in this slice (all
+  three are implemented and tested); `one_life`'s task reward replaced its old direct tier-earned
+  chat line rather than firing both, so a survivor sees exactly one message per round, not two.
 
 ### I2a: Per-player challenge tier persistence (`one_life` first slice)
 As a **player**, I want my progress in a challenge to survive server restarts and be visible on
