@@ -82,11 +82,14 @@ algorithm. There is no replacement; the two remaining algorithms need no region 
   `ids():Set<String>`. Named after the catalog it exposes, not `TerrainAlgorithmProvider`.
 - `ports.algorithm.AlgorithmFactory` (`@FunctionalInterface`): `TerrainAlgorithm create(GeneratorConfig)`.
   A Factory Method, one registered per algorithm id via a Guice `MapBinder` in the composition root.
-- `ports.out.RuleRepository`: `GeneratorConfig load()` (creates defaults if missing);
-  `void save(GeneratorConfig)`.
-- `ports.out.PresetRepository`, `ports.in.Presets`, `ports.in.Biomes`, `ports.in.SkyGridDecorations`,
-  `ports.in.SpawnPoints`: the preset/rules and spread-spawn ports; the domain of the
-  `config-schema-and-rules` skill, not detailed here.
+- `ports.out.RuleRepository`: `RuleCatalog load()` (creates the bundled defaults if `rules/` is
+  empty); `void save(RuleCatalog)`.
+- `ports.out.PresetRepository`: `PresetCatalog load()` (creates defaults if missing);
+  `void save(PresetCatalog)`.
+- `ports.out.ChallengeRepository`, `ports.in.Presets`, `ports.in.Biomes`, `ports.in.SkyGridDecorations`,
+  `ports.in.SpawnPoints`, `ports.in.ChallengeAdminUseCase`: the preset/rules, biome, spawn, and
+  challenge ports; the domain of the `config-schema-and-rules` (presets/rules) and
+  `challenge-season-system` (challenges) skills, not detailed here.
 
 ## Services (`core/service`)
 
@@ -98,18 +101,19 @@ The former `RegionGenerationService` (implemented `GenerateRegionUseCase` with a
   key set, not a `switch`, is the single source of truth for known ids); rebuilds the active algorithm
   on every `RuleState` change (Observer), falling back to `IndependentSkyGridAlgorithm` for an unknown
   configured id.
-- `RuleAdminService(RuleState, RuleRepository)` implements `RuleAdminUseCase`.
+- `RuleAdminService(RuleState, PresetService, TerrainAlgorithms)` implements `RuleAdminUseCase`;
+  `save()`/`reload()` delegate to `PresetService`, which flattens edits back into the active preset
+  (or reloads the catalog from disk) via `PresetRepository`. `PresetService` and `PresetResolver`
+  (preset `extends` inheritance) are the domain of `world-generator-presets`, not detailed here.
 
 ## Adapters
 
-- `adapter/in/paper/HexagonalChunkGenerator(TerrainAlgorithms, ...)` extends
-  `ChunkGenerator`, `@Inject`. Field `materials = new MaterialResolver(Material.STONE)`.
-  `generateSurface` reads `worldInfo.getSeed()` and `chunkData.getMinHeight()/getMaxHeight()`, then
-  delegates per column to the active algorithm. All `shouldGenerate*` return false (fully custom),
-  `isParallelCapable()` true. The WFC-only decoration populator seam (`usesWfcDecorations()`) is gone;
-  decorations are no longer tied to a specific algorithm.
-- `adapter/in/paper/MaterialResolver` (package private): `MaterialResolver(Material fallback)`;
-  `Material resolve(String name)` (cached; unknown name maps to the fallback).
+- `adapters.generator.HexagonalChunkGenerator(TerrainAlgorithms, SkyGridDecorations, Biomes,
+  RuleCatalog)` extends `ChunkGenerator`, `@Inject`. Builds a `RuleResolver(ruleCatalog,
+  Material.STONE)` field and a `BiomeResolver(Biome.PLAINS)`. `generateSurface` reads
+  `worldInfo.getSeed()` and `chunkData.getMinHeight()/getMaxHeight()`, then delegates per column to
+  the active algorithm. All `shouldGenerate*` return false (fully custom), `isParallelCapable()`
+  true. `getDefaultBiomeProvider` returns a `SkyGridBiomeProvider(biomes, biomeResolver)`.
 - `adapters.command.CloudCommandManagerFactory.create(JavaPlugin)` builds an Incendo Cloud
   `PaperCommandManager<CommandSource>` via `SenderMapper.create(PaperCommandSource::new,
   PaperCommandSource::stack)`, so the command tree never touches a raw Paper `CommandSourceStack`.
@@ -124,7 +128,12 @@ The former `RegionGenerationService` (implemented `GenerateRegionUseCase` with a
   `presets`, `worlds`), `AlgorithmCommands` (`algorithm`, `skyweight`), `MaintenanceCommands`
   (`reload`, `reload confirm`, `save`, `undo`), `ChallengeCommands` (`challenge list`,
   `challenge toggle`), `HelpCommands` (bare `skygrid`, `skygrid help`, `skygrid help <subcommand>`).
-- `adapter/out/json/JsonRuleRepository(Path file, String defaultJson)` implements `RuleRepository`.
+- `adapters.config.JacksonPresetRepository(Path dataFolder, BundledDefaults)` implements
+  `PresetRepository`; `adapters.config.JacksonRuleRepository(Path dataFolder, BundledDefaults)`
+  implements `RuleRepository`. Both read/write the split `config.<ext>`/`presets/`/`rules/` layout
+  (JSON, YAML, or TOML per file, chosen by extension) via Jackson; see `config-schema-and-rules` for
+  the full format. `adapters.config.JacksonChallengeRepository` implements `ChallengeRepository` the
+  same way for `challenges/`.
 
 ## Bootstrap and Guice modules (`bootstrap`)
 
@@ -135,6 +144,10 @@ The former `RegionGenerationService` (implemented `GenerateRegionUseCase` with a
   `CloudCommandManagerFactory`/`CloudCommandRegistrar`), and logs. `getDefaultWorldGenerator` returns
   `injector.getInstance(HexagonalChunkGenerator.class)`.
 - `injection/PlatformModule(JavaPlugin)` binds `JavaPlugin` and provides the data folder `Path`.
-- `injection/RepositoryModule` provides `RuleRepository` from `plugin.getResource("generator.json")`.
+- `injection/RepositoryModule` provides `PresetRepository` and `RuleRepository`, both backed by
+  `JacksonPresetRepository`/`JacksonRuleRepository` seeded from `BundledDefaults` (the plugin jar's
+  bundled resources via `JavaPlugin.getResource`).
 - `injection/GeneratorModule` provides the core services and binds each in port to its service. The
   core stays annotation free; this module is the only place the core is constructed.
+- `injection/CommandModule` binds every `adapters.command.handler.CloudCommandHandler` into a Guice
+  set binder, parsed as a whole by `CloudCommandRegistrar` (see the Adapters section above).

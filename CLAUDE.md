@@ -47,22 +47,27 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
 - `api/` (`api.*`, framework free): the public contract. `api.model` (immutable records),
   `api.SkyGridApi` (read-only facade), `api.util.Seeds` (deterministic seed derivation). No deps.
 - `ports/` (`ports.*`, framework free): the interfaces adapters compile against. `ports.in`
-  (`GenerateRegionUseCase`, `RuleAdminUseCase`, `TerrainAlgorithmProvider`), `ports.out`
-  (`PresetRepository`, `RuleRepository`), `ports.algorithm` (`TerrainAlgorithm`, `ColumnSink`).
-  Depends on `api`.
+  (`RuleAdminUseCase`, `TerrainAlgorithms`, `Presets`, `Biomes`, `SkyGridDecorations`, `SpawnPoints`,
+  `ChallengeAdminUseCase`), `ports.out` (`PresetRepository`, `RuleRepository`,
+  `ChallengeRepository`), `ports.algorithm` (`TerrainAlgorithm`, `ColumnSink`). Depends on `api`.
 - `core/` (`core.*`, framework free): the domain. `algorithm` (the two terrain algorithm impls),
-  `service` (use case impls, incl. `SkyGridApiService`),
+  `service` (use case impls, incl. `SkyGridApiService`, `PresetService`, `ChallengeAdminService`),
   `state` (`RuleState`), `util` (`ValueNoise`, `WeightedTable`). Implements the ports; depends on
   `ports` + `api`.
-- `adapters/generator`, `adapters/command`, `adapters/config`, `adapters/spawn` (`adapters.*`): the
-  Bukkit/Jackson edges. Each depends on `ports` + `api` only, never on `core`. `generator`
-  (`HexagonalChunkGenerator`, material and per-block rule resolution to `BlockData`), `command`
-  (`/skygrid` + Adventure messages), `config` (Jackson `PresetRepository` + `RuleRepository`: the split
-  `config` selector, one file per preset under `presets/` and one per block under `rules/`, in
-  JSON/YAML/TOML, plus the victools-generated editor `schema/`), `spawn` (the spread first-join
-  listener).
+- `adapters/generator`, `adapters/command`, `adapters/config`, `adapters/spawn`, `adapters/challenge`
+  (`adapters.*`): the Bukkit/Jackson edges. Each depends on `ports` + `api` only, never on `core`.
+  `generator` (`HexagonalChunkGenerator`, material and per-block rule resolution to `BlockData`),
+  `command` (`/skygrid` on the Incendo Cloud command framework: `adapters.command` wires
+  `PaperCommandManager`/`SenderMapper`/`CloudCommandRegistrar`, `adapters.command.handler` holds the
+  `@Command`-annotated, Bukkit-free subcommand handlers, `Messages` builds the MiniMessage
+  `Component.translatable` calls), `config` (Jackson `PresetRepository` + `RuleRepository` +
+  `ChallengeRepository`: the split `config` selector, one file per preset under `presets/`, one per
+  block under `rules/`, one per challenge under `challenges/`, in JSON/YAML/TOML, plus the
+  victools-generated editor `schema/`), `spawn` (the spread first-join listener), `challenge` (the
+  OneLiteFeather challenge rule listeners).
 - `platforms/common` (`platforms.common.*`): the shared Bukkit composition root. `SkyGridNgPlugin`,
-  `I18n`, the Guice modules (`PlatformModule`, `RepositoryModule`, `GeneratorModule`), the message
+  `I18n`, the Guice modules (`PlatformModule`, `RepositoryModule`, `GeneratorModule`,
+  `CommandModule`), the message
   bundles, and `platforms.olf.*` (`OlfModule`, `OlfFeature`, `ChallengeModule`, `ChallengeFeature`):
   a naming convention, not a module boundary, for mechanics specific to this OneLiteFeather (OLF)
   server (challenges) rather than general-purpose plugin behavior. `SkyGridNgPlugin.modules()` and

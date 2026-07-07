@@ -55,21 +55,24 @@ Commands run on Incendo Cloud (`adapters.command`), annotation driven
 
 ## Add an out adapter (for example a database repository)
 
-1. Implement the existing `core/port/out/RuleRepository` interface in a new package under
-   `adapter/out`. The core does not change.
-2. Bind it in `RepositoryModule` instead of `JsonRuleRepository`. Nothing else moves.
-3. Tests: a black-box round-trip test against the `RuleRepository` contract, like
-   `JsonRuleRepositoryTest`.
+1. Implement one of the existing `ports.out` interfaces (`PresetRepository`, `RuleRepository`,
+   `ChallengeRepository`) in a new package under `adapters/config` (or a new adapter module). The
+   core does not change.
+2. Bind it in `RepositoryModule` instead of the matching `Jackson*Repository`. Nothing else moves.
+3. Tests: a black-box round-trip test against the port's contract, like
+   `JacksonPresetRepositoryTest`/`JacksonRuleRepositoryTest`/`JacksonChallengeRepositoryTest`.
 
 ## Add a config field
 
-1. Add the component to the relevant record (`SkyGridConfig`, `RuleSet`, `GenerationSettings`, ...)
-   and validate it in the compact constructor.
-2. Mirror it in the Gson DTO in `adapter/out/json/GeneratorConfigDto` and update the default
-   `resources/generator.json`.
-3. Update `docs/ADMIN.md` so server operators know about it.
-4. Tests: a guard test in `RecordValidationTest` and a round-trip assertion in
-   `JsonRuleRepositoryTest`.
+1. Add the component to the relevant record (`SkyGridConfig`, `Preset`, `Rule`, `PlacementRule`, ...,
+   see `config-schema-and-rules` for the full model) and validate it in the compact constructor.
+2. Mirror it in the matching Jackson DTO (`ConfigDtos`, `RuleDtos`, or `ChallengeDtos` in
+   `adapters/config`) and update the bundled defaults under
+   `adapters/config/src/main/resources/` (`presets/`, `rules/`, or `challenges/`).
+3. Update the relevant operator doc (`docs/configuration.md`, `docs/presets.md`, or `docs/rules.md`)
+   so server operators know about it.
+4. Tests: a guard test in `RecordValidationTest` and a round-trip assertion in the matching
+   `Jackson*RepositoryTest`.
 
 ## Anti patterns to reject
 
