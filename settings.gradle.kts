@@ -43,8 +43,10 @@ dependencyResolutionManagement {
             // coordinate exists for it; 2.0.0 is the current stable release).
             version("cloudAnnotations", "2.0.0")
             version("postgresql", "42.7.7")     // PostgreSQL JDBC driver, challenge progress adapter
-            version("hikaricp", "6.3.0")         // connection pooling, challenge progress adapter
+            version("hikaricp", "6.3.0")         // connection pooling, owned directly by Hibernate now
             version("flyway", "11.8.2")          // versioned migrations; postgres support is a split module since Flyway 10
+            version("jakartaPersistence", "3.1.0") // JSR 338 API; the version Hibernate ORM 6.6.x targets
+            version("hibernate", "6.6.54.Final") // Hibernate ORM, challenge progress adapter's JPA provider
 
             version("shadow", "9.4.2")
             version("runPaper", "3.0.2")
@@ -75,6 +77,10 @@ dependencyResolutionManagement {
             library("hikaricp", "com.zaxxer", "HikariCP").versionRef("hikaricp")
             library("flyway-core", "org.flywaydb", "flyway-core").versionRef("flyway")
             library("flyway-postgresql", "org.flywaydb", "flyway-database-postgresql").versionRef("flyway")
+            library("jakarta-persistence-api", "jakarta.persistence", "jakarta.persistence-api").versionRef("jakartaPersistence")
+            library("hibernate-core", "org.hibernate.orm", "hibernate-core").versionRef("hibernate")
+            library("hibernate-hikaricp", "org.hibernate.orm", "hibernate-hikaricp").versionRef("hibernate")
+            library("hibernate-jpamodelgen", "org.hibernate.orm", "hibernate-jpamodelgen").versionRef("hibernate")
 
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit")
             library("junit-launcher", "org.junit.platform", "junit-platform-launcher").version("1.11.3")
