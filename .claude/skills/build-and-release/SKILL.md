@@ -22,7 +22,9 @@ The build is grouped under category folders (see the `hexagonal-architecture` sk
 responsibilities and the dependency arrows):
 
 - `api`, `ports`, `core`: framework-free `java-library` modules, no platform plugins.
-- `adapters/generator`, `adapters/command`, `adapters/json`: the Bukkit/Gson adapter libraries.
+- `adapters/generator`, `adapters/command`, `adapters/config`, `adapters/spawn`, `adapters/challenge`,
+  `adapters/challenge-progress`: the Bukkit/Jackson/persistence adapter libraries.
+- `adapters/persistence`: shared Jakarta Persistence (Hibernate ORM) infrastructure, no Bukkit.
 - `platforms/common`: the shared Bukkit composition root, a library (no platform plugins).
 - `platforms/paper`: the single Paper distribution. Applies shadow, plugin-yml, run-paper, and
   CycloneDX SBOM generation. Produces `skygrid-ng-<version>.jar`.
@@ -52,13 +54,15 @@ versions current using the OLF presets in `renovate.json`.
 
 ## Shadow and relocation
 
-Shadow is applied in the distribution module only (`platforms/paper`). The shaded jar shades Gson
-and relocates it to `net.onelitefeather.skygridng.libs.gson` to avoid clashing with the server or
-other plugins. Keep any shaded library relocated under `net.onelitefeather.skygridng.libs.*`.
-`platforms/paper` depends on `platforms/common`, which exposes the whole object graph (adapters,
-core, ports, api, Guice) with the `api` configuration, so shadow bundles everything transitively
-into a self-contained jar. The GitHub release attachment step uses `platforms/paper`'s
-`tasks.shadowJar`.
+Shadow is applied in the distribution module only (`platforms/paper`). The shaded jar relocates
+every bundled library that could clash with the server or another plugin, under
+`net.onelitefeather.skygridng.libs.*`: Jackson (databind, plus the SnakeYAML its YAML backend pulls
+in), victools (JSON Schema generation) and its classmate dependency, and `org.incendo.cloud` (the
+Cloud command framework, a popular library other plugins may also shade). Keep any newly bundled
+library relocated the same way. `platforms/paper` depends on `platforms/common`, which exposes the
+whole object graph (adapters, core, ports, api, Guice, Jackson, Cloud) with the `api` configuration,
+so shadow bundles everything transitively into a self-contained jar. The GitHub release attachment
+step uses `platforms/paper`'s `tasks.shadowJar`.
 
 ## plugin-yml
 
@@ -71,7 +75,9 @@ import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 load = BukkitPluginDescription.PluginLoadOrder.STARTUP
 ```
 
-The command is `skygrid`, the permission is `skygridng.admin`. The main class is
+The `bukkit { }` block declares the `skygridng.admin` permission, but not the `skygrid` command
+itself: Incendo Cloud registers it at runtime (its own guidance is not to also declare a command it
+owns in `plugin.yml`, see `hexagonal-architecture`). The main class is
 `...platforms.common.SkyGridNgPlugin` (display name `SkyGrid-ng`), which always wires and enables
 the OLF-only mechanics in its `platforms.olf` package too (there is no separate distribution without
 them). The `bukkit { }` block keeps `load = STARTUP`. The distribution is not published to any

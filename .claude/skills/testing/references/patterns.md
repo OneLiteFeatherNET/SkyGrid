@@ -44,9 +44,14 @@ Load the plugin for an integration test (reads the generated plugin.yml from the
 ```java
 SkyGridNgPlugin plugin = MockBukkit.load(SkyGridNgPlugin.class);
 assertThat(plugin.isEnabled()).isTrue();
-assertThat(plugin.getCommand("skygrid")).isNotNull();
-assertThat(new java.io.File(plugin.getDataFolder(), "generator.json")).exists();
+assertThat(new java.io.File(plugin.getDataFolder(), "config.yml")).exists();
+assertThat(new java.io.File(plugin.getDataFolder(), "presets/classic.yml")).exists();
 ```
+
+Commands are no longer registered via `plugin.getCommand(...)` (Cloud registers them at runtime, see
+`hexagonal-architecture`); do not assert on it. The Cloud command manager's construction throws under
+MockBukkit and `SkyGridNgPlugin` guards that, so do not assert anything about it being built here
+either.
 
 Generator test: MockBukkit gives the Material registry, Mockito gives the chunk inputs, then capture
 which blocks land.
@@ -91,15 +96,18 @@ assertThat(source.messages()).containsExactly(Messages.reloadConfirm());
 See `MaintenanceCommandsTest` (and its four sibling `*CommandsTest` classes in the same package) for
 the full pattern across all five migrated handler classes.
 
-In memory repository for service tests:
+In memory repository for service tests, prefer the shared fixture over a one-off anonymous class:
+`Fixtures.InMemoryPresetRepository` (`core/src/testFixtures/.../testutil/Fixtures.java`) wraps a
+`PresetCatalog` the same way `RuleAdminServiceTest` constructs it:
 
 ```java
-RuleRepository repo = new RuleRepository() {
-    private GeneratorConfig stored = Fixtures.config("skygrid");
-    public GeneratorConfig load() { return stored; }
-    public void save(GeneratorConfig c) { stored = c; }
-};
+PresetCatalog catalog = Fixtures.presetCatalog("skygrid");
+Fixtures.InMemoryPresetRepository repository = new Fixtures.InMemoryPresetRepository(catalog);
 ```
+
+A bare in memory `RuleRepository`, if a test genuinely needs one directly, implements
+`RuleCatalog load()`/`void save(RuleCatalog)` (not `GeneratorConfig`, see `hexagonal-architecture`'s
+`references/api-surface.md`).
 
 ## Verified value table
 

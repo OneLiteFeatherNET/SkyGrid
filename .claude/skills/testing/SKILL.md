@@ -37,15 +37,23 @@ Shared fixtures live in `core/src/testFixtures/java/.../testutil/Fixtures.java`:
   cases directly (cumulative buckets, value noise, Memento/Observer, grid math, record guards). The
   `core/solver` package (`WfcSolver` and its strategies) was removed along with the `wfc` algorithm.
 - `core/service`: black-box against the in port contracts (`TerrainAlgorithms`, `RuleAdminUseCase`,
-  and the preset/spawn ports). Use an in memory `RuleRepository`/`PresetRepository` where needed.
-- `adapter/out/json`: black-box round-trip against the `RuleRepository` contract with `@TempDir`.
-- `adapter/in/paper`: MockBukkit for the Material registry, Mockito for `WorldInfo` and `ChunkData`,
-  then assert which blocks are placed. `MaterialResolver` is package private, so its test lives in
-  the same package.
-- `adapter/in/command`: Mockito against the `RuleAdminUseCase` port and a mocked `CommandSender`. Do
-  not depend on translatable rendering; assert delegation and the permission guard.
-- `bootstrap`: MockBukkit integration. Load the plugin, assert it enables, the command is
-  registered, the default world generator is the hexagonal one, and `generator.json` is written.
+  and the preset/spawn/challenge ports). Use an in memory `RuleRepository`/`PresetRepository` where
+  needed.
+- `adapters/config`: black-box round-trip against the `PresetRepository`/`RuleRepository`/
+  `ChallengeRepository` contracts with `@TempDir` (`Jackson*RepositoryTest`).
+- `adapters/generator`: MockBukkit for the Material registry, Mockito for `WorldInfo` and
+  `ChunkData`, then assert which blocks are placed. `MaterialResolver` is package private, so its
+  test lives in the same package.
+- `adapters/command/handler`: no MockBukkit, no Mockito `CommandSender`. Call the `@Command`
+  annotated method directly against a `CommandSource` test double (`RecordingCommandSource`, which
+  records every sent `Component`); Cloud's own argument parsing and permission gate are not part of
+  what these tests exercise. Do not assert exact translated text, just delegation and which
+  `Messages.*` method fired.
+- `bootstrap`: MockBukkit integration. Load the plugin, assert it enables and the default world
+  generator is the hexagonal one. The Cloud command manager's construction is guarded and throws
+  under MockBukkit (see `SkyGridNgPlugin`), so do not assert on `cloudCommandManager` there; assert
+  the config files are seeded instead (`config.<ext>`, `presets/`, `rules/` exist in the data
+  folder).
 
 ## The verification rule (important)
 
