@@ -19,4 +19,5 @@ dependencies {
     testRuntimeOnly(libs.junit.launcher)
     testImplementation(libs.assertj.core)
     testImplementation(libs.adventure.api)
+    testImplementation(libs.mockito.core)
 }

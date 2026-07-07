@@ -58,14 +58,23 @@ ArchUnit in `:verification`:
   `ports.out`, `ports.algorithm`. Depends on `api`.
 - `core` (`core.*`): the framework-free domain (algorithms, solver, services, state). Implements the
   ports; depends on `ports` + `api` with the `api` configuration.
-- `adapters/generator`, `adapters/command`, `adapters/config`, `adapters/spawn`, `adapters/challenge`
-  (`adapters.*`): the Bukkit/Jackson edges, one module each. Each depends on `ports` + `api` only.
-  Bukkit and jakarta.inject are `compileOnly` (the platform provides them at runtime); Jackson
-  (databind, YAML and TOML dataformats) is bundled and relocated by the platform distribution.
-  `adapters/config` holds the Jackson `PresetRepository`/`RuleRepository`/`ChallengeRepository`
-  implementations (`config-schema-and-rules` skill); `adapters/spawn` the spread first-join spawn
-  search; `adapters/challenge` the OneLiteFeather challenge rule listeners
-  (`challenge-season-system` skill).
+- `adapters/generator`, `adapters/command`, `adapters/config`, `adapters/spawn`, `adapters/challenge`,
+  `adapters/challenge-progress` (`adapters.*`): the Bukkit/Jackson/persistence edges, one module
+  each. Each depends on `ports` + `api` only. Bukkit and jakarta.inject are `compileOnly` (the
+  platform provides them at runtime); Jackson (databind, YAML and TOML dataformats) is bundled and
+  relocated by the platform distribution. `adapters/config` holds the Jackson
+  `PresetRepository`/`RuleRepository`/`ChallengeRepository` implementations
+  (`config-schema-and-rules` skill); `adapters/spawn` the spread first-join spawn search;
+  `adapters/challenge` the OneLiteFeather challenge rule listeners; `adapters/challenge-progress`
+  the Postgres-backed `ChallengeProgressRepository` (`PostgresChallengeProgressRepository`) (both
+  `challenge-season-system` skill).
+- `adapters/persistence` (`adapters.persistence.*`): shared, reusable Jakarta Persistence (JSR 338)
+  via Hibernate ORM infrastructure (`DatabaseConfig`, `AbstractJpaRepository`: the lazy
+  `EntityManagerFactory` bootstrap, Flyway migration, and `read`/`inTransaction` helpers), depends on
+  `ports` + `api` only. Every Postgres-backed adapter (for example `adapters/challenge-progress`'s
+  `PostgresChallengeProgressRepository`) extends `AbstractJpaRepository` instead of writing a new
+  factory-bootstrap/transaction-lifecycle from scratch; a new one only needs its own `@Entity`,
+  migration, and a small repository built on `read`/`inTransaction`.
 - `platforms/common` (`platforms.common.*`, `platforms.olf.*`): the shared Bukkit composition root
   and the single distribution's home. `SkyGridNgPlugin`, `I18n`, the Guice modules, the message
   bundles. `platforms.olf` (`OlfModule`, `OlfFeature`, `ChallengeModule`, `ChallengeFeature`) is a

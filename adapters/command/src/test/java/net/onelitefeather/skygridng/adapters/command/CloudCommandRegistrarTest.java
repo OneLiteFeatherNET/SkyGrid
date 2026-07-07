@@ -7,6 +7,7 @@ import net.onelitefeather.skygridng.adapters.command.handler.HelpCommands;
 import net.onelitefeather.skygridng.adapters.command.handler.MaintenanceCommands;
 import net.onelitefeather.skygridng.adapters.command.handler.PresetCommands;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import org.incendo.cloud.CommandManager;
@@ -56,7 +57,7 @@ class CloudCommandRegistrarTest {
         };
         // The annotation parser resolves each @Argument(suggestions = "...") name against the
         // manager's parser registry while assembling the command tree (it throws
-        // IllegalArgumentException for an unregistered name), so the four dynamic providers
+        // IllegalArgumentException for an unregistered name), so the five dynamic providers
         // CloudCommandRegistrar registers in production must exist here too, even though their
         // content is irrelevant to this annotation-consistency check.
         SuggestionProvider<CommandSource> empty = SuggestionProvider.blockingStrings((ctx, input) -> List.of());
@@ -64,6 +65,7 @@ class CloudCommandRegistrarTest {
         manager.parserRegistry().registerSuggestionProvider("algorithm-ids", empty);
         manager.parserRegistry().registerSuggestionProvider("material-ids", empty);
         manager.parserRegistry().registerSuggestionProvider("challenge-ids", empty);
+        manager.parserRegistry().registerSuggestionProvider("online-players", empty);
 
         AnnotationParser<CommandSource> parser = new AnnotationParser<>(manager, CommandSource.class);
 
@@ -71,7 +73,7 @@ class CloudCommandRegistrarTest {
                 new PresetCommands(mock(Presets.class)),
                 new AlgorithmCommands(mock(RuleAdminUseCase.class)),
                 new MaintenanceCommands(mock(RuleAdminUseCase.class)),
-                new ChallengeCommands(mock(ChallengeAdminUseCase.class)),
+                new ChallengeCommands(mock(ChallengeAdminUseCase.class), mock(ChallengeProgressUseCase.class)),
                 new HelpCommands()))
                 .doesNotThrowAnyException();
     }

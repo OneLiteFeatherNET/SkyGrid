@@ -3,8 +3,13 @@ package net.onelitefeather.skygridng.adapters.command;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
 import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
 import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * The Paper binding of {@link CommandSource}: forwards feedback to the underlying
@@ -25,5 +30,21 @@ public record PaperCommandSource(CommandSourceStack stack) implements CommandSou
     @Override
     public boolean hasPermission(String permission) {
         return stack.getSender().hasPermission(permission);
+    }
+
+    @Override
+    public Optional<UUID> playerId() {
+        return stack.getSender() instanceof Player player
+                ? Optional.of(player.getUniqueId())
+                : Optional.empty();
+    }
+
+    @Override
+    public Optional<UUID> resolvePlayerId(String name) {
+        // Bukkit.getOfflinePlayer(String) resolves an online player instantly; for a name never
+        // seen before it may block on a Mojang UUID lookup. Accepted here since this is a rarely
+        // used admin command, not a hot path.
+        OfflinePlayer target = Bukkit.getOfflinePlayer(name);
+        return Optional.of(target.getUniqueId());
     }
 }

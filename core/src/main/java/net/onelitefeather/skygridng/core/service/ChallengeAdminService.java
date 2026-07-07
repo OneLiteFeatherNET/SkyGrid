@@ -43,6 +43,11 @@ public final class ChallengeAdminService implements ChallengeAdminUseCase {
         return setActive(id, false);
     }
 
+    @Override
+    public void addChangeListener(Runnable listener) {
+        state.addChangeListener(listener);
+    }
+
     private boolean setActive(String id, boolean active) {
         ChallengeCatalog catalog = state.current();
         var rule = catalog.forId(id);

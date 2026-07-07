@@ -24,4 +24,12 @@ public interface ChallengeAdminUseCase {
 
     /** Deactivates the challenge {@code id} and persists the catalog. Returns false for an unknown id. */
     boolean deactivate(String id);
+
+    /**
+     * Registers a listener invoked on every change to the challenge catalog (activation,
+     * deactivation, or reload). Lets a driving adapter (for example the {@code one_life} listener)
+     * react to a challenge becoming active or inactive without depending on the core state holder
+     * directly.
+     */
+    void addChangeListener(Runnable listener);
 }
