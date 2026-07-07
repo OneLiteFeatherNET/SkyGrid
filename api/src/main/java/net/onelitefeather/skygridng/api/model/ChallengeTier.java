@@ -19,6 +19,10 @@ public record ChallengeTier(UUID playerId, String challengeId, int tier) {
         if (challengeId == null || challengeId.isBlank()) {
             throw new IllegalArgumentException("ChallengeTier.challengeId must not be blank");
         }
+        if (challengeId.length() > ChallengeRule.MAX_ID_LENGTH) {
+            throw new IllegalArgumentException(
+                    "ChallengeTier.challengeId must be at most " + ChallengeRule.MAX_ID_LENGTH + " characters");
+        }
         if (tier < 0) {
             throw new IllegalArgumentException("ChallengeTier.tier must not be negative");
         }

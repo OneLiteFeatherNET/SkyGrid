@@ -2,6 +2,7 @@ package net.onelitefeather.skygridng.adapters.challengeprogress;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import net.onelitefeather.skygridng.api.model.ChallengeRule;
 
 import java.io.Serializable;
 import java.util.UUID;
@@ -23,7 +24,8 @@ import java.util.UUID;
 @Embeddable
 public record ChallengeTierId(
         @Column(name = "player_id", nullable = false) UUID playerId,
-        @Column(name = "challenge_id", nullable = false) String challengeId) implements Serializable {
+        @Column(name = "challenge_id", nullable = false, length = ChallengeRule.MAX_ID_LENGTH) String challengeId)
+        implements Serializable {
 
     public ChallengeTierId {
         if (playerId == null) {
@@ -31,6 +33,10 @@ public record ChallengeTierId(
         }
         if (challengeId == null || challengeId.isBlank()) {
             throw new IllegalArgumentException("ChallengeTierId.challengeId must not be blank");
+        }
+        if (challengeId.length() > ChallengeRule.MAX_ID_LENGTH) {
+            throw new IllegalArgumentException(
+                    "ChallengeTierId.challengeId must be at most " + ChallengeRule.MAX_ID_LENGTH + " characters");
         }
     }
 }
