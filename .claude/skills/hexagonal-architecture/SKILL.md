@@ -52,16 +52,50 @@ ArchUnit in `:verification`:
   `ports.out`, `ports.algorithm`. Depends on `api`.
 - `core` (`core.*`): the framework-free domain (algorithms, solver, services, state). Implements the
   ports; depends on `ports` + `api` with the `api` configuration.
-- `adapters/generator`, `adapters/command`, `adapters/json` (`adapters.*`): the Bukkit/Gson edges,
-  one module each. Each depends on `ports` + `api` only. Bukkit and jakarta.inject are `compileOnly`
-  (the platform provides them at runtime); Gson is bundled by the platform.
+- `adapters/generator` (`adapters.generator`): framework-free, like `core`, not Bukkit/Gson glue.
+  Depends on `ports` + `api` only and resolves nothing through a native type directly; it drives
+  decoration, structure, and still-water placement entirely through `ports.algorithm.RegionWriter`,
+  the seam whose Bukkit implementation (`LimitedRegionWriter`, wrapping a live `LimitedRegion`) lives
+  in `platforms/common` alongside the rest of the Bukkit-flavored generator classes
+  (`HexagonalChunkGenerator`, `RuleResolver`, `MaterialResolver`, `BiomeResolver`).
+- `adapters/spawn` (`adapters.spawn`): framework-free, like `core`, not Bukkit glue. Depends on
+  `ports` + `api` only and resolves nothing through a native type directly; it drives the first-join
+  safe-spawn search entirely through `ports.algorithm.GroundReader`, the seam whose Bukkit
+  implementation (`BukkitGroundReader`, wrapping a live `World`) lives in `platforms/common`
+  alongside the rest of the Bukkit-flavored spawn classes (`SpreadSpawnListener`).
+- `adapters/command` (`adapters.command`): framework-free, like `core`, not Bukkit glue. Depends on
+  `ports` + `api` only and resolves nothing through a native type directly; it drives every
+  `/skygrid` subcommand entirely through Cloud's core/annotations API, with the Paper/Bukkit binding
+  of the command manager (`PaperCommandSource`, `CloudCommandManagerFactory`,
+  `CloudCommandRegistrar`) living in `platforms/common` instead of a `ports.algorithm` seam.
+- `adapters/config` (`adapters.config`): never a Bukkit edge, unlike the sibling adapters before
+  rounds of framework-free cleanup; its one framework dependency is Jackson (databind plus the YAML
+  and TOML dataformats) and victools for JSON Schema generation, both bundled and relocated by the
+  platform. Depends on `ports` + `api` only. Holds `ConfigFormats` (per-extension mapper selection),
+  `ConfigDtos` + `RuleDtos` + `ChallengeDtos` (the Jackson DTOs mirroring the on-disk shape),
+  `ConfigSchemas` (the victools-generated Draft 2020-12 schema), `JacksonPresetRepository`,
+  `JacksonRuleRepository`, and `JacksonChallengeRepository` (the `PresetRepository`/
+  `RuleRepository`/`ChallengeRepository` implementations), and `BundledDefaults` (the seam the
+  platform implements to hand over bundled defaults without this module touching Bukkit); split into
+  a `config` selector, one file per preset under `presets/`, one per block under `rules/`, and one
+  per challenge under `challenges/`, in JSON/YAML/TOML, plus the editor `schema/`. Jackson and
+  victools here are a deliberate, permanent design choice, a cross-platform serialization/schema
+  library, not a Bukkit/Paper binding, the same reasoning as Adventure's carve-out for
+  `api`/`ports`/`core` (see "Enforcement (ArchUnit)" above); this module is not awaiting inversion
+  into `platforms/*` the way the Bukkit edges the sibling adapters used to hold were.
+- `adapters/challenge` (`adapters.challenge`): framework-free, like `core`, not Bukkit glue. Depends
+  on `ports` + `api` only and holds nothing but `ChallengeBehavior`, a plain marker interface (no
+  Bukkit, Guice, or jakarta.inject import); its four concrete implementations
+  (`OneLifeListener`, `NoNaturalRegenerationListener`, `NoCraftingTableListener`,
+  `LevelBorderWarningTask`) live in `platforms/common`'s `platforms.olf.challenge` package instead.
 - `platforms/common` (`platforms.common.*`, `platforms.olf.*`): the shared Bukkit composition root
   and the single distribution's home. `SkyGridNgPlugin`, `I18n`, the Guice modules, the message
   bundles. `platforms.olf` (`OlfModule`, `OlfFeature`, `ChallengeModule`, `ChallengeFeature`) is a
   naming convention, not a separate module, for mechanics specific to this OneLiteFeather server
   (challenges); `SkyGridNgPlugin` always wires `OlfModule` and enables every bound `OlfFeature`.
-  Exposes the whole graph with `api`. The only place that may use Bukkit, Guice, and jakarta.inject
-  (Adventure text is allowed in every layer). A library (no shadow/plugin-yml).
+  `platforms.olf.challenge` holds the four Bukkit-facing `ChallengeBehavior` implementations
+  themselves. Exposes the whole graph with `api`. The only place that may use Bukkit, Guice, and
+  jakarta.inject (Adventure text is allowed in every layer). A library (no shadow/plugin-yml).
 - `platforms/paper`: the single Paper distribution (thin: plugin.yml, shadow, run-paper, publishing).
   Produces `skygrid-ng-<version>.jar`. Holds the bootstrap integration tests (they need the generated
   plugin.yml).
@@ -87,24 +121,47 @@ The second package segment matches the module: `api.*`, `ports.*`, `core.*`, `ad
   registered as a Bukkit service in `platforms/common`. `api.util.Seeds`: SplitMix64 derivation
   (shared by core and the generator adapter).
 - `ports.in`: `RuleAdminUseCase`, `TerrainAlgorithms`. `ports.out`: `RuleRepository`.
-  `ports.algorithm`: `TerrainAlgorithm` + `ColumnSink` (the seam the generator adapter implements) +
-  `AlgorithmFactory` (Factory Method, one per algorithm, registered by id). The `GenerateRegionUseCase`
-  port and the `core.solver` package (`WfcSolver` and its strategy interfaces) were removed along with
-  the `wfc` algorithm.
+  `ports.algorithm`: `TerrainAlgorithm` + `ColumnSink` (the seams the generator adapter implements) +
+  `RegionWriter` (read/write access to a live native generation region by `BlockId`, so decoration,
+  structure, and still-water logic in `adapters.generator` stay framework-free; its Bukkit
+  implementation, `LimitedRegionWriter`, lives in `platforms/common`, constructed fresh per generation
+  call, never injected as a singleton) + `GroundReader` (read only access to a live native world's
+  block state by `BlockId`, so the first-join safe-spawn search in `adapters.spawn` stays
+  framework-free; its Bukkit implementation, `BukkitGroundReader`, lives in `platforms/common`,
+  constructed fresh per join event, never injected as a singleton) + `AlgorithmFactory` (Factory
+  Method, one per algorithm, registered by id). The `GenerateRegionUseCase` port and the `core.solver`
+  package (`WfcSolver` and its strategy interfaces) were removed along with the `wfc` algorithm.
 - `core.algorithm`: `IndependentSkyGridAlgorithm` (id `skygrid`), `NoiseSkyGridAlgorithm`
   (`noise_skygrid`) - the two implementations of `TerrainAlgorithm`. `core.util`: `WeightedTable`,
   `ValueNoise`.
 - `core.state.RuleState`: thread safe holder, Memento (undo) plus Observer (listeners).
 - `core.service`: `DefaultTerrainAlgorithms`, `RuleAdminService`, `SkyGridApiService` (the
   implementors of the in ports and the facade).
-- `adapters.generator`: `HexagonalChunkGenerator`, `MaterialPopulator`, `MaterialResolver`.
-- `adapters.command`: `SkyGridCommand`, `Messages` (translatable components).
-- `adapters.json`: `JsonRuleRepository`, `GeneratorConfigDto`, and the bundled default
-  `generator.json` resource.
+- `adapters.generator`: `DecorationEngine`, `StructurePlacer`, `StillWater`.
+- `adapters.command`: `SkyGridCommands` (the Cloud-annotated `/skygrid` subcommands),
+  `parser.SkyGridArgumentParsers` (tab-completion suggestion providers), `Messages` (translatable
+  components), and `handler.CommandSource` (the neutral sender interface).
+- `adapters.config`: `ConfigFormats` (JSON/YAML/TOML mapper selection by file extension),
+  `ConfigDtos` + `RuleDtos` + `ChallengeDtos` (the Jackson DTOs for the preset, rule, and challenge
+  files), `ConfigSchemas` (the victools-generated JSON Schema under `schema/`),
+  `JacksonPresetRepository`, `JacksonRuleRepository`, and `JacksonChallengeRepository` (the
+  out-port implementations), and `BundledDefaults` (the seam for the bundled default
+  config/presets/rules, implemented by `platforms/common` so this module never touches Bukkit);
+  split into a `config` selector, one file per preset under `presets/`, one per block under
+  `rules/`, and one per challenge under `challenges/`.
+- `adapters.challenge`: `ChallengeBehavior` only (a plain marker interface).
 - `platforms.common`: `SkyGridNgPlugin` (composition root), `I18n`, the `injection/` modules
-  (`PlatformModule`, `RepositoryModule`, `GeneratorModule`), and the `messages/` bundles.
+  (`PlatformModule`, `RepositoryModule`, `GeneratorModule`), the `messages/` bundles,
+  `platforms.common.generator` (`HexagonalChunkGenerator`, `MaterialResolver`, `BiomeResolver`,
+  `BukkitIds`, `RuleResolver`, `SkyGridBiomeProvider`, `SkyGridDecorationPopulator`,
+  `LimitedRegionWriter`), `platforms.common.spawn` (`SpreadSpawnListener`, `BukkitGroundReader`
+  implementing `GroundReader` over a live `World`), and `platforms.common.command`
+  (`PaperCommandSource`, `CloudCommandManagerFactory`, `CloudCommandRegistrar`: the Paper/Cloud-paper
+  binding of the `/skygrid` command manager).
 - `platforms.olf` (inside `platforms/common`): `OlfModule`, `OlfFeature`, `NetworkStartupReportFeature`,
-  `ChallengeModule`, `ChallengeFeature`.
+  `ChallengeModule`, `ChallengeFeature`, and its `platforms.olf.challenge` subpackage
+  (`OneLifeListener`, `NoNaturalRegenerationListener`, `NoCraftingTableListener`,
+  `LevelBorderWarningTask`: the Bukkit-facing implementations of `adapters.challenge.ChallengeBehavior`).
 
 For exact constructor and method signatures, read `references/api-surface.md` before editing. Do not
 guess signatures; the records have validating compact constructors that throw
@@ -123,8 +180,9 @@ The framework-free layers must be neutral semantically, not just syntactically. 
 - The model (`BlockWeight`, `SkyGridConfig`), the `ColumnSink` port, and the weighted table
   carry `BlockId`. Resolution of a `BlockId` to a native `org.bukkit.Material` happens ONLY in
   `adapters.generator.MaterialResolver`, via `new NamespacedKey(namespace, value)` +
-  `Registry.MATERIAL.get(key)` (this is the WorldEdit `BukkitAdapter` round-trip). The Gson
-  `BlockId` adapter (string <-> `BlockId`) lives in `adapters.json`.
+  `Registry.MATERIAL.get(key)` (this is the WorldEdit `BukkitAdapter` round-trip). The `BlockId`
+  string mapping (plain `String` fields on the DTOs, converted via `BlockId.of(...)`) lives in
+  `adapters.config`.
 - This is the EngineHub/WorldEdit and FAWE pattern: `worldedit-core` identifies blocks by namespaced
   id (`BlockType implements Keyed`), and each platform resolves that id against its own registry. The
   same id works for Bukkit, Fabric, Forge, and Sponge.

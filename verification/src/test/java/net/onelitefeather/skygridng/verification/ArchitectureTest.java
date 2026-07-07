@@ -59,6 +59,7 @@ class ArchitectureTest {
     private static final String GENERATOR_ADAPTER = "net.onelitefeather.skygridng.adapters.generator..";
     private static final String SPAWN_ADAPTER = "net.onelitefeather.skygridng.adapters.spawn..";
     private static final String CHALLENGE_ADAPTER = "net.onelitefeather.skygridng.adapters.challenge..";
+    private static final String CONFIG_ADAPTER = "net.onelitefeather.skygridng.adapters.config..";
 
     @ArchTest
     static final ArchRule generatorAdapterIsFrameworkFree =
@@ -85,6 +86,16 @@ class ArchitectureTest {
                     .because("adapters.challenge is framework-free like core: ChallengeBehavior is a "
                             + "plain marker interface implemented by Bukkit-facing classes that live in "
                             + "platforms.olf.challenge instead");
+
+    @ArchTest
+    static final ArchRule configAdapterIsFrameworkFree =
+            noClasses().that().resideInAPackage(CONFIG_ADAPTER)
+                    .should().dependOnClassesThat().resideInAnyPackage(PLATFORM_AND_FRAMEWORK_PACKAGES)
+                    .because("adapters.config is framework-free with respect to the Minecraft platform: "
+                            + "it resolves nothing through Bukkit, Guice, or jakarta.inject; Jackson and "
+                            + "victools are cross-platform serialization/schema libraries, not platform "
+                            + "bindings, and stay allowed here the same way Adventure text stays allowed "
+                            + "in api/ports/core");
 
     /**
      * Packages the whole command adapter (the neutral CommandSource seam, the Cloud-annotated
