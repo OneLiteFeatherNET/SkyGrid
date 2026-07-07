@@ -8,6 +8,7 @@ include(":adapters:command")
 include(":adapters:config")
 include(":adapters:spawn")
 include(":adapters:challenge")
+include(":adapters:challenge-progress")
 include(":platforms:common")
 include(":platforms:paper")
 include(":verification")
@@ -41,6 +42,9 @@ dependencyResolutionManagement {
             // Incendo Cloud annotations module: versioned independently of cloud-paper (no beta.17
             // coordinate exists for it; 2.0.0 is the current stable release).
             version("cloudAnnotations", "2.0.0")
+            version("postgresql", "42.7.7")     // PostgreSQL JDBC driver, challenge progress adapter
+            version("hikaricp", "6.3.0")         // connection pooling, challenge progress adapter
+            version("flyway", "11.8.2")          // versioned migrations; postgres support is a split module since Flyway 10
 
             version("shadow", "9.4.2")
             version("runPaper", "3.0.2")
@@ -53,6 +57,7 @@ dependencyResolutionManagement {
             version("mockito", "5.14.2")
             version("assertj", "3.27.7")
             version("archunit", "1.4.2")
+            version("testcontainers", "1.21.3") // real disposable Postgres for the challenge progress adapter test
 
             // ----- Libraries -----
             library("paper-api", "io.papermc.paper", "paper-api").versionRef("paper")
@@ -66,6 +71,10 @@ dependencyResolutionManagement {
             library("jakarta-inject", "jakarta.inject", "jakarta.inject-api").versionRef("jakartaInject")
             library("cloud-paper", "org.incendo", "cloud-paper").versionRef("cloudPaper")
             library("cloud-annotations", "org.incendo", "cloud-annotations").versionRef("cloudAnnotations")
+            library("postgresql", "org.postgresql", "postgresql").versionRef("postgresql")
+            library("hikaricp", "com.zaxxer", "HikariCP").versionRef("hikaricp")
+            library("flyway-core", "org.flywaydb", "flyway-core").versionRef("flyway")
+            library("flyway-postgresql", "org.flywaydb", "flyway-database-postgresql").versionRef("flyway")
 
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit")
             library("junit-launcher", "org.junit.platform", "junit-platform-launcher").version("1.11.3")
@@ -73,6 +82,8 @@ dependencyResolutionManagement {
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito")
             library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj")
             library("archunit-junit5", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
+            library("testcontainers-postgresql", "org.testcontainers", "postgresql").versionRef("testcontainers")
+            library("testcontainers-junit-jupiter", "org.testcontainers", "junit-jupiter").versionRef("testcontainers")
 
             // ----- Plugins -----
             plugin("shadow", "com.gradleup.shadow").versionRef("shadow")

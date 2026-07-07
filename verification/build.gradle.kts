@@ -19,6 +19,7 @@ dependencies {
     testImplementation(project(":adapters:config"))
     testImplementation(project(":adapters:spawn"))
     testImplementation(project(":adapters:challenge"))
+    testImplementation(project(":adapters:challenge-progress"))
     testImplementation(project(":platforms:common"))
 
     testImplementation(libs.paper.api)

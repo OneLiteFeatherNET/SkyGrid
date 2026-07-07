@@ -6,6 +6,8 @@ import net.onelitefeather.skygridng.api.model.ChallengeRule;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.incendo.cloud.annotations.AnnotationParser;
 import org.incendo.cloud.exception.NoPermissionException;
 import org.incendo.cloud.paper.PaperCommandManager;
@@ -21,10 +23,11 @@ import java.util.Set;
  * of every handler instance.
  *
  * The literal subcommand names (preset, presets, worlds, algorithm, skyweight, reload, save, undo,
- * challenge, help), the literal {@code confirm} token, and the literal {@code list}/{@code toggle}
- * challenge subcommands are all Cloud command tree literals now, not free-form arguments, so Cloud
- * suggests them natively; only the genuinely dynamic argument values (preset names, algorithm ids,
- * material ids, challenge ids) need a custom {@link SuggestionProvider} registered here.
+ * challenge, help), the literal {@code confirm} token, and the literal {@code list}/{@code toggle}/
+ * {@code tier}/{@code reset} challenge subcommands are all Cloud command tree literals now, not
+ * free-form arguments, so Cloud suggests them natively; only the genuinely dynamic argument values
+ * (preset names, algorithm ids, material ids, challenge ids, online player names) need a custom
+ * {@link SuggestionProvider} registered here.
  *
  * The handler set comes from Guice's {@code CloudCommandHandler} set binder (see
  * {@code CommandModule}), so adding a subcommand group is one new class plus one binding line
@@ -62,6 +65,10 @@ public final class CloudCommandRegistrar {
         manager.parserRegistry().registerSuggestionProvider("challenge-ids",
                 SuggestionProvider.blockingStrings((ctx, input) -> challenges.list().stream()
                         .map(ChallengeRule::id)
+                        .toList()));
+        manager.parserRegistry().registerSuggestionProvider("online-players",
+                SuggestionProvider.blockingStrings((ctx, input) -> Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
                         .toList()));
     }
 
