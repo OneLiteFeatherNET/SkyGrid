@@ -68,8 +68,10 @@ Chat messages are the one real, shipping surface:
   placeholder in a usage string like `/skygrid preset <name>`) renders as plain text instead of
   throwing, so existing `<placeholder>`/`[optional]` usage syntax stays safe without escaping.
 - Construction: `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java`
-  builds every `Component.translatable(...)` call; `SkyGridCommand.java` in the same module is the
-  one caller today.
+  builds every `Component.translatable(...)` call; the callers today are the five
+  `@Command`-annotated handler classes in `adapters/command/src/main/java/.../adapters/command/handler/`
+  (`PresetCommands`, `AlgorithmCommands`, `MaintenanceCommands`, `ChallengeCommands`, `HelpCommands`),
+  run through Incendo Cloud rather than a hand-rolled `CommandExecutor`.
 
 Going forward, name a new key `skygridng.<area>.<subarea>[.<detail>]`, following the existing
 `skygridng.command.<subcommand>[.<detail>]` shape (for example `skygridng.command.weight.set`,
@@ -97,9 +99,9 @@ string. Sending discrete messages:
 Concrete precedent: `Messages.help()` in
 `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java` returns
 a `List<Component>` (`skygridng.command.help.header`, `.subcommands`, `.algorithm_skyweight`,
-`.reload_save_undo_challenge`, `.footer`), and the command adapter sends each with its own
-`sender.sendMessage(...)` call (see `SkyGridCommand.sendHelp`). Use this shape, not a single
-newline-joined `key("help")`, whenever a message needs more than one visual line.
+`.reload_save_undo_challenge`, `.footer`), and `HelpCommands` (in `adapters/command/handler`) sends
+each with its own `source.sendMessage(...)` call. Use this shape, not a single newline-joined
+`key("help")`, whenever a message needs more than one visual line.
 
 ## Current log message reality
 
@@ -134,6 +136,7 @@ Code to read for real examples:
 - `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
 - `platforms/common/src/main/resources/messages/Bundle_en.properties`, `Bundle_de.properties`
 - `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java`
-- `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/SkyGridCommand.java`
+- `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/handler/` (the
+  `@Command`-annotated handler classes that call `Messages`)
 - `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/SkyGridNgPlugin.java`,
   `WorldGenerators.java`

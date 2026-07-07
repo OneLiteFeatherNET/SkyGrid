@@ -6,9 +6,11 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.TypeLiteral;
+import net.onelitefeather.skygridng.adapters.command.handler.CloudCommandHandler;
 import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
 import net.onelitefeather.skygridng.platforms.common.command.CloudCommandManagerFactory;
 import net.onelitefeather.skygridng.platforms.common.command.CloudCommandRegistrar;
+import net.onelitefeather.skygridng.platforms.common.injection.CommandModule;
 import net.onelitefeather.skygridng.platforms.common.injection.GeneratorModule;
 import net.onelitefeather.skygridng.platforms.common.injection.PlatformModule;
 import net.onelitefeather.skygridng.platforms.common.injection.RepositoryModule;
@@ -17,7 +19,11 @@ import net.onelitefeather.skygridng.platforms.olf.ChallengeModule;
 import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
 import net.onelitefeather.skygridng.platforms.olf.OlfModule;
 import net.onelitefeather.skygridng.api.SkyGridApi;
+import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.Presets;
+import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
+import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.ServicePriority;
@@ -49,6 +55,8 @@ import java.util.logging.Level;
 public class SkyGridNgPlugin extends JavaPlugin {
 
     private static final Key<Set<OlfFeature>> FEATURES = Key.get(new TypeLiteral<Set<OlfFeature>>() {});
+    private static final Key<Set<CloudCommandHandler>> COMMAND_HANDLERS =
+            Key.get(new TypeLiteral<Set<CloudCommandHandler>>() {});
 
     private final I18n i18n = new I18n();
     private Injector injector;
@@ -71,6 +79,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
         modules.add(new PlatformModule(this));
         modules.add(new RepositoryModule());
         modules.add(new GeneratorModule());
+        modules.add(new CommandModule());
         modules.add(new OlfModule());
         modules.add(new ChallengeModule());
         return modules;
@@ -95,19 +104,24 @@ public class SkyGridNgPlugin extends JavaPlugin {
             getLogger().warning("Unknown algorithm '" + algorithm + "', falling back to skygrid.");
         }
 
-        // Cloud command framework migration, stage 2 (live): build the sender-mapped manager and
-        // parse the migrated /skygrid subcommands onto it. The manager's constructor eagerly
-        // reflects into the server's real Brigadier argument type registry; a test double
-        // (MockBukkit) or a server fork without that registry throws a LinkageError
-        // (ExceptionInInitializerError or NoClassDefFoundError) from a static initializer, not a
-        // plain exception, so both the manager build and the command registration stay inside one
-        // guarded try block: a failure anywhere in Cloud setup never takes down the rest of the
-        // plugin. There is no hand-rolled fallback executor anymore (stage 1's legacy
-        // getCommand("skygrid") wiring is gone for good), so a failure here means no /skygrid
-        // command at all, logged clearly instead of crashing enable.
+        // Cloud command framework migration, stage 2: build the sender-mapped manager and register
+        // the migrated annotated subcommands (preset, presets, worlds, algorithm, skyweight,
+        // reload, save, undo, challenge, help) on it. The manager's constructor eagerly reflects
+        // into the server's real Brigadier argument type registry; a test double (MockBukkit) or a
+        // server fork without that registry throws a LinkageError (ExceptionInInitializerError or
+        // NoClassDefFoundError) from a static initializer, not a plain exception. Guard both steps
+        // so a construction or registration failure never takes down the rest of the plugin. There
+        // is no hand-rolled fallback executor anymore (stage 1's legacy getCommand("skygrid")
+        // wiring is gone for good), so a failure here means no /skygrid command at all, logged
+        // clearly instead of crashing enable.
         try {
             cloudCommandManager = CloudCommandManagerFactory.create(this);
-            injector.getInstance(CloudCommandRegistrar.class).registerOn(cloudCommandManager);
+            CloudCommandRegistrar.register(
+                    cloudCommandManager,
+                    injector.getInstance(Presets.class),
+                    injector.getInstance(RuleAdminUseCase.class),
+                    injector.getInstance(ChallengeAdminUseCase.class),
+                    injector.getInstance(COMMAND_HANDLERS));
         } catch (RuntimeException | LinkageError e) {
             getLogger().log(Level.WARNING, "Failed to build the Cloud command manager.", e);
         }
@@ -124,6 +138,19 @@ public class SkyGridNgPlugin extends JavaPlugin {
     public void onDisable() {
         onExtensionDisable();
         i18n.unregister();
+
+        // ChallengeProgressRepository's Postgres adapter lazily opens a HikariCP pool on first use;
+        // whether or not it was ever used this run, ask the injector for the bound singleton (Guice
+        // memoizes it, so this never reopens or duplicates anything) and close it if it is
+        // AutoCloseable, so a reload or server stop never leaks pooled connections or Hikari's
+        // housekeeping threads.
+        if (injector.getInstance(ChallengeProgressRepository.class) instanceof AutoCloseable closeable) {
+            try {
+                closeable.close();
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "Failed to close the challenge progress repository.", e);
+            }
+        }
     }
 
     /**

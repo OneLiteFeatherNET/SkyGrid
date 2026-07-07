@@ -44,9 +44,14 @@ Load the plugin for an integration test (reads the generated plugin.yml from the
 ```java
 SkyGridNgPlugin plugin = MockBukkit.load(SkyGridNgPlugin.class);
 assertThat(plugin.isEnabled()).isTrue();
-assertThat(plugin.getCommand("skygrid")).isNotNull();
-assertThat(new java.io.File(plugin.getDataFolder(), "generator.json")).exists();
+assertThat(new java.io.File(plugin.getDataFolder(), "config.yml")).exists();
+assertThat(new java.io.File(plugin.getDataFolder(), "presets/classic.yml")).exists();
 ```
+
+Commands are no longer registered via `plugin.getCommand(...)` (Cloud registers them at runtime, see
+`hexagonal-architecture`); do not assert on it. The Cloud command manager's construction throws under
+MockBukkit and `SkyGridNgPlugin` guards that, so do not assert anything about it being built here
+either.
 
 Generator test: MockBukkit gives the Material registry, Mockito gives the chunk inputs, then capture
 which blocks land.
@@ -71,28 +76,38 @@ config over a 16x16 chunk and y range 0..63, exactly 256 blocks are placed (4 x 
 
 ## Mockito patterns
 
-Command test against the port, no MockBukkit and no message rendering:
+Command handler test against the port, no MockBukkit and no message rendering: call the
+`@Command`-annotated method directly (Cloud's argument parsing and permission gate are not part of
+what this test exercises) with a `CommandSource` test double instead of a mocked Bukkit
+`CommandSender`. `adapters/command/src/test/java/.../adapters/command/handler/RecordingCommandSource.java`
+is that double: it just records every `Component` sent, in order.
 
 ```java
 RuleAdminUseCase admin = mock(RuleAdminUseCase.class);
-CommandSender sender = mock(CommandSender.class);
-SkyGridCommand cmd = new SkyGridCommand(admin);
+MaintenanceCommands subject = new MaintenanceCommands(admin);
+RecordingCommandSource source = new RecordingCommandSource();
 
-when(sender.hasPermission("skygridng.admin")).thenReturn(false);
-cmd.onCommand(sender, mock(Command.class), "skygrid", new String[]{"reload"});
-verify(sender).sendMessage(any(net.kyori.adventure.text.Component.class));
-verifyNoInteractions(admin);
+subject.reload(source);
+
+verify(admin, never()).reload();
+assertThat(source.messages()).containsExactly(Messages.reloadConfirm());
 ```
 
-In memory repository for service tests:
+See `MaintenanceCommandsTest` (and its four sibling `*CommandsTest` classes in the same package) for
+the full pattern across all five migrated handler classes.
+
+In memory repository for service tests, prefer the shared fixture over a one-off anonymous class:
+`Fixtures.InMemoryPresetRepository` (`core/src/testFixtures/.../testutil/Fixtures.java`) wraps a
+`PresetCatalog` the same way `RuleAdminServiceTest` constructs it:
 
 ```java
-RuleRepository repo = new RuleRepository() {
-    private GeneratorConfig stored = Fixtures.config("skygrid");
-    public GeneratorConfig load() { return stored; }
-    public void save(GeneratorConfig c) { stored = c; }
-};
+PresetCatalog catalog = Fixtures.presetCatalog("skygrid");
+Fixtures.InMemoryPresetRepository repository = new Fixtures.InMemoryPresetRepository(catalog);
 ```
+
+A bare in memory `RuleRepository`, if a test genuinely needs one directly, implements
+`RuleCatalog load()`/`void save(RuleCatalog)` (not `GeneratorConfig`, see `hexagonal-architecture`'s
+`references/api-surface.md`).
 
 ## Verified value table
 

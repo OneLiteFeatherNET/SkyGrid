@@ -2,8 +2,8 @@
 name: skygrid-domain
 description: >
   Use whenever working on what SkyGrid-ng generates or how it behaves in game: the two algorithms
-  (skygrid, noise_skygrid), the generator.json config, weighted block tables, decorations, world
-  setup, the safe first-join spawn search, or the SkyGrid gameplay caveats and performance. It
+  (skygrid, noise_skygrid), the SkyGridConfig preset fields, weighted block tables, decorations,
+  world setup, the safe first-join spawn search, or the SkyGrid gameplay caveats and performance. It
   explains the SkyGrid concept (SethBling 2012), why each algorithm exists, and the exact config
   semantics and defaults, so a generation change matches the intended behavior instead of guessing.
   Read this before changing generation logic, config defaults, the block table, or before advising a
@@ -13,8 +13,9 @@ description: >
 # SkyGrid-ng domain
 
 This is the domain knowledge (what the plugin generates and why). For code structure and the
-dependency rule, see the `hexagonal-architecture` skill. For the full operator facing config tables
-and tuning advice, see `docs/ADMIN.md`.
+dependency rule, see the `hexagonal-architecture` skill. For the full operator facing config
+reference, see `docs/README.md` (`docs/presets.md`, `docs/rules.md`); for commands and tuning
+advice, see `docs/ADMIN.md`.
 
 ## What SkyGrid is
 
@@ -25,7 +26,7 @@ variant.
 
 ## The two algorithms
 
-Selected by `algorithm` in `generator.json`, switchable in game with `/skygrid algorithm <id>`. Both
+Selected by a preset's `algorithm` field, switchable in game with `/skygrid algorithm <id>`. Both
 are seed based and deterministic: the same world seed and coordinates always produce the same result.
 An unrecognized configured id falls back to `skygrid` with a warning.
 
@@ -46,11 +47,13 @@ removed: its solid-terrain and tile-admin surface area (a dedicated solver packa
 config section, and public API/`RuleAdminUseCase` tile methods) cost more to maintain than the two
 void-grid algorithms needed. See `project-context` (decision log) for the removal rationale.
 
-## generator.json config
+## SkyGridConfig fields (in a preset)
 
-Top level: `algorithm` is `skygrid` or `noise_skygrid`.
+Not a standalone file: these fields live inside a preset under `presets/<name>.<ext>` (the split
+config layout, `config-schema-and-rules` skill). Top level: a preset's `algorithm` is `skygrid` or
+`noise_skygrid`.
 
-`skygrid` section (used by `skygrid` and `noise_skygrid`), shipped defaults:
+`SkyGridConfig`, shipped defaults:
 
 - `spacing` (int, 4): grid length in blocks. Classic SkyGrid is 4.
 - `minY` (int, -48) and `maxY` (int, 120): lowest and highest grid layer.
@@ -60,6 +63,10 @@ Top level: `algorithm` is `skygrid` or `noise_skygrid`.
   Blocks are platform-neutral namespaced ids (`minecraft:stone`), not Bukkit `Material` enum names; a
   bare `stone` defaults to the `minecraft` namespace. Unknown ids fall back to a safe block (no
   crash). The adapter resolves the id to a native block (see the `core-platform-neutrality` memory).
+- `chestLoot`/`spawnerMobs` (list, both optional): weighted tables of loot-table ids
+  (`minecraft:chests/simple_dungeon`) and mob ids (`minecraft:zombie`) for table-placed chests and
+  spawners; empty means a bare chest or default spawner. See `docs/presets.md` for the full preset
+  schema (biomes, spawn) and `world-generator-presets` for preset selection and inheritance.
 
 ## Safe first-join spawn
 
@@ -76,10 +83,10 @@ regardless of which terrain algorithm generated the column.
 
 ## Gameplay caveats
 
-- `WATER` and `LAVA` sit surrounded by air, so they flow on a block update (the classic water
-  elevator). Remove them from the block table to avoid flowing fluids.
-- `CHEST` and `SPAWNER` are placed as plain blocks (empty chest, default spawner). Loot tables and
-  spawner types are a planned feature, not yet implemented.
+- `minecraft:water` and `minecraft:lava` sit surrounded by air, so they flow on a block update (the
+  classic water elevator). Remove them from the block table to avoid flowing fluids.
+- Chests and spawners get a real loot table/mob type from a preset's `chestLoot`/`spawnerMobs`
+  tables; an empty table falls back to a bare chest or default spawner (see `generation-pipeline`).
 
 ## Performance shape
 

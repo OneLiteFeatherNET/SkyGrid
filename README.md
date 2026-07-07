@@ -1,11 +1,12 @@
 # SkyGrid-ng
 
 A chunk generator plugin for Paper 26.1 that revives the classic **SkyGrid**. Pure Java 25, hexagonal
-architecture, i18n through Adventure, JSON configuration, switchable at runtime via `/skygrid`.
+architecture, i18n through Adventure and MiniMessage, JSON/YAML/TOML configuration, switchable at
+runtime via `/skygrid` (built on the Incendo Cloud command framework).
 
 ## Algorithms
 
-Selected by `algorithm` in `generator.json`, switchable in game with `/skygrid algorithm <id>`:
+Selected by a preset's `algorithm` field, switchable in game with `/skygrid algorithm <id>`:
 
 - **`skygrid`** (default): classic SkyGrid. One block on every grid point (grid length `spacing`,
   default 4), air between, floating in the void. Each cell is sampled independently from a
@@ -18,8 +19,9 @@ All algorithms are seed based and deterministic.
 
 ## Quick start
 
-1. Put `skygrid-ng.jar` in `plugins/` and start the server once to generate
-   `plugins/SkyGrid-ng/generator.json`.
+1. Put `skygrid-ng.jar` in `plugins/` and start the server once. This seeds
+   `plugins/SkyGrid-ng/` with the bundled default `config.yml`, `presets/`, and `rules/` (see
+   [docs/README.md](docs/README.md) for the full layout).
 2. Add a world using the generator in `bukkit.yml`:
 
    ```yaml
@@ -28,8 +30,9 @@ All algorithms are seed based and deterministic.
        generator: SkyGrid-ng
    ```
 
-3. Load the world and play. See [docs/ADMIN.md](docs/ADMIN.md) for all settings, commands, and
-   tuning advice for large servers (around 100 players).
+3. Load the world and play. See [docs/ADMIN.md](docs/ADMIN.md) for commands and tuning advice for
+   large servers (around 100 players), and [docs/README.md](docs/README.md) for the configuration
+   reference (presets, per-block rules, formats).
 
 ## Build
 
@@ -44,7 +47,9 @@ multi-module project (`api`, `ports`, `core`, `adapters/*`, `platforms/*`); see
 
 ## Documentation
 
-- [docs/ADMIN.md](docs/ADMIN.md): all configuration, commands, and performance tuning.
+- [docs/ADMIN.md](docs/ADMIN.md): commands and performance tuning.
+- [docs/README.md](docs/README.md): the configuration reference (layout, formats, presets, per-block
+  rules).
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): hexagonal design and extension points.
 - [docs/USERSTORIES.md](docs/USERSTORIES.md): functional requirements.
 - [docs/RELEASING.md](docs/RELEASING.md): CI/CD and release process.

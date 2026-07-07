@@ -19,7 +19,9 @@ dependencies {
 
     // Cloud command framework: annotation processing and the platform-neutral command core.
     // Declared as `api` so it flows through platforms/common into the platforms/paper shaded jar,
-    // same reasoning as the stage-1 cloud-paper dependency this replaced.
+    // same reasoning as the stage-1 cloud-paper dependency this replaced. The Paper/Bukkit binding
+    // (cloud-paper) lives in platforms/common instead, alongside CloudCommandManagerFactory,
+    // PaperCommandSource, and CloudCommandRegistrar.
     api(libs.cloud.core)
     api(libs.cloud.annotations)
 

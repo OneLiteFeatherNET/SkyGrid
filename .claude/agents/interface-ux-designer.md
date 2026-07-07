@@ -28,10 +28,10 @@ exist today and are real, current work:
   and click/hover events, and reference `Component.translatable` arguments as `<arg:0>`, `<arg:1>`,
   ... (not `java.text.MessageFormat`'s `{0}`/`{1}`).
   `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java` builds
-  the `Component.translatable(...)` calls that render them, and
-  `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/SkyGridCommand.java`
-  is the `/skygrid` command whose subcommands (`preset`, `worlds`, `algorithm`, `skyweight`, `reload`,
-  `save`, `undo`, `challenge`) each send one of these messages.
+  the `Component.translatable(...)` calls that render them, and the `/skygrid` subcommands
+  (`preset`, `worlds`, `algorithm`, `skyweight`, `reload`, `save`, `undo`, `challenge`) each send one
+  of these messages from an Incendo Cloud `@Command`-annotated handler class in
+  `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/handler/`.
 - **Server log messages.** `SkyGridNgPlugin.java` and `WorldGenerators.java` (both in
   `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/`) call
   `getLogger().info(...)` / `getLogger().warning(...)` with plain, untemplated, hand-concatenated
@@ -44,7 +44,7 @@ Audiences, Localization pages) is the authoritative source for how Components ar
 When a message needs more than one line, the Adventure-idiomatic shape is multiple discrete
 `Audience.sendMessage(...)` calls (one per line, each its own bundle key), not one
 newline-joined string crammed into a single `MessageFormat` pattern. See `messaging-ux-conventions`
-for the concrete precedent (`Messages.help()` / `SkyGridCommand.sendHelp`).
+for the concrete precedent (`Messages.help()` / `HelpCommands` in `adapters/command/handler`).
 
 Scope and handoff:
 

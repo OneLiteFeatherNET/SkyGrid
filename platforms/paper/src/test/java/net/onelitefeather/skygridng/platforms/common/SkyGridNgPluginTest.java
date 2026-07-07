@@ -26,10 +26,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Black-box integration test for the composition root. MockBukkit boots a server and loads the
- * plugin, which builds the full Guice graph, registers the command, writes the default config, and
- * (since {@link SkyGridNgPlugin} now folds in what used to be {@code OlfNetworkPlugin}) enables the
+ * plugin, which builds the full Guice graph, writes the default config, and (since
+ * {@link SkyGridNgPlugin} now folds in what used to be {@code OlfNetworkPlugin}) enables the
  * OLF-only challenge features as well. If any wiring is wrong the plugin fails to enable and these
  * tests fail.
+ *
+ * Command registration itself is deliberately not asserted here: since the stage 2 Cloud command
+ * migration, {@code /skygrid} is registered by {@code CloudCommandRegistrar} through a
+ * {@code PaperCommandManager}, whose constructor reflects into the server's real Brigadier argument
+ * type registry. MockBukkit does not provide that registry, so the constructor throws a
+ * {@code LinkageError} there, which {@link SkyGridNgPlugin#onEnable} deliberately catches so the rest
+ * of the plugin still enables (see its Javadoc); there is no longer a plugin.yml-declared
+ * {@code PluginCommand} to observe through {@code getCommand} either. Real command registration is
+ * exercised by a boot test against an actual Paper server instead.
  */
 class SkyGridNgPluginTest {
 
@@ -46,12 +55,11 @@ class SkyGridNgPluginTest {
     }
 
     @Test
-    @DisplayName("the plugin enables, registers /skygrid and writes config.yml")
+    @DisplayName("the plugin enables and writes config.yml")
     void enablesAndWires() {
         SkyGridNgPlugin plugin = MockBukkit.load(SkyGridNgPlugin.class);
 
         assertThat(plugin.isEnabled()).isTrue();
-        assertThat(plugin.getCommand("skygrid")).isNotNull();
         assertThat(new File(plugin.getDataFolder(), "config.yml")).exists();
         assertThat(new File(plugin.getDataFolder(), "presets/classic.yml")).exists();
         assertThat(server.getServicesManager().load(SkyGridApi.class)).isNotNull();

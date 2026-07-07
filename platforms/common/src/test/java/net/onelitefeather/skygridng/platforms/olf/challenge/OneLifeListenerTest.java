@@ -1,7 +1,9 @@
 package net.onelitefeather.skygridng.platforms.olf.challenge;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TranslatableComponent;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -22,19 +24,26 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
  * MockBukkit + Mockito tests for the driving adapter: MockBukkit supplies the player and world,
- * Mockito mocks the {@link ChallengeAdminUseCase} port. Each event handler is invoked directly on a
- * hand-built event, and the same listener instance is reused across a death/respawn (or death/join)
- * pair to observe the in-memory elimination set take effect, since it is not otherwise exposed.
+ * Mockito mocks the {@link ChallengeAdminUseCase} and {@link ChallengeProgressUseCase} ports. Each
+ * event handler is invoked directly on a hand-built event, and the same listener instance is reused
+ * across a death/respawn (or death/join) pair to observe the in-memory elimination set take effect,
+ * since it is not otherwise exposed. The catalog change listener registered in {@link
+ * OneLifeListener#enable()} is captured with an {@link ArgumentCaptor} (since {@code challenges} is
+ * a mock and would not otherwise invoke it) so a test can simulate a specific catalog notification.
  */
 class OneLifeListenerTest {
 
@@ -42,6 +51,7 @@ class OneLifeListenerTest {
     private WorldMock world;
     private PlayerMock player;
     private ChallengeAdminUseCase challenges;
+    private ChallengeProgressUseCase progress;
     private JavaPlugin plugin;
 
     @BeforeEach
@@ -50,6 +60,7 @@ class OneLifeListenerTest {
         world = server.addSimpleWorld("skygrid-world");
         player = server.addPlayer();
         challenges = mock(ChallengeAdminUseCase.class);
+        progress = mock(ChallengeProgressUseCase.class);
         plugin = MockBukkit.createMockPlugin("SkyGridNg");
     }
 
@@ -59,7 +70,19 @@ class OneLifeListenerTest {
     }
 
     private OneLifeListener listener(Predicate<World> appliesTo) {
-        return new OneLifeListener(challenges, appliesTo, plugin);
+        return new OneLifeListener(challenges, progress, appliesTo, plugin);
+    }
+
+    /**
+     * Registers {@code listener} and captures the {@link Runnable} it passed to
+     * {@link ChallengeAdminUseCase#addChangeListener}, so a test can invoke it directly to simulate
+     * a catalog change notification without a real {@link ChallengeState}.
+     */
+    private Runnable enableAndCaptureCatalogListener(OneLifeListener listener) {
+        listener.enable();
+        ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+        verify(challenges).addChangeListener(captor.capture());
+        return captor.getValue();
     }
 
     private static boolean isRegistered(HandlerList handlerList, Object listenerInstance) {
@@ -152,6 +175,84 @@ class OneLifeListenerTest {
     @DisplayName("challengeId returns the constant challenge id")
     void challengeIdReturnsConstant() {
         assertThat(listener(w -> true).challengeId()).isEqualTo(OneLifeListener.CHALLENGE_ID);
+    }
+
+    // ----- round completion on the active-to-inactive transition -----
+
+    @Test
+    @DisplayName("an active-to-inactive transition records completion for every online, non-eliminated "
+            + "player in a matching world, but not for an eliminated one")
+    void activeToInactiveTransitionRecordsCompletionForSurvivorsOnly() {
+        PlayerMock eliminatedPlayer = server.addPlayer();
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(true);
+        OneLifeListener listener = listener(w -> true);
+        Runnable onCatalogChanged = enableAndCaptureCatalogListener(listener);
+        listener.onDeath(death(eliminatedPlayer));
+        when(progress.recordCompletion(player.getUniqueId(), OneLifeListener.CHALLENGE_ID)).thenReturn(2);
+
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(false);
+        onCatalogChanged.run();
+
+        verify(progress).recordCompletion(player.getUniqueId(), OneLifeListener.CHALLENGE_ID);
+        verify(progress, never()).recordCompletion(eliminatedPlayer.getUniqueId(), OneLifeListener.CHALLENGE_ID);
+        Component message = player.nextComponentMessage();
+        assertThat(message).isInstanceOf(TranslatableComponent.class);
+        assertThat(((TranslatableComponent) message).key()).isEqualTo("skygridng.challenge.one_life.tier_earned");
+        assertThat(eliminatedPlayer.nextComponentMessage()).isNull();
+    }
+
+    @Test
+    @DisplayName("a player in a non-matching world is not swept into completion on the active-to-inactive transition")
+    void nonMatchingWorldPlayerNotSweptOnTransition() {
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(true);
+        OneLifeListener listener = listener(w -> false);
+        Runnable onCatalogChanged = enableAndCaptureCatalogListener(listener);
+
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(false);
+        onCatalogChanged.run();
+
+        verifyNoInteractions(progress);
+    }
+
+    @Test
+    @DisplayName("after a round completes, the eliminated set is cleared so a later respawn no longer forces spectator")
+    void completedRoundClearsTheEliminatedSet() {
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(true);
+        OneLifeListener listener = listener(w -> true);
+        Runnable onCatalogChanged = enableAndCaptureCatalogListener(listener);
+        listener.onDeath(death(player));
+        GameMode beforeElimination = player.getGameMode();
+
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(false);
+        onCatalogChanged.run();
+        listener.onRespawn(respawn(player));
+
+        assertThat(player.getGameMode()).isEqualTo(beforeElimination);
+    }
+
+    @Test
+    @DisplayName("an inactive-to-active transition does not trigger a completion sweep")
+    void inactiveToActiveTransitionDoesNotSweep() {
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(false);
+        OneLifeListener listener = listener(w -> true);
+        Runnable onCatalogChanged = enableAndCaptureCatalogListener(listener);
+
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(true);
+        onCatalogChanged.run();
+
+        verifyNoInteractions(progress);
+    }
+
+    @Test
+    @DisplayName("a catalog change notification where one_life stays active does not trigger a completion sweep")
+    void catalogChangeWithNoTransitionDoesNotSweep() {
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(true);
+        OneLifeListener listener = listener(w -> true);
+        Runnable onCatalogChanged = enableAndCaptureCatalogListener(listener);
+
+        onCatalogChanged.run(); // still active: true -> true, not a transition
+
+        verifyNoInteractions(progress);
     }
 
     @Test

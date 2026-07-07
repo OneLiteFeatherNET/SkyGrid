@@ -19,7 +19,7 @@ What to check, in priority order:
    `net.minecraft`, `com.google.gson`, `com.google.inject`, `jakarta.inject`, or
    `net.kyori.adventure.platform`. Plain `net.kyori.adventure` is explicitly allowed there, it is a
    cross-platform text API, don't flag it.
-3. **Block naming**: `api`/`ports`/`core`/`generator.json`/`generator.yaml`/`generator.conf` must
+3. **Block naming**: `api`/`ports`/`core` and any `presets/*.<ext>`/`rules/*.<ext>` config file must
    name blocks via namespaced `BlockId` (`minecraft:stone`), never a Bukkit `Material` enum name.
 4. **Determinism and immutability**: value types are records validated in compact constructors;
    generation must stay derivable from the world seed alone.

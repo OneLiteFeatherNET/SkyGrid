@@ -40,6 +40,15 @@ module graph already blocks most violations at compile time, but ArchUnit is the
 build-file drift (add paper-api to the core and it compiles, but the framework-free rule fails). If
 you add a legitimately new layer or package, update `ArchitectureTest` in the same change.
 
+Per-adapter rules (`generatorAdapterIsFrameworkFree`, `spawnAdapterIsFrameworkFree`,
+`commandAdapterIsFrameworkFree`, `challengeAdapterIsFrameworkFree`, `configAdapterIsFrameworkFree`)
+lock in the same framework-free guarantee for each of those adapters individually: none of them may
+depend on `org.bukkit..`, `io.papermc..`, Guice, or jakarta.inject (`adapters.command` additionally
+bans `org.incendo.cloud.paper..`/`org.incendo.cloud.brigadier..`, while plain Cloud core/annotation
+packages stay allowed, since Cloud's core module is itself framework-free by design). The
+`SenderMapper`/`PaperCommandManager` binding for `/skygrid` lives in `platforms/common` instead of
+`adapters.command`, so this rule applies to the whole package, not just a `handler` subpackage.
+
 ## Module layout
 
 The build is multi-module, grouped under category folders. The dependency rule is enforced at the
@@ -64,9 +73,12 @@ ArchUnit in `:verification`:
   implementation (`BukkitGroundReader`, wrapping a live `World`) lives in `platforms/common`
   alongside the rest of the Bukkit-flavored spawn classes (`SpreadSpawnListener`).
 - `adapters/command` (`adapters.command`): framework-free, like `core`, not Bukkit glue. Depends on
-  `ports` + `api` only and resolves nothing through a native type directly; it drives every
-  `/skygrid` subcommand entirely through Cloud's core/annotations API, with the Paper/Bukkit binding
-  of the command manager (`PaperCommandSource`, `CloudCommandManagerFactory`,
+  `ports` + `api` only and resolves nothing through a native type directly; `adapters.command.handler`
+  holds the `@Command`-annotated, Bukkit-free subcommand handlers (`PresetCommands`,
+  `AlgorithmCommands`, `MaintenanceCommands`, `ChallengeCommands`, `HelpCommands`, each a
+  `CloudCommandHandler` bound via Guice's set binder in `platforms/common`'s `CommandModule`), driven
+  entirely through Cloud's core/annotations API and the neutral `CommandSource`, with the Paper/Bukkit
+  binding of the command manager (`PaperCommandSource`, `CloudCommandManagerFactory`,
   `CloudCommandRegistrar`) living in `platforms/common` instead of a `ports.algorithm` seam.
 - `adapters/config` (`adapters.config`): never a Bukkit edge, unlike the sibling adapters before
   rounds of framework-free cleanup; its one framework dependency is Jackson (databind plus the YAML
@@ -88,6 +100,16 @@ ArchUnit in `:verification`:
   Bukkit, Guice, or jakarta.inject import); its four concrete implementations
   (`OneLifeListener`, `NoNaturalRegenerationListener`, `NoCraftingTableListener`,
   `LevelBorderWarningTask`) live in `platforms/common`'s `platforms.olf.challenge` package instead.
+- `adapters/challenge-progress` (`adapters.challengeprogress.*`): the Postgres-backed
+  `ChallengeProgressRepository` implementation (`PostgresChallengeProgressRepository`), depends on
+  `ports` + `api` + `adapters/persistence` (`challenge-season-system` skill).
+- `adapters/persistence` (`adapters.persistence.*`): shared, reusable Jakarta Persistence (JSR 338)
+  via Hibernate ORM infrastructure (`DatabaseConfig`, `AbstractJpaRepository`: the lazy
+  `EntityManagerFactory` bootstrap, Flyway migration, and `read`/`inTransaction` helpers), depends on
+  `ports` + `api` only. Every Postgres-backed adapter (for example `adapters/challenge-progress`'s
+  `PostgresChallengeProgressRepository`) extends `AbstractJpaRepository` instead of writing a new
+  factory-bootstrap/transaction-lifecycle from scratch; a new one only needs its own `@Entity`,
+  migration, and a small repository built on `read`/`inTransaction`.
 - `platforms/common` (`platforms.common.*`, `platforms.olf.*`): the shared Bukkit composition root
   and the single distribution's home. `SkyGridNgPlugin`, `I18n`, the Guice modules, the message
   bundles. `platforms.olf` (`OlfModule`, `OlfFeature`, `ChallengeModule`, `ChallengeFeature`) is a
@@ -115,12 +137,19 @@ existing adapters never change.
 The second package segment matches the module: `api.*`, `ports.*`, `core.*`, `adapters.*`,
 `platforms.*`.
 
-- `api.model` value records: `TileType`, `FeatureSpec`, `GenerationSettings`, `GeneratorConfig`,
-  `RuleSet`, `SkyGridConfig`, `BlockWeight`, `AllowedPair`, `Direction`, `AdjacencyRules`.
+- `api.model` value records: `GeneratorConfig`, `SkyGridConfig`, `SpawnConfig`, `SpawnPoint`,
+  `BlockWeight`, `BlockId`, `BiomeId`, plus the preset/rule records owned by
+  `config-schema-and-rules` (`Preset`, `PresetCatalog`, `Rule`, `RuleCatalog`, `PlacementRule`,
+  `StructurePattern`, `LegendEntry`, `Plant`, `PhysicsMode`) and the challenge records owned by
+  `challenge-season-system` (`ChallengeRule`, `ChallengeCatalog`). The former Wave Function Collapse
+  model (`TileType`, `FeatureSpec`, `RuleSet`, `AllowedPair`, `AdjacencyRules`, `GenerationSettings`,
+  `Direction`) was removed with the `wfc` algorithm; do not reintroduce it.
 - `api.SkyGridApi`: the public read-only facade, implemented by `core.service.SkyGridApiService` and
   registered as a Bukkit service in `platforms/common`. `api.util.Seeds`: SplitMix64 derivation
   (shared by core and the generator adapter).
-- `ports.in`: `RuleAdminUseCase`, `TerrainAlgorithms`. `ports.out`: `RuleRepository`.
+- `ports.in`: `RuleAdminUseCase`, `TerrainAlgorithms`, `Presets`, `Biomes`, `SkyGridDecorations`,
+  `SpawnPoints`, `ChallengeAdminUseCase`. `ports.out`: `RuleRepository`, `PresetRepository`,
+  `ChallengeRepository`.
   `ports.algorithm`: `TerrainAlgorithm` + `ColumnSink` (the seams the generator adapter implements) +
   `RegionWriter` (read/write access to a live native generation region by `BlockId`, so decoration,
   structure, and still-water logic in `adapters.generator` stay framework-free; its Bukkit
@@ -135,12 +164,15 @@ The second package segment matches the module: `api.*`, `ports.*`, `core.*`, `ad
   (`noise_skygrid`) - the two implementations of `TerrainAlgorithm`. `core.util`: `WeightedTable`,
   `ValueNoise`.
 - `core.state.RuleState`: thread safe holder, Memento (undo) plus Observer (listeners).
-- `core.service`: `DefaultTerrainAlgorithms`, `RuleAdminService`, `SkyGridApiService` (the
-  implementors of the in ports and the facade).
+- `core.service`: `DefaultTerrainAlgorithms`, `RuleAdminService`, `PresetService`, `PresetResolver`,
+  `SkyGridApiService`, `ChallengeAdminService`, `DefaultBiomes`, `DefaultSkyGridDecorations`,
+  `SpiralSpawnService` (the implementors of the in ports and the facade).
 - `adapters.generator`: `DecorationEngine`, `StructurePlacer`, `StillWater`.
-- `adapters.command`: `SkyGridCommands` (the Cloud-annotated `/skygrid` subcommands),
-  `parser.SkyGridArgumentParsers` (tab-completion suggestion providers), `Messages` (translatable
-  components), and `handler.CommandSource` (the neutral sender interface).
+- `adapters.command`: `Messages` (translatable components) and `handler.CommandSource` (the neutral
+  sender interface). `adapters.command.handler`: `PresetCommands`, `AlgorithmCommands`,
+  `MaintenanceCommands`, `ChallengeCommands`, `HelpCommands`, the `@Command`-annotated subcommand
+  handlers, plus the platform-neutral `CloudCommandHandler` type they compile against. Enforced
+  Bukkit/Paper/cloud-paper/cloud-brigadier free by an ArchUnit rule (see `references/extending.md`).
 - `adapters.config`: `ConfigFormats` (JSON/YAML/TOML mapper selection by file extension),
   `ConfigDtos` + `RuleDtos` + `ChallengeDtos` (the Jackson DTOs for the preset, rule, and challenge
   files), `ConfigSchemas` (the victools-generated JSON Schema under `schema/`),
@@ -148,16 +180,19 @@ The second package segment matches the module: `api.*`, `ports.*`, `core.*`, `ad
   out-port implementations), and `BundledDefaults` (the seam for the bundled default
   config/presets/rules, implemented by `platforms/common` so this module never touches Bukkit);
   split into a `config` selector, one file per preset under `presets/`, one per block under
-  `rules/`, and one per challenge under `challenges/`.
-- `adapters.challenge`: `ChallengeBehavior` only (a plain marker interface).
+  `rules/`, and one per challenge under `challenges/`. Domain of the `config-schema-and-rules` skill.
+- `adapters.spawn`: `SafeLocationFinder` (the first-join safe-spawn search).
+- `adapters.challenge`: `ChallengeBehavior` only (a plain marker interface). Domain of the
+  `challenge-season-system` skill.
 - `platforms.common`: `SkyGridNgPlugin` (composition root), `I18n`, the `injection/` modules
-  (`PlatformModule`, `RepositoryModule`, `GeneratorModule`), the `messages/` bundles,
+  (`PlatformModule`, `RepositoryModule`, `GeneratorModule`, `CommandModule`), the `messages/` bundles,
   `platforms.common.generator` (`HexagonalChunkGenerator`, `MaterialResolver`, `BiomeResolver`,
   `BukkitIds`, `RuleResolver`, `SkyGridBiomeProvider`, `SkyGridDecorationPopulator`,
   `LimitedRegionWriter`), `platforms.common.spawn` (`SpreadSpawnListener`, `BukkitGroundReader`
   implementing `GroundReader` over a live `World`), and `platforms.common.command`
   (`PaperCommandSource`, `CloudCommandManagerFactory`, `CloudCommandRegistrar`: the Paper/Cloud-paper
-  binding of the `/skygrid` command manager).
+  binding of the `/skygrid` command manager, and the seam that parses every
+  `adapters.command.handler.CloudCommandHandler` onto it).
 - `platforms.olf` (inside `platforms/common`): `OlfModule`, `OlfFeature`, `NetworkStartupReportFeature`,
   `ChallengeModule`, `ChallengeFeature`, and its `platforms.olf.challenge` subpackage
   (`OneLifeListener`, `NoNaturalRegenerationListener`, `NoCraftingTableListener`,
@@ -175,14 +210,16 @@ The framework-free layers must be neutral semantically, not just syntactically. 
 - A block is named by a platform-neutral, namespaced id, the `api.model.BlockId` value type
   (`namespace` + `value`, lowercased and validated; `BlockId.of("stone")` defaults to `minecraft`).
   The canonical string form is `minecraft:stone`. NEVER use a Bukkit `Material` enum name
-  ("STONE", "GRASS_BLOCK") in `api`, `ports`, `core`, or `generator.json`, and never hardcode one in
-  an algorithm (a `TerrainAlgorithm` uses `BlockId` constants, not `"BEDROCK"`).
+  ("STONE", "GRASS_BLOCK") in `api`, `ports`, `core`, or a `presets/`/`rules/` config file, and never
+  hardcode one in an algorithm (a `TerrainAlgorithm` uses `BlockId` constants, not `"BEDROCK"`).
 - The model (`BlockWeight`, `SkyGridConfig`), the `ColumnSink` port, and the weighted table
   carry `BlockId`. Resolution of a `BlockId` to a native `org.bukkit.Material` happens ONLY in
-  `adapters.generator.MaterialResolver`, via `new NamespacedKey(namespace, value)` +
-  `Registry.MATERIAL.get(key)` (this is the WorldEdit `BukkitAdapter` round-trip). The `BlockId`
-  string mapping (plain `String` fields on the DTOs, converted via `BlockId.of(...)`) lives in
-  `adapters.config`.
+  `platforms.common.generator.MaterialResolver` (moved out of `adapters.generator` in the
+  framework-free cleanup so the adapter never touches `Material` directly), via
+  `new NamespacedKey(namespace, value)` + `Registry.MATERIAL.get(key)` (this is the WorldEdit
+  `BukkitAdapter` round-trip). The Jackson DTOs in `adapters.config` hold plain `String`s for a
+  block id; `JacksonPresetRepository`/`JacksonRuleRepository` call `BlockId.of(...)` at the
+  boundary, there is no dedicated (de)serializer class.
 - This is the EngineHub/WorldEdit and FAWE pattern: `worldedit-core` identifies blocks by namespaced
   id (`BlockType implements Keyed`), and each platform resolves that id against its own registry. The
   same id works for Bukkit, Fabric, Forge, and Sponge.
@@ -237,10 +274,16 @@ fixed recipe. Read `references/extending.md` and follow it step by step. The sho
 
 - New algorithm: add one class in `core.algorithm` implementing `ports.algorithm.TerrainAlgorithm`,
   register an `AlgorithmFactory` for its id in the composition root's `MapBinder` (read by
-  `DefaultTerrainAlgorithms`'s registry), and add the id to the command tab completion. The
-  generator adapter never changes.
-- New out adapter: implement the existing `ports.out` interface (in a new or existing adapter
-  module), bind it in `RepositoryModule`. The core does not change.
+  `DefaultTerrainAlgorithms`'s registry). Command tab completion for `/skygrid algorithm` reads
+  straight from that registry (`RuleAdminUseCase.algorithmIds()`), so it updates automatically; no
+  command file to touch. The generator adapter never changes.
+- New command subcommand: add one `@Command`/`@Argument`/`@Permission` annotated method to an
+  existing (or new) class in `adapters.command.handler` implementing `CloudCommandHandler`, bind it
+  in `platforms.common.injection.CommandModule`'s set binder. `CloudCommandRegistrar` picks it up
+  automatically; no change to the registrar or `SkyGridNgPlugin`.
+- New out adapter: implement one of the existing `ports.out` interfaces (`PresetRepository`,
+  `RuleRepository`, `ChallengeRepository`), in a new or existing adapter module, bind it in
+  `RepositoryModule`. The core does not change.
 - New OLF-only mechanic (`platforms.olf` inside `platforms/common`): implement `OlfFeature`
   (id/enable/disable), inject the `JavaPlugin`, the public `SkyGridApi`, or any port, and add one
   `Multibinder` line in `OlfModule`. `SkyGridNgPlugin` enables it with the lifecycle. "OLF-only" is

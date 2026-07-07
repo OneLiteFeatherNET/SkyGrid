@@ -47,11 +47,11 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
 - `api/` (`api.*`, framework free): the public contract. `api.model` (immutable records),
   `api.SkyGridApi` (read-only facade), `api.util.Seeds` (deterministic seed derivation). No deps.
 - `ports/` (`ports.*`, framework free): the interfaces adapters compile against. `ports.in`
-  (`GenerateRegionUseCase`, `RuleAdminUseCase`, `TerrainAlgorithmProvider`), `ports.out`
-  (`PresetRepository`, `RuleRepository`), `ports.algorithm` (`TerrainAlgorithm`, `ColumnSink`).
-  Depends on `api`.
+  (`RuleAdminUseCase`, `TerrainAlgorithms`, `Presets`, `Biomes`, `SkyGridDecorations`, `SpawnPoints`,
+  `ChallengeAdminUseCase`), `ports.out` (`PresetRepository`, `RuleRepository`,
+  `ChallengeRepository`), `ports.algorithm` (`TerrainAlgorithm`, `ColumnSink`). Depends on `api`.
 - `core/` (`core.*`, framework free): the domain. `algorithm` (the two terrain algorithm impls),
-  `service` (use case impls, incl. `SkyGridApiService`),
+  `service` (use case impls, incl. `SkyGridApiService`, `PresetService`, `ChallengeAdminService`),
   `state` (`RuleState`), `util` (`ValueNoise`, `WeightedTable`). Implements the ports; depends on
   `ports` + `api`.
 - `adapters/generator` (`adapters.generator`): framework-free, like `core`, depending on `ports` +
@@ -63,37 +63,40 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
   `ports.algorithm.GroundReader` port instead of a native Bukkit type, so this module never imports
   Bukkit, Guice, or jakarta.inject.
 - `adapters/command` (`adapters.command`): framework-free, like `core`/`adapters/generator`/
-  `adapters/spawn`, depending on `ports` + `api` only. Holds `SkyGridCommands` (the Cloud-annotated
-  `/skygrid` subcommands), its `parser.SkyGridArgumentParsers` (the tab-completion suggestion
-  providers), and `Messages` (Adventure), driven entirely through Cloud's core/annotations API
-  instead of a native Bukkit sender, so this module never imports Bukkit, Cloud's Paper/Brigadier
-  bindings, Guice, or jakarta.inject; the Paper/Cloud-paper binding of the command manager lives in
-  `platforms/common`.
+  `adapters/spawn`, depending on `ports` + `api` only. Holds `Messages` (Adventure) and
+  `adapters.command.handler`'s `@Command`-annotated, Bukkit-free subcommand handlers (`PresetCommands`,
+  `AlgorithmCommands`, `MaintenanceCommands`, `ChallengeCommands`, `HelpCommands`, each a
+  `CloudCommandHandler` bound via Guice's set binder in `CommandModule`), driven entirely through
+  Cloud's core/annotations API and the neutral `CommandSource` instead of a native Bukkit sender, so
+  this module never imports Bukkit, Cloud's Paper/Brigadier bindings, Guice, or jakarta.inject; the
+  Paper/Cloud-paper binding of the command manager (`PaperCommandSource`, `CloudCommandManagerFactory`,
+  `CloudCommandRegistrar`) lives in `platforms/common` instead.
 - `adapters/config` (`adapters.config`): now the one remaining adapter with a framework dependency,
   and it is Jackson (a cross-platform serialization library), never Bukkit, so it resolves to
   nothing Paper-specific, unlike the Bukkit-facing code the sibling adapters above held before
   framework-free cleanup. Depends on `ports` + `api` only, never on `core`. Holds
-  `PresetRepository` + `RuleRepository`: the split `config` selector, one file per preset under
-  `presets/` and one per block under `rules/`, in JSON/YAML/TOML, plus the victools-generated
-  editor `schema/`.
+  `PresetRepository` + `RuleRepository` + `ChallengeRepository`: the split `config` selector, one
+  file per preset under `presets/`, one per block under `rules/`, one per challenge under
+  `challenges/`, in JSON/YAML/TOML, plus the victools-generated editor `schema/`.
 - `adapters/challenge` (`adapters.challenge`): framework-free, like `core`/`adapters/generator`/
   `adapters/spawn`/`adapters/command`, depending on `ports` + `api` only. Holds only
   `ChallengeBehavior` (a plain marker interface); its four concrete implementations live in
   `platforms/common`'s `platforms.olf.challenge` package instead.
 - `platforms/common` (`platforms.common.*`): the shared Bukkit composition root. `SkyGridNgPlugin`,
-  `I18n`, the Guice modules (`PlatformModule`, `RepositoryModule`, `GeneratorModule`), the message
-  bundles, `platforms.common.generator` (the Bukkit implementation of the generator: `HexagonalChunkGenerator`,
-  `RuleResolver`, `MaterialResolver`, `BukkitIds`, `BiomeResolver`, `SkyGridBiomeProvider`,
-  `LimitedRegionWriter` implementing `RegionWriter` over a live `LimitedRegion`, and the thin
-  `SkyGridDecorationPopulator` shell that delegates to `adapters.generator.DecorationEngine`),
-  `platforms.common.spawn` (the Bukkit implementation of the spawn search: `SpreadSpawnListener` and
-  `BukkitGroundReader` implementing `GroundReader` over a live `World`),
-  `platforms.common.command` (`PaperCommandSource`, `CloudCommandManagerFactory`, and
-  `CloudCommandRegistrar`: the Paper/Cloud-paper binding of the `/skygrid` command manager, and the
-  seam that parses `adapters.command.SkyGridCommands` onto it), and
-  `platforms.olf.*` (`OlfModule`, `OlfFeature`, `ChallengeModule`, `ChallengeFeature`, and
-  `platforms.olf.challenge` with the four `ChallengeBehavior` implementations: `OneLifeListener`,
-  `NoNaturalRegenerationListener`, `NoCraftingTableListener`, `LevelBorderWarningTask`):
+  `I18n`, the Guice modules (`PlatformModule`, `RepositoryModule`, `GeneratorModule`, `CommandModule`),
+  the message bundles, `platforms.common.generator` (the Bukkit implementation of the generator:
+  `HexagonalChunkGenerator`, `RuleResolver`, `MaterialResolver`, `BukkitIds`, `BiomeResolver`,
+  `SkyGridBiomeProvider`, `LimitedRegionWriter` implementing `RegionWriter` over a live
+  `LimitedRegion`, and the thin `SkyGridDecorationPopulator` shell that delegates to
+  `adapters.generator.DecorationEngine`), `platforms.common.spawn` (the Bukkit implementation of the
+  spawn search: `SpreadSpawnListener` and `BukkitGroundReader` implementing `GroundReader` over a live
+  `World`), `platforms.common.command` (`PaperCommandSource`, `CloudCommandManagerFactory`, and
+  `CloudCommandRegistrar`: the Paper/Cloud-paper binding of the `/skygrid` command manager, the
+  dynamic suggestion providers, and the seam that parses `adapters.command.handler`'s
+  `CloudCommandHandler` set onto it), and `platforms.olf.*` (`OlfModule`, `OlfFeature`,
+  `ChallengeModule`, `ChallengeFeature`, and `platforms.olf.challenge` with the four
+  `ChallengeBehavior` implementations: `OneLifeListener`, `NoNaturalRegenerationListener`,
+  `NoCraftingTableListener`, `LevelBorderWarningTask`):
   a naming convention, not a module boundary, for mechanics specific to this OneLiteFeather (OLF)
   server (challenges) rather than general-purpose plugin behavior. `SkyGridNgPlugin.modules()` and
   `onExtensionEnable()`/`onExtensionDisable()` always wire and enable every bound `OlfFeature`, there

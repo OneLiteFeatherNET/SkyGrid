@@ -29,8 +29,10 @@ adapter module has no `core` on its classpath):
 | `ports` | `ports.in`, `ports.out`, `ports.algorithm` | no | library (depends on api) |
 | `core` | `core.*` | no | library (depends on ports, api) |
 | `adapters/generator` | `adapters.generator` | yes (Bukkit) | library (depends on ports, api) |
-| `adapters/command` | `adapters.command` | yes (Bukkit, Adventure) | library (depends on ports, api) |
-| `adapters/json` | `adapters.json` | yes (Gson) | library (depends on ports, api) |
+| `adapters/command` | `adapters.command`, `adapters.command.handler` | yes (Bukkit, Adventure, Incendo Cloud) | library (depends on ports, api) |
+| `adapters/config` | `adapters.config` | yes (Jackson) | library (depends on ports, api) |
+| `adapters/spawn` | `adapters.spawn` | yes (Bukkit) | library (depends on ports, api) |
+| `adapters/challenge` | `adapters.challenge` | yes (Bukkit) | library (depends on ports, api) |
 | `platforms/common` | `platforms.common`, `platforms.olf` | yes (Bukkit, Guice) | library (composition root) |
 | `platforms/paper` | (none) | yes | `skygrid-ng-<version>.jar` |
 
@@ -58,9 +60,13 @@ artifact.
 ### 1. API (`api.*`)
 Pure Java 25, the public data contract, fully testable without a server.
 
-- `api.model` domain records (Flyweight: shared immutable `TileType`, `BlockWeight`): `TileType`,
-  `FeatureSpec`, `AllowedPair`, `GenerationSettings`, `RuleSet`, `AdjacencyRules`, `Direction`, plus
-  `BlockWeight`, `SkyGridConfig`, and the top level `GeneratorConfig`. Semantically versioned.
+- `api.model` domain records (Flyweight: shared immutable `BlockWeight`, `Preset`/`Rule` entries):
+  `BlockId`, `BiomeId`, `BlockWeight`, `SkyGridConfig`, `SpawnConfig`, `SpawnPoint`, and the top
+  level `GeneratorConfig`, plus the preset/rule records (`Preset`, `PresetCatalog`, `Rule`,
+  `RuleCatalog`, `PlacementRule`, `StructurePattern`, `LegendEntry`, `Plant`, `PhysicsMode`) and the
+  challenge records (`ChallengeRule`, `ChallengeCatalog`). Semantically versioned. The former Wave
+  Function Collapse model (`TileType`, `FeatureSpec`, `AllowedPair`, `GenerationSettings`, `RuleSet`,
+  `AdjacencyRules`, `Direction`) was removed with the `wfc` algorithm.
 - `api.SkyGridApi` the public read-only facade, implemented by `core.service.SkyGridApiService` and
   registered as a Bukkit service by the composition root so other plugins and the OLF network can
   inspect a running generator. `api.util.Seeds` the SplitMix64 derivation, shared with the generator
@@ -69,9 +75,14 @@ Pure Java 25, the public data contract, fully testable without a server.
 ### 2. Ports (`ports.*`)
 The contracts. Interfaces only, framework free, depending on `api`. Adapters compile against these.
 
-- `ports.in.RuleAdminUseCase` the in game administration.
-- `ports.in.TerrainAlgorithmProvider` the active algorithm for the generator.
-- `ports.out.RuleRepository` where configuration comes from and goes to (Repository).
+- `ports.in.RuleAdminUseCase` the in game administration; `ports.in.Presets` preset activation and
+  world assignment; `ports.in.ChallengeAdminUseCase` challenge rule administration.
+- `ports.in.TerrainAlgorithms` the active-algorithm catalog for the generator (named after the
+  catalog it exposes, not `TerrainAlgorithmProvider`); `ports.in.Biomes`, `ports.in.SkyGridDecorations`,
+  `ports.in.SpawnPoints` the biome, decoration, and spread-spawn catalogs.
+- `ports.out.RuleRepository`, `ports.out.PresetRepository`, `ports.out.ChallengeRepository` where
+  configuration comes from and goes to (Repository); see `config-schema-and-rules` and
+  `challenge-season-system`.
 - `ports.algorithm.TerrainAlgorithm` + `ColumnSink` the generation SPI the generator adapter drives.
 
 In ports are implemented by the core and called by adapters. Out ports are called by the core and
@@ -84,50 +95,67 @@ Pure Java 25, the domain. Implements the ports; depends on `ports` + `api`.
 - `core.algorithm` the two `TerrainAlgorithm` implementations: `IndependentSkyGridAlgorithm`,
   `NoiseSkyGridAlgorithm`.
 - `core.state.RuleState` holds the current `GeneratorConfig`, Memento (undo) plus Observer.
-- `core.service` the application services, including `RuleAdminService` and `SkyGridApiService`.
+- `core.service` the application services: `RuleAdminService`, `PresetService`, `PresetResolver`,
+  `SkyGridApiService`, `ChallengeAdminService`, `DefaultTerrainAlgorithms`, `DefaultBiomes`,
+  `DefaultSkyGridDecorations`, `SpiralSpawnService`.
 
 ### 4. Adapters (`adapters.*`)
-The translators to the outside world, one module each. Bukkit, Gson, and Adventure live here only;
-they depend on `ports` + `api`, never on `core`.
+The translators to the outside world, one module each. Bukkit, Jackson, and Adventure live here
+only; they depend on `ports` + `api`, never on `core`.
 
-- `adapters.generator` `HexagonalChunkGenerator` and `MaterialPopulator` call the use cases;
-  `MaterialResolver` resolves a platform-neutral `BlockId` (`minecraft:stone`) to a Bukkit `Material`
-  via `NamespacedKey` + `Registry.MATERIAL`. The core never names a Bukkit block (WorldEdit pattern).
-- `adapters.command` `SkyGridCommand` calls `RuleAdminUseCase`; `Messages` builds translatable
-  components.
-- `adapters.json` `JsonRuleRepository` (plus `GeneratorConfigDto`) implements `RuleRepository` via
-  Gson (Factory: JSON to domain), and owns the bundled default `generator.json`.
+- `adapters.generator` `HexagonalChunkGenerator` calls the use cases; `MaterialResolver` resolves a
+  platform-neutral `BlockId` (`minecraft:stone`) to a Bukkit `Material` via `NamespacedKey` +
+  `Registry.MATERIAL`. The core never names a Bukkit block (WorldEdit pattern).
+- `adapters.command` runs `/skygrid` on the Incendo Cloud command framework: `CloudCommandManagerFactory`
+  builds a `PaperCommandManager<CommandSource>` (Cloud's Paper sender mapped to our own
+  platform-neutral `CommandSource` via `SenderMapper`), `CloudCommandRegistrar` wires suggestion
+  providers and permission handling and parses the `@Command`-annotated handler classes in
+  `adapters.command.handler` (`PresetCommands`, `AlgorithmCommands`, `MaintenanceCommands`,
+  `ChallengeCommands`, `HelpCommands`), each calling `RuleAdminUseCase`/`Presets`/
+  `ChallengeAdminUseCase`; `Messages` builds translatable components (MiniMessage, not
+  `java.text.MessageFormat`).
+- `adapters.config` `JacksonPresetRepository`/`JacksonRuleRepository`/`JacksonChallengeRepository`
+  (Factory: JSON/YAML/TOML to domain, format chosen per file by extension) implement
+  `PresetRepository`/`RuleRepository`/`ChallengeRepository` via Jackson, mapped through
+  `ConfigDtos`/`RuleDtos`/`ChallengeDtos`, and own the bundled default `presets/`, `rules/`, and
+  `challenges/` resources. `adapters.spawn` `SpreadSpawnListener`/`SafeLocationFinder` place new
+  players. `adapters.challenge` the OneLiteFeather challenge rule listeners.
 
 ### Composition Root (`platforms.common`)
 `SkyGridNgPlugin` builds a Guice object graph (`Stage.PRODUCTION`) from the modules in
-`platforms.common.injection` (`PlatformModule`, `RepositoryModule`, `GeneratorModule`) and connects
-adapters to ports. The core carries no injection annotations: its services are constructed in the
-modules' `@Provides` methods, so the core stays framework free while the wiring is Guice managed.
-Adapters (`HexagonalChunkGenerator`, `SkyGridCommand`) use constructor `@Inject`. `platforms.common`
-`I18n` registers the Adventure translation store. `platforms/paper` builds on this shared root.
-Swapping an adapter changes a module binding, not the core.
+`platforms.common.injection` (`PlatformModule`, `RepositoryModule`, `GeneratorModule`,
+`CommandModule`) and connects adapters to ports. The core carries no injection annotations: its
+services are constructed in the modules' `@Provides` methods, so the core stays framework free while
+the wiring is Guice managed. Adapters (`HexagonalChunkGenerator`, the `adapters.command.handler`
+classes) use constructor `@Inject`; the Cloud handler set is a Guice `Multibinder` (`CommandModule`),
+parsed as a whole by `CloudCommandRegistrar` (see `hexagonal-architecture`'s "Add a command
+subcommand" recipe). `platforms.common` `I18n` registers the MiniMessage translation store.
+`platforms/paper` builds on this shared root. Swapping an adapter changes a module binding, not the
+core.
 
 ## Switchable algorithms
 
 `TerrainAlgorithm.generateColumn(seed, x, z, minY, maxY, sink)` emits blocks for a column; the
-Paper adapter writes them. `AlgorithmService` is the Factory (maps the `algorithm` config value to
-an implementation) and an Observer on `RuleState` (rebuilds the active algorithm on change). The
-generator only knows the `TerrainAlgorithmProvider` port.
+Paper adapter writes them. `DefaultTerrainAlgorithms` is the Factory (a `Registry<String,
+AlgorithmFactory>` maps the `algorithm` config value to an implementation) and an Observer on
+`RuleState` (rebuilds the active algorithm on change). The generator only knows the
+`ports.in.TerrainAlgorithms` port.
 
-Adding an algorithm: one class implementing `TerrainAlgorithm` plus one branch in
-`AlgorithmService`. The generator adapter does not change.
+Adding an algorithm: one class implementing `TerrainAlgorithm` plus one `AlgorithmFactory`
+registration in the composition root's `MapBinder` (read by `DefaultTerrainAlgorithms`'s registry,
+the single source of truth for known ids, not a `switch`). The generator adapter does not change.
 
 ## GoF patterns (source: refactoring.guru)
 
 | Pattern | Where | Purpose |
 |---------|-------|---------|
 | Strategy | `TerrainAlgorithm` | swap behavior without changing callers |
-| Factory | `JsonRuleRepository`, `AlgorithmService` | build domain from JSON / build the active algorithm |
-| Repository | `RuleRepository` | abstract the config source |
-| Flyweight | `TileType`, `BlockWeight` | one shared instance per type |
+| Factory | `Jackson*Repository`, `DefaultTerrainAlgorithms`'s `AlgorithmFactory` registry | build domain from config / build the active algorithm |
+| Repository | `RuleRepository`, `PresetRepository`, `ChallengeRepository` | abstract the config source |
+| Flyweight | `BlockWeight`, `Preset`/`Rule` entries | one shared instance per type |
 | Observer | `RuleState` listeners | cache invalidation and algorithm rebuild |
 | Memento | immutable `GeneratorConfig` + undo stack | in game undo |
-| Command | `SkyGridCommand` subcommands | encapsulate runtime operations |
+| Command | Incendo Cloud `@Command` handlers (`adapters.command.handler`) | encapsulate runtime operations |
 
 ## Determinism
 
@@ -138,6 +166,7 @@ fast and parallel safe at any player count.
 ## Internationalization
 
 The core stays text free: services return data, the command adapter renders messages. `Messages`
-builds `Component.translatable(key, args)`, `platforms.common` `I18n` registers the resource bundles as an
-Adventure `TranslationStore` on the `GlobalTranslator`, and Paper renders each component in the
-client locale.
+builds `Component.translatable(key, args)`, `platforms.common` `I18n` registers the resource bundles
+as a `MiniMessageTranslationStore` on the `GlobalTranslator` (bundle values are MiniMessage, not
+`java.text.MessageFormat`; arguments are `<arg:0>`/`<arg:1>`), and Paper renders each component in
+the client locale.

@@ -5,8 +5,9 @@ Everything a server owner can configure in SkyGrid-ng, plus tuning advice for la
 
 ## Installing and creating a world
 
-1. Drop `skygrid-ng.jar` into `plugins/` and start the server once. This writes
-   `plugins/SkyGrid-ng/generator.json`.
+1. Drop `skygrid-ng.jar` into `plugins/` and start the server once. This seeds
+   `plugins/SkyGrid-ng/` with the bundled default `config.yml`, `presets/`, and `rules/` (see
+   [docs/README.md](README.md) for the full configuration reference).
 2. Tell the server to use the generator for a world, in `bukkit.yml`:
 
    ```yaml
@@ -25,41 +26,47 @@ player's client language.
 
 | Command | Description |
 |---------|-------------|
+| `/skygrid help [subcommand]` | List every subcommand, or show focused usage for one. |
+| `/skygrid preset <name>` | Switch the active preset. |
+| `/skygrid presets` | List known presets and the active one. |
+| `/skygrid worlds` | List per-world preset assignments. |
 | `/skygrid algorithm [id]` | Show or switch the active algorithm (`skygrid`, `noise_skygrid`). |
 | `/skygrid skyweight <material> <value>` | Set a SkyGrid block weight (adds the material if absent). |
+| `/skygrid reload` / `/skygrid reload confirm` | Reload the config from disk; discards the undo history, so it asks for confirmation first. |
+| `/skygrid save` | Flatten the current (possibly in game edited) state back into the active preset file. |
 | `/skygrid undo` | Revert the last change. |
-| `/skygrid reload` | Reload `generator.json`, clear caches. |
-| `/skygrid save` | Write the current state back to `generator.json`. |
+| `/skygrid challenge list` | List challenge rules and whether each is active. |
+| `/skygrid challenge toggle <id>` | Enable or disable a challenge rule. |
+| `/skygrid challenge tier [player]` | Show your own (or another player's) challenge tier progress. |
+| `/skygrid challenge tier reset` / `... reset confirm` | Reset every player's challenge tier progress; asks for confirmation first. |
 
 Runtime changes affect newly generated chunks only. Switching the algorithm changes the terrain
 shape (void vs solid), so recreate the world after switching rather than mixing styles.
 
-## generator.json reference
+## Configuration reference
 
-### Top level
+The config lives in `plugins/SkyGrid-ng/`, split into a `config.<ext>` selector, one file per preset
+under `presets/`, and one file per block under `rules/` (JSON, YAML, or TOML, chosen per file by
+extension). See [docs/README.md](README.md) for the full reference:
 
-| Key | Type | Meaning |
-|-----|------|---------|
-| `algorithm` | string | `skygrid` or `noise_skygrid`. |
+- [Configuration layout and formats](configuration.md): the split layout, the three formats, and
+  the generated editor `schema/`.
+- [Presets](presets.md): the preset schema (`algorithm`, `spacing`/`minY`/`maxY`/`noiseScale`, the
+  weighted block table, chest loot and spawner mob tables, biomes, spawn), preset inheritance
+  (`extends`), and the shipped presets (`classic`, `standard`, `nether`).
+- [Per-block rules](rules.md): the per-block `state`/`physics`/`placement` rule model.
 
-### `skygrid` (used by `skygrid` and `noise_skygrid`)
-
-| Key | Type | Default | Meaning |
-|-----|------|---------|---------|
-| `spacing` | int | 4 | Grid length in blocks; classic SkyGrid is 4. |
-| `minY` | int | -48 | Lowest grid layer. |
-| `maxY` | int | 120 | Highest grid layer. |
-| `noiseScale` | double | 0.03 | Cluster frequency for `noise_skygrid`; smaller means larger clusters. |
-| `blocks` | list | see file | Weighted block table: `{ "material": "STONE", "weight": 28 }`. |
-
-Material names are Bukkit names. Unknown names fall back to a safe block instead of crashing.
+Block ids are platform-neutral namespaced ids (`minecraft:stone`), not Bukkit `Material` enum names;
+a bare `stone` defaults to the `minecraft` namespace. Unknown ids fall back to a safe block instead
+of crashing.
 
 ## SkyGrid caveats
 
-- `WATER` and `LAVA` sit surrounded by air, so they can flow on a block update (the classic
-  "water elevator" issue). Remove them from the block table if you do not want flowing fluids.
-- `CHEST` and `SPAWNER` are placed as plain blocks (empty chest, default spawner). Loot and
-  spawner types are a planned feature.
+- `minecraft:water` and `minecraft:lava` sit surrounded by air, so they can flow on a block update
+  (the classic "water elevator" issue). Remove them from the block table if you do not want flowing
+  fluids.
+- Chests and spawners placed by a preset's `chestLoot`/`spawnerMobs` tables get a real loot table or
+  mob type; an empty `chestLoot`/`spawnerMobs` table falls back to a bare chest or default spawner.
 
 ## Performance tuning for ~100 players
 
@@ -91,7 +98,8 @@ Always load test with a population tool before opening to 100 real players, and 
 
 ## Internationalization
 
-Messages ship for English and German. To add a language, add
-`src/main/resources/messages/Bundle_<locale>.properties` and register the locale in
-`bootstrap/I18n`, or translate through Crowdin. Item display names are not translated by Paper's
-GlobalTranslator (a platform limitation).
+Messages ship for English and German, written as MiniMessage (color, click, hover) rather than plain
+text. To add a language, add `platforms/common/src/main/resources/messages/Bundle_<locale>.properties`
+and register the locale in `platforms.common.I18n`; the German bundle flows through Crowdin and is
+never hand-edited directly. Item display names are not translated by Paper's `GlobalTranslator` (a
+platform limitation).

@@ -1,63 +1,85 @@
 package net.onelitefeather.skygridng.platforms.common.command;
 
-import jakarta.inject.Inject;
-import net.onelitefeather.skygridng.adapters.command.SkyGridCommands;
+import net.onelitefeather.skygridng.adapters.command.Messages;
+import net.onelitefeather.skygridng.adapters.command.handler.CloudCommandHandler;
 import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
-import net.onelitefeather.skygridng.adapters.command.parser.SkyGridArgumentParsers;
+import net.onelitefeather.skygridng.api.model.ChallengeRule;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.incendo.cloud.annotations.AnnotationParser;
+import org.incendo.cloud.exception.NoPermissionException;
 import org.incendo.cloud.paper.PaperCommandManager;
+import org.incendo.cloud.suggestion.SuggestionProvider;
+
+import java.util.Set;
 
 /**
- * Migration stage 2: parses the Cloud-annotated {@link SkyGridCommands} (and its sibling
- * {@link SkyGridArgumentParsers} suggestion providers) onto the sender-mapped
- * {@link PaperCommandManager} that {@link CloudCommandManagerFactory} built.
+ * Registers stage 2's Cloud annotated subcommand handlers on the manager built by
+ * {@link CloudCommandManagerFactory}: the dynamic suggestion providers ported from the legacy
+ * {@code SkyGridCommand#onTabComplete}, the {@code NoPermissionException} handler that replaces
+ * Cloud's default text with {@link Messages#noPermission()}, and finally the annotation parsing
+ * of every handler instance.
  *
- * Guice-constructed like the rest of the composition root: it takes the same three in ports
- * {@code SkyGridCommands} needs, then builds {@code SkyGridCommands} and
- * {@code SkyGridArgumentParsers} itself with a plain constructor, no {@code @Inject} on either,
- * exactly the way {@code SkyGridDecorationPopulator} does {@code new DecorationEngine(...)}.
+ * Lives in platforms.common, not adapters.command: it is the only place the handler set is
+ * registered onto a real Paper-bound {@link PaperCommandManager}, and it needs Bukkit
+ * (online player suggestions) directly, unlike the handler classes themselves, which stay
+ * framework-free.
  *
- * Cloud's own {@code @ExceptionHandler} discovery (run inside {@link AnnotationParser#parse}) does
- * pick up {@code SkyGridCommands}'s permission-denied and invalid-syntax handlers automatically from
- * the same instance and register them on {@code manager.exceptionController()}, so there is nothing
- * extra to call here beyond the single parse call for that wiring to exist; unlike a naive design,
- * {@code Messages} (package-private to {@code adapters.command}) never needs to leave its package or
- * become part of this class's API.
+ * The literal subcommand names (preset, presets, worlds, algorithm, skyweight, reload, save, undo,
+ * challenge, help), the literal {@code confirm} token, and the literal {@code list}/{@code toggle}/
+ * {@code tier}/{@code reset} challenge subcommands are all Cloud command tree literals now, not
+ * free-form arguments, so Cloud suggests them natively; only the genuinely dynamic argument values
+ * (preset names, algorithm ids, material ids, challenge ids, online player names) need a custom
+ * {@link SuggestionProvider} registered here.
  *
- * That wiring existing is not the same as it firing for every case it was written for, though.
- * {@link PaperCommandManager} always registers its commands through its built in
- * {@code ModernPaperBrigadier} registration handler (there is no builder option on
- * {@link PaperCommandManager#builder()} or {@code CoordinatedBuilder} to opt out of it), which
- * mirrors {@code SkyGridCommands}'s whole Cloud command tree into a real Mojang Brigadier tree and
- * registers that directly with Paper's own {@code Commands}/{@code CommandDispatcher}. An
- * unrecognized first token to {@code /skygrid} never reaches Cloud's exception pipeline at all in
- * that setup: Brigadier's own dispatcher rejects it with its generic syntax error before the
- * {@code Command<S>} bridge that hands off to Cloud is ever invoked. That is why
- * {@code SkyGridCommands} registers an explicit {@code unmatched} fallback subcommand for that case
- * (a real tree node Brigadier itself routes unmatched input into) rather than relying solely on its
- * {@code handleInvalidSyntax} exception handler; see the javadoc on both of those methods for the
- * full explanation.
+ * The handler set comes from Guice's {@code CloudCommandHandler} set binder (see
+ * {@code CommandModule}), so adding a subcommand group is one new class plus one binding line
+ * there, never a change to this method's signature.
  */
 public final class CloudCommandRegistrar {
 
-    private final RuleAdminUseCase admin;
-    private final Presets presets;
-    private final ChallengeAdminUseCase challenges;
-
-    @Inject
-    public CloudCommandRegistrar(RuleAdminUseCase admin, Presets presets, ChallengeAdminUseCase challenges) {
-        this.admin = admin;
-        this.presets = presets;
-        this.challenges = challenges;
+    private CloudCommandRegistrar() {
     }
 
-    public void registerOn(PaperCommandManager<CommandSource> manager) {
+    public static void register(PaperCommandManager<CommandSource> manager,
+                                 Presets presets,
+                                 RuleAdminUseCase admin,
+                                 ChallengeAdminUseCase challenges,
+                                 Set<CloudCommandHandler> handlers) {
+        registerSuggestionProviders(manager, presets, admin, challenges);
+        registerNoPermissionHandler(manager);
+
         AnnotationParser<CommandSource> parser = new AnnotationParser<>(manager, CommandSource.class);
-        SkyGridCommands commands = new SkyGridCommands(admin, presets, challenges);
-        SkyGridArgumentParsers argumentParsers = new SkyGridArgumentParsers(admin, presets, challenges);
-        parser.parse(commands, argumentParsers);
+        parser.parse(handlers.toArray());
+    }
+
+    private static void registerSuggestionProviders(PaperCommandManager<CommandSource> manager,
+                                                      Presets presets,
+                                                      RuleAdminUseCase admin,
+                                                      ChallengeAdminUseCase challenges) {
+        manager.parserRegistry().registerSuggestionProvider("preset-names",
+                SuggestionProvider.blockingStrings((ctx, input) -> presets.names()));
+        manager.parserRegistry().registerSuggestionProvider("algorithm-ids",
+                SuggestionProvider.blockingStrings((ctx, input) -> admin.algorithmIds()));
+        manager.parserRegistry().registerSuggestionProvider("material-ids",
+                SuggestionProvider.blockingStrings((ctx, input) -> admin.current().skygrid().blocks().stream()
+                        .map(blockWeight -> blockWeight.material().asString())
+                        .toList()));
+        manager.parserRegistry().registerSuggestionProvider("challenge-ids",
+                SuggestionProvider.blockingStrings((ctx, input) -> challenges.list().stream()
+                        .map(ChallengeRule::id)
+                        .toList()));
+        manager.parserRegistry().registerSuggestionProvider("online-players",
+                SuggestionProvider.blockingStrings((ctx, input) -> Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .toList()));
+    }
+
+    private static void registerNoPermissionHandler(PaperCommandManager<CommandSource> manager) {
+        manager.exceptionController().registerHandler(NoPermissionException.class,
+                ctx -> ctx.context().sender().sendMessage(Messages.noPermission()));
     }
 }

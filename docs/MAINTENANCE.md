@@ -27,8 +27,8 @@ update.
 - Folia support: regionize the generator and any scheduling; SkyGrid is already stateless and a
   good Folia candidate. Gate behind capability detection like AntiRedstoneClock does.
 - Per dimension SkyGrid (overworld, nether, end style grids) with separate block tables.
-- Performance pass for 100+ player servers; publish a tuned reference `generator.json` and a
-  `/spark` based tuning guide.
+- Performance pass for 100+ player servers; publish a tuned reference preset and a `/spark` based
+  tuning guide.
 - Promote the plugin publish steps into a reusable `OneLiteFeatherNET/workflows` workflow so other
   plugins share it.
 
@@ -54,7 +54,8 @@ update.
 ## Minecraft version policy
 
 - Target the current Paper major; support the previous major for one cycle.
-- The pure core does not depend on Paper, so version updates touch only `adapter/in/paper`.
+- The pure core does not depend on Paper, so version updates touch only the adapter modules
+  (`adapters/generator`, `adapters/command`, ...), never `api`/`ports`/`core`.
 - Paper's first fully deobfuscated era (26.1+) reduces breakage risk; still pin the Paper build in
   the version catalog and let Renovate propose bumps.
 
@@ -62,8 +63,8 @@ update.
 
 - Renovate (org preset) opens grouped dependency PRs; CI must pass before merge.
 - Security advisories from Dependency-Track are triaged within one week.
-- Keep runtime dependencies minimal (currently only Gson, relocated). Prefer the platform
-  (Adventure, Paper) over new libraries.
+- Keep runtime dependencies minimal (currently Jackson, Incendo Cloud, and Guice, all relocated).
+  Prefer the platform (Adventure, Paper) over new libraries.
 
 ## Bus factor and governance
 
