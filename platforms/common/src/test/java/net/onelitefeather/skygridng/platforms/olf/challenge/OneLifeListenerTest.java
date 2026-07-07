@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.challenge;
+package net.onelitefeather.skygridng.platforms.olf.challenge;
 
 import net.kyori.adventure.text.Component;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;

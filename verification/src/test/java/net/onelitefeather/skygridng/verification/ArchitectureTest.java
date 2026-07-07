@@ -58,6 +58,7 @@ class ArchitectureTest {
 
     private static final String GENERATOR_ADAPTER = "net.onelitefeather.skygridng.adapters.generator..";
     private static final String SPAWN_ADAPTER = "net.onelitefeather.skygridng.adapters.spawn..";
+    private static final String CHALLENGE_ADAPTER = "net.onelitefeather.skygridng.adapters.challenge..";
 
     @ArchTest
     static final ArchRule generatorAdapterIsFrameworkFree =
@@ -76,6 +77,14 @@ class ArchitectureTest {
                             + "through ports.algorithm.GroundReader instead of a native Bukkit type, so "
                             + "the Bukkit implementation of that port can live in platforms.common "
                             + "without pulling Bukkit, Guice, or jakarta.inject back into this adapter");
+
+    @ArchTest
+    static final ArchRule challengeAdapterIsFrameworkFree =
+            noClasses().that().resideInAPackage(CHALLENGE_ADAPTER)
+                    .should().dependOnClassesThat().resideInAnyPackage(PLATFORM_AND_FRAMEWORK_PACKAGES)
+                    .because("adapters.challenge is framework-free like core: ChallengeBehavior is a "
+                            + "plain marker interface implemented by Bukkit-facing classes that live in "
+                            + "platforms.olf.challenge instead");
 
     /**
      * Packages the whole command adapter (the neutral CommandSource seam, the Cloud-annotated

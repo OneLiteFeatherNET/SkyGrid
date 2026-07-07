@@ -1,10 +1,10 @@
 package net.onelitefeather.skygridng.platforms.common;
 
-import net.onelitefeather.skygridng.adapters.challenge.NoCraftingTableListener;
-import net.onelitefeather.skygridng.adapters.challenge.NoNaturalRegenerationListener;
-import net.onelitefeather.skygridng.adapters.challenge.OneLifeListener;
-import net.onelitefeather.skygridng.adapters.generator.HexagonalChunkGenerator;
 import net.onelitefeather.skygridng.api.SkyGridApi;
+import net.onelitefeather.skygridng.platforms.common.generator.HexagonalChunkGenerator;
+import net.onelitefeather.skygridng.platforms.olf.challenge.NoCraftingTableListener;
+import net.onelitefeather.skygridng.platforms.olf.challenge.NoNaturalRegenerationListener;
+import net.onelitefeather.skygridng.platforms.olf.challenge.OneLifeListener;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
