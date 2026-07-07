@@ -1,10 +1,10 @@
 package net.onelitefeather.skygridng.platforms.olf.challenge;
 
 import jakarta.inject.Inject;
-import net.kyori.adventure.text.Component;
 import net.onelitefeather.skygridng.adapters.challenge.ChallengeBehavior;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
+import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;
 import org.bukkit.GameMode;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -42,15 +42,29 @@ import java.util.function.Predicate;
  * ({@link ChallengeAdminUseCase#addChangeListener}), and at that moment every surviving player in a
  * matching world (present in {@code appliesTo}, absent from the eliminated set) has their tier
  * recorded through {@link ChallengeProgressUseCase#recordCompletion}, which is backed by durable
- * storage and therefore does survive a server restart. The eliminated set is then cleared for the
- * next round.
+ * storage and therefore does survive a server restart, and also completes the quest-facing
+ * {@code survive_the_round} task through {@link TaskProgressUseCase#completeTask}. The eliminated
+ * set is then cleared for the next round.
+ *
+ * <p><b>One chat line, not two:</b> {@link TaskProgressUseCase#completeTask} grants the task's
+ * configured reward exactly once, and {@code one_life.yml}'s {@code survive_the_round} task is
+ * expected to carry a {@code PlayerMessage} reward ("You survived the round!"), delivered by the
+ * reward-granting adapter. That would double up with this class's own previous direct chat message
+ * announcing the earned tier, so {@link #completeRound()} no longer sends one itself: the
+ * reward-driven message is now the sole round-completion chat line a survivor sees. The tier number
+ * itself is not lost, it is still recorded through {@link ChallengeProgressUseCase#recordCompletion}
+ * for whatever else reads it (a scoreboard, a future leaderboard); it is simply no longer announced
+ * in chat by this class, only "you survived".
  */
 public final class OneLifeListener implements Listener, ChallengeBehavior {
 
     static final String CHALLENGE_ID = "one_life";
 
+    private static final String SURVIVE_TASK_ID = "survive_the_round";
+
     private final ChallengeAdminUseCase challenges;
     private final ChallengeProgressUseCase progress;
+    private final TaskProgressUseCase taskProgress;
     private final Predicate<World> appliesTo;
     private final JavaPlugin plugin;
     private final Set<UUID> eliminated = ConcurrentHashMap.newKeySet();
@@ -66,9 +80,10 @@ public final class OneLifeListener implements Listener, ChallengeBehavior {
 
     @Inject
     public OneLifeListener(ChallengeAdminUseCase challenges, ChallengeProgressUseCase progress,
-                            Predicate<World> appliesTo, JavaPlugin plugin) {
+                            TaskProgressUseCase taskProgress, Predicate<World> appliesTo, JavaPlugin plugin) {
         this.challenges = challenges;
         this.progress = progress;
+        this.taskProgress = taskProgress;
         this.appliesTo = appliesTo;
         this.plugin = plugin;
         this.lastActive = challenges.isActive(CHALLENGE_ID);
@@ -106,17 +121,17 @@ public final class OneLifeListener implements Listener, ChallengeBehavior {
 
     /**
      * Ends a {@code one_life} round: every online player in a matching world who was not eliminated
-     * advances one tier, is told their new tier, and then the eliminated set is cleared for the next
-     * round, regardless of whether any player advanced.
+     * advances one tier (recorded, not announced here, see the class doc for why) and completes the
+     * {@code survive_the_round} task, then the eliminated set is cleared for the next round,
+     * regardless of whether any player advanced.
      */
     private void completeRound() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             if (!appliesTo.test(player.getWorld()) || eliminated.contains(player.getUniqueId())) {
                 continue;
             }
-            int tier = progress.recordCompletion(player.getUniqueId(), CHALLENGE_ID);
-            player.sendMessage(Component.translatable(
-                    "skygridng.challenge.one_life.tier_earned", Component.text(tier)));
+            progress.recordCompletion(player.getUniqueId(), CHALLENGE_ID);
+            taskProgress.completeTask(player.getUniqueId(), CHALLENGE_ID, SURVIVE_TASK_ID);
         }
         eliminated.clear();
     }

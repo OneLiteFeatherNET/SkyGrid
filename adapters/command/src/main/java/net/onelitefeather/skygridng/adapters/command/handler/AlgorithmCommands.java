@@ -1,6 +1,5 @@
 package net.onelitefeather.skygridng.adapters.command.handler;
 
-import jakarta.inject.Inject;
 import net.onelitefeather.skygridng.adapters.command.Messages;
 import net.onelitefeather.skygridng.api.model.BlockId;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
@@ -23,7 +22,6 @@ public final class AlgorithmCommands implements CloudCommandHandler {
 
     private final RuleAdminUseCase admin;
 
-    @Inject
     public AlgorithmCommands(RuleAdminUseCase admin) {
         this.admin = admin;
     }

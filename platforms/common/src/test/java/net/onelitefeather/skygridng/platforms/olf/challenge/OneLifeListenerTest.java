@@ -1,9 +1,9 @@
 package net.onelitefeather.skygridng.platforms.olf.challenge;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TranslatableComponent;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
+import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -52,6 +52,7 @@ class OneLifeListenerTest {
     private PlayerMock player;
     private ChallengeAdminUseCase challenges;
     private ChallengeProgressUseCase progress;
+    private TaskProgressUseCase taskProgress;
     private JavaPlugin plugin;
 
     @BeforeEach
@@ -61,6 +62,7 @@ class OneLifeListenerTest {
         player = server.addPlayer();
         challenges = mock(ChallengeAdminUseCase.class);
         progress = mock(ChallengeProgressUseCase.class);
+        taskProgress = mock(TaskProgressUseCase.class);
         plugin = MockBukkit.createMockPlugin("SkyGridNg");
     }
 
@@ -70,7 +72,7 @@ class OneLifeListenerTest {
     }
 
     private OneLifeListener listener(Predicate<World> appliesTo) {
-        return new OneLifeListener(challenges, progress, appliesTo, plugin);
+        return new OneLifeListener(challenges, progress, taskProgress, appliesTo, plugin);
     }
 
     /**
@@ -195,10 +197,28 @@ class OneLifeListenerTest {
 
         verify(progress).recordCompletion(player.getUniqueId(), OneLifeListener.CHALLENGE_ID);
         verify(progress, never()).recordCompletion(eliminatedPlayer.getUniqueId(), OneLifeListener.CHALLENGE_ID);
+        verify(taskProgress).completeTask(player.getUniqueId(), OneLifeListener.CHALLENGE_ID, "survive_the_round");
+        verify(taskProgress, never())
+                .completeTask(eliminatedPlayer.getUniqueId(), OneLifeListener.CHALLENGE_ID, "survive_the_round");
+    }
+
+    @Test
+    @DisplayName("a survivor sees exactly one chat line per round, not the old direct tier message plus "
+            + "a reward-driven one: OneLifeListener itself sends nothing directly any more")
+    void survivorGetsNoDirectMessageFromTheListenerItself() {
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(true);
+        OneLifeListener listener = listener(w -> true);
+        Runnable onCatalogChanged = enableAndCaptureCatalogListener(listener);
+        when(progress.recordCompletion(player.getUniqueId(), OneLifeListener.CHALLENGE_ID)).thenReturn(2);
+
+        when(challenges.isActive(OneLifeListener.CHALLENGE_ID)).thenReturn(false);
+        onCatalogChanged.run();
+
+        // The one and only chat line a survivor sees now comes from the survive_the_round task's
+        // config-authored reward, granted deep inside TaskProgressUseCase#completeTask (mocked here,
+        // so no message is observed on this end); OneLifeListener no longer sends one itself.
         Component message = player.nextComponentMessage();
-        assertThat(message).isInstanceOf(TranslatableComponent.class);
-        assertThat(((TranslatableComponent) message).key()).isEqualTo("skygridng.challenge.one_life.tier_earned");
-        assertThat(eliminatedPlayer.nextComponentMessage()).isNull();
+        assertThat(message).isNull();
     }
 
     @Test
@@ -212,6 +232,7 @@ class OneLifeListenerTest {
         onCatalogChanged.run();
 
         verifyNoInteractions(progress);
+        verifyNoInteractions(taskProgress);
     }
 
     @Test
@@ -241,6 +262,7 @@ class OneLifeListenerTest {
         onCatalogChanged.run();
 
         verifyNoInteractions(progress);
+        verifyNoInteractions(taskProgress);
     }
 
     @Test
@@ -253,6 +275,7 @@ class OneLifeListenerTest {
         onCatalogChanged.run(); // still active: true -> true, not a transition
 
         verifyNoInteractions(progress);
+        verifyNoInteractions(taskProgress);
     }
 
     @Test

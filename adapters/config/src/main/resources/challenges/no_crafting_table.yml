@@ -1,3 +1,10 @@
 id: no_crafting_table
 description: Crafting tables cannot be opened while this challenge is active.
 active: false
+sequential: false
+tasks:
+  - id: no_crafting_table_round
+    description: Finish a no_crafting_table round without opening a crafting table.
+    reward:
+      type: message
+      message: "<green>You finished the round without a crafting table!"

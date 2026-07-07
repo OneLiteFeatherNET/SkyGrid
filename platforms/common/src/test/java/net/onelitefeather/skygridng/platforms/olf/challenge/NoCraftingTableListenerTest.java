@@ -1,6 +1,7 @@
 package net.onelitefeather.skygridng.platforms.olf.challenge;
 
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -20,18 +21,24 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
+import org.mockito.ArgumentCaptor;
 
 import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
  * MockBukkit + Mockito tests for the driving adapter: MockBukkit supplies the player, world and
- * block, Mockito mocks the {@link ChallengeAdminUseCase} port. The listener method is invoked
- * directly with a hand-built {@link PlayerInteractEvent}, which is enough to exercise its guard
- * chain without going through the plugin manager's event bus.
+ * block, Mockito mocks the {@link ChallengeAdminUseCase} and {@link TaskProgressUseCase} ports. The
+ * listener method is invoked directly with a hand-built {@link PlayerInteractEvent}, which is enough
+ * to exercise its guard chain without going through the plugin manager's event bus. The catalog
+ * change listener registered in {@link NoCraftingTableListener#enable()} is captured with an {@link
+ * ArgumentCaptor}, the same pattern {@link OneLifeListenerTest} uses.
  */
 class NoCraftingTableListenerTest {
 
@@ -39,6 +46,7 @@ class NoCraftingTableListenerTest {
     private WorldMock world;
     private PlayerMock player;
     private ChallengeAdminUseCase challenges;
+    private TaskProgressUseCase taskProgress;
     private JavaPlugin plugin;
 
     @BeforeEach
@@ -47,6 +55,7 @@ class NoCraftingTableListenerTest {
         world = server.addSimpleWorld("skygrid-world");
         player = server.addPlayer();
         challenges = mock(ChallengeAdminUseCase.class);
+        taskProgress = mock(TaskProgressUseCase.class);
         plugin = MockBukkit.createMockPlugin("SkyGridNg");
     }
 
@@ -56,7 +65,7 @@ class NoCraftingTableListenerTest {
     }
 
     private NoCraftingTableListener listener(Predicate<World> appliesTo) {
-        return new NoCraftingTableListener(challenges, appliesTo, plugin);
+        return new NoCraftingTableListener(challenges, taskProgress, appliesTo, plugin);
     }
 
     private static boolean isRegistered(HandlerList handlerList, Object listenerInstance) {
@@ -71,6 +80,18 @@ class NoCraftingTableListenerTest {
     private PlayerInteractEvent interact(Player p, Block block, EquipmentSlot hand) {
         return new PlayerInteractEvent(p, Action.RIGHT_CLICK_BLOCK, null, block,
                 org.bukkit.block.BlockFace.UP, hand);
+    }
+
+    /**
+     * Registers {@code listener} and captures the {@link Runnable} it passed to
+     * {@link ChallengeAdminUseCase#addChangeListener}, so a test can invoke it directly to simulate
+     * a catalog change notification without a real {@code ChallengeState}.
+     */
+    private Runnable enableAndCaptureCatalogListener(NoCraftingTableListener listener) {
+        listener.enable();
+        ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+        verify(challenges).addChangeListener(captor.capture());
+        return captor.getValue();
     }
 
     @Test
@@ -142,6 +163,76 @@ class NoCraftingTableListenerTest {
     @DisplayName("challengeId returns the constant challenge id")
     void challengeIdReturnsConstant() {
         assertThat(listener(w -> true).challengeId()).isEqualTo(NoCraftingTableListener.CHALLENGE_ID);
+    }
+
+    // ----- round completion on the active-to-inactive transition -----
+
+    @Test
+    @DisplayName("an active-to-inactive transition completes the round task for every online player in a "
+            + "matching world who never had an interaction denied, but not for one who did")
+    void activeToInactiveTransitionCompletesTaskForNonViolatorsOnly() {
+        PlayerMock violator = server.addPlayer();
+        when(challenges.isActive(NoCraftingTableListener.CHALLENGE_ID)).thenReturn(true);
+        NoCraftingTableListener listener = listener(w -> true);
+        Runnable onCatalogChanged = enableAndCaptureCatalogListener(listener);
+        Block table = world.getBlockAt(0, 64, 0);
+        table.setType(Material.CRAFTING_TABLE);
+        listener.onInteract(interact(violator, table, EquipmentSlot.HAND));
+
+        when(challenges.isActive(NoCraftingTableListener.CHALLENGE_ID)).thenReturn(false);
+        onCatalogChanged.run();
+
+        verify(taskProgress).completeTask(player.getUniqueId(), NoCraftingTableListener.CHALLENGE_ID,
+                "no_crafting_table_round");
+        verify(taskProgress, never()).completeTask(violator.getUniqueId(), NoCraftingTableListener.CHALLENGE_ID,
+                "no_crafting_table_round");
+    }
+
+    @Test
+    @DisplayName("a player in a non-matching world is not swept into completion on the active-to-inactive transition")
+    void nonMatchingWorldPlayerNotSweptOnTransition() {
+        when(challenges.isActive(NoCraftingTableListener.CHALLENGE_ID)).thenReturn(true);
+        NoCraftingTableListener listener = listener(w -> false);
+        Runnable onCatalogChanged = enableAndCaptureCatalogListener(listener);
+
+        when(challenges.isActive(NoCraftingTableListener.CHALLENGE_ID)).thenReturn(false);
+        onCatalogChanged.run();
+
+        verifyNoInteractions(taskProgress);
+    }
+
+    @Test
+    @DisplayName("after a round completes, the violated set is cleared so a later round can complete the task again")
+    void completedRoundClearsTheViolatedSet() {
+        when(challenges.isActive(NoCraftingTableListener.CHALLENGE_ID)).thenReturn(true);
+        NoCraftingTableListener listener = listener(w -> true);
+        Runnable onCatalogChanged = enableAndCaptureCatalogListener(listener);
+        Block table = world.getBlockAt(0, 64, 0);
+        table.setType(Material.CRAFTING_TABLE);
+        listener.onInteract(interact(player, table, EquipmentSlot.HAND));
+
+        when(challenges.isActive(NoCraftingTableListener.CHALLENGE_ID)).thenReturn(false);
+        onCatalogChanged.run(); // player violated this round, so not completed
+        when(challenges.isActive(NoCraftingTableListener.CHALLENGE_ID)).thenReturn(true);
+        onCatalogChanged.run();
+        when(challenges.isActive(NoCraftingTableListener.CHALLENGE_ID)).thenReturn(false);
+        onCatalogChanged.run(); // next round, no violation this time
+
+        verify(taskProgress).completeTask(player.getUniqueId(), NoCraftingTableListener.CHALLENGE_ID,
+                "no_crafting_table_round");
+    }
+
+    @Test
+    @DisplayName("an inactive-to-active transition does not trigger a completion sweep")
+    void inactiveToActiveTransitionDoesNotSweep() {
+        when(challenges.isActive(NoCraftingTableListener.CHALLENGE_ID)).thenReturn(false);
+        NoCraftingTableListener listener = listener(w -> true);
+        Runnable onCatalogChanged = enableAndCaptureCatalogListener(listener);
+
+        when(challenges.isActive(NoCraftingTableListener.CHALLENGE_ID)).thenReturn(true);
+        onCatalogChanged.run();
+
+        verifyNoInteractions(taskProgress);
     }
 
     @Test

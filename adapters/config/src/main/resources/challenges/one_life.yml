@@ -1,3 +1,10 @@
 id: one_life
 description: A player who dies is eliminated for the rest of the run and stays in spectator mode.
 active: false
+sequential: false
+tasks:
+  - id: survive_the_round
+    description: Survive an entire one_life round without dying.
+    reward:
+      type: message
+      message: "<green>You survived the round!"

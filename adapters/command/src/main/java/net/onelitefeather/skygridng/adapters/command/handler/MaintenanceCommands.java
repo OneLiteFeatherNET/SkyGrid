@@ -1,6 +1,5 @@
 package net.onelitefeather.skygridng.adapters.command.handler;
 
-import jakarta.inject.Inject;
 import net.onelitefeather.skygridng.adapters.command.Messages;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import org.incendo.cloud.annotations.Command;
@@ -20,7 +19,6 @@ public final class MaintenanceCommands implements CloudCommandHandler {
 
     private final RuleAdminUseCase admin;
 
-    @Inject
     public MaintenanceCommands(RuleAdminUseCase admin) {
         this.admin = admin;
     }

@@ -1,6 +1,5 @@
 package net.onelitefeather.skygridng.adapters.command.handler;
 
-import jakarta.inject.Inject;
 import net.onelitefeather.skygridng.adapters.command.Messages;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import org.incendo.cloud.annotations.Argument;
@@ -18,7 +17,6 @@ public final class PresetCommands implements CloudCommandHandler {
 
     private final Presets presets;
 
-    @Inject
     public PresetCommands(Presets presets) {
         this.presets = presets;
     }

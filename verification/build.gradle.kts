@@ -21,6 +21,8 @@ dependencies {
     testImplementation(project(":adapters:challenge"))
     testImplementation(project(":adapters:challenge-progress"))
     testImplementation(project(":adapters:persistence"))
+    testImplementation(project(":adapters:task-progress"))
+    testImplementation(project(":adapters:scoreboard"))
     testImplementation(project(":platforms:common"))
 
     testImplementation(libs.paper.api)

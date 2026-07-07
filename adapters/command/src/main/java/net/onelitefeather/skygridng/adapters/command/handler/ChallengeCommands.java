@@ -1,6 +1,5 @@
 package net.onelitefeather.skygridng.adapters.command.handler;
 
-import jakarta.inject.Inject;
 import net.onelitefeather.skygridng.adapters.command.Messages;
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
@@ -32,7 +31,6 @@ public final class ChallengeCommands implements CloudCommandHandler {
     private final ChallengeAdminUseCase challenges;
     private final ChallengeProgressUseCase progress;
 
-    @Inject
     public ChallengeCommands(ChallengeAdminUseCase challenges, ChallengeProgressUseCase progress) {
         this.challenges = challenges;
         this.progress = progress;

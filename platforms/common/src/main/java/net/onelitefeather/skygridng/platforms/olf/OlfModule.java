@@ -14,6 +14,8 @@ public final class OlfModule extends AbstractModule {
         Multibinder<OlfFeature> features = Multibinder.newSetBinder(binder(), OlfFeature.class);
         features.addBinding().to(NetworkStartupReportFeature.class);
         features.addBinding().to(ChallengeFeature.class);
+        // Shows the active challenge's task progress as a live per-player scoreboard sidebar.
+        features.addBinding().to(ChallengeSidebarFeature.class);
         // Future OLF mechanics add their binding here.
     }
 }

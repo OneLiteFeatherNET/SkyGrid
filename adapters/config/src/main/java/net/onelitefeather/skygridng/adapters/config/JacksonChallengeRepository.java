@@ -1,8 +1,13 @@
 package net.onelitefeather.skygridng.adapters.config;
 
 import net.onelitefeather.skygridng.adapters.config.ChallengeDtos.ChallengeDto;
+import net.onelitefeather.skygridng.adapters.config.ChallengeDtos.RewardDto;
+import net.onelitefeather.skygridng.adapters.config.ChallengeDtos.TaskDto;
 import net.onelitefeather.skygridng.api.model.ChallengeCatalog;
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.api.model.ItemId;
+import net.onelitefeather.skygridng.api.model.Reward;
+import net.onelitefeather.skygridng.api.model.Task;
 import net.onelitefeather.skygridng.ports.out.ChallengeRepository;
 
 import java.io.IOException;
@@ -133,10 +138,58 @@ public final class JacksonChallengeRepository implements ChallengeRepository {
         if (dto.id() == null || dto.id().isBlank()) {
             throw new IllegalStateException("challenge file " + file.getFileName() + " is missing an 'id'");
         }
-        return new ChallengeRule(dto.id(), dto.description(), dto.active() != null && dto.active());
+        List<Task> tasks = dto.tasks() == null
+                ? List.of()
+                : dto.tasks().stream().map(task -> toTask(task, file)).toList();
+        return new ChallengeRule(
+                dto.id(), dto.description(), dto.active() != null && dto.active(),
+                tasks, dto.sequential() != null && dto.sequential());
+    }
+
+    private Task toTask(TaskDto dto, Path file) {
+        if (dto.id() == null || dto.id().isBlank()) {
+            throw new IllegalStateException("challenge file " + file.getFileName() + " has a task missing an 'id'");
+        }
+        Reward reward = dto.reward() == null ? null : toReward(dto.reward(), file);
+        return new Task(dto.id(), dto.description(), reward);
+    }
+
+    private Reward toReward(RewardDto dto, Path file) {
+        return switch (dto.type()) {
+            case "item" -> {
+                if (dto.quantity() == null) {
+                    throw new IllegalStateException("challenge file " + file.getFileName()
+                            + " has an 'item' reward missing 'quantity'");
+                }
+                yield new Reward.ItemGrant(ItemId.of(dto.itemId()), dto.quantity());
+            }
+            case "command" -> new Reward.CommandDispatch(dto.command());
+            case "message" -> new Reward.PlayerMessage(dto.message());
+            case null, default -> throw new IllegalStateException("challenge file " + file.getFileName()
+                    + " has a task reward with an unrecognized 'type' '" + dto.type() + "'");
+        };
     }
 
     private ChallengeDto toDto(ChallengeRule rule) {
-        return new ChallengeDto(rule.id(), rule.description(), rule.active());
+        List<TaskDto> tasks = rule.tasks().isEmpty()
+                ? null
+                : rule.tasks().stream().map(this::toDto).toList();
+        return new ChallengeDto(
+                rule.id(), rule.description(), rule.active(), tasks, rule.sequential());
+    }
+
+    private TaskDto toDto(Task task) {
+        return new TaskDto(task.id(), task.description(), task.hasReward() ? toDto(task.reward()) : null);
+    }
+
+    private RewardDto toDto(Reward reward) {
+        return switch (reward) {
+            case Reward.ItemGrant(var item, var quantity) ->
+                    new RewardDto("item", item.asString(), quantity, null, null);
+            case Reward.CommandDispatch(var command) ->
+                    new RewardDto("command", null, null, command, null);
+            case Reward.PlayerMessage(var text) ->
+                    new RewardDto("message", null, null, null, text);
+        };
     }
 }
