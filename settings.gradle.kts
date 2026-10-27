@@ -34,7 +34,7 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             // ----- Versions (verify before the first build) -----
-            version("paper", "26.1.2.build.+")  // keep the build segment
+            version("paper", "26.1.2.build.74-stable")  // keep the build segment
             version("java", "25")               // Paper 26.1 requires Java 25
             version("jackson", "2.22.0")        // config databinding: JSON/YAML/TOML (relocated in the shaded jar)
             version("jsonSchemaGen", "4.38.0")  // victools; generates the editor schema (Jackson 2.x line)
@@ -59,7 +59,7 @@ dependencyResolutionManagement {
 
             // Testing
             version("junit", "5.11.3")
-            version("mockbukkit", "4.+")
+            version("mockbukkit", "4.115.0")
             version("mockito", "5.14.2")
             version("assertj", "3.27.7")
             version("archunit", "1.4.2")
