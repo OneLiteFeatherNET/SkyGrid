@@ -10,6 +10,10 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
     testImplementation(libs.archunit.junit5)
+    testImplementation(libs.assertj.core)
+    testImplementation(libs.postgresql)
+    testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.testcontainers.junit.jupiter)
 
     testImplementation(project(":api"))
     testImplementation(project(":ports"))

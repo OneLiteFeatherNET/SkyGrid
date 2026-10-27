@@ -12,6 +12,10 @@ import java.util.function.Supplier;
 final class TestJpaRepository extends AbstractJpaRepository {
 
     TestJpaRepository(Supplier<DatabaseConfig> configSupplier) {
-        super("abstract-jpa-repository-test", "classpath:db/migration", configSupplier);
+        super(
+                "abstract-jpa-repository-test",
+                "classpath:db/migration",
+                "flyway_history_abstract_jpa_repository_test",
+                configSupplier);
     }
 }

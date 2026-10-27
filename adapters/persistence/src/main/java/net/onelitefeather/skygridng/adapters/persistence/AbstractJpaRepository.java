@@ -50,29 +50,40 @@ public abstract class AbstractJpaRepository implements AutoCloseable {
 
     private final String persistenceUnitName;
     private final String migrationLocation;
+    private final String migrationHistoryTable;
     private final Supplier<DatabaseConfig> configSupplier;
     private volatile EntityManagerFactory entityManagerFactory;
 
     /**
-     * Stores the persistence unit name, the Flyway classpath migration location, and {@code
-     * configSupplier} for later use. Nothing is resolved, connected, or migrated yet: that all
-     * happens lazily, on the first call to {@link #read} or {@link #inTransaction}.
+     * Stores the persistence unit name, the Flyway classpath migration location, the Flyway history
+     * table, and {@code configSupplier} for later use. Nothing is resolved, connected, or migrated
+     * yet: that all happens lazily, on the first call to {@link #read} or {@link #inTransaction}.
      *
-     * @param persistenceUnitName the {@code <persistence-unit name="...">} declared in the
-     *                            subclass's own {@code META-INF/persistence.xml}
-     * @param migrationLocation   the Flyway classpath migration location for this persistence unit,
-     *                            for example {@code "classpath:db/migration"}
-     * @param configSupplier      supplies the connection settings on first use, normally
-     *                            {@code DatabaseConfig::fromEnvironment}. Deferring this to a
-     *                            supplier (rather than accepting a resolved {@link DatabaseConfig})
-     *                            means the required-environment-variable check inside
-     *                            {@link DatabaseConfig#fromEnvironment()} is not run at construction
-     *                            time either.
+     * @param persistenceUnitName    the {@code <persistence-unit name="...">} declared in the
+     *                               subclass's own {@code META-INF/persistence.xml}
+     * @param migrationLocation      the Flyway classpath migration location for this persistence
+     *                               unit, for example {@code "classpath:db/migration/task-progress"}.
+     *                               Each adapter gets its own subfolder, so two adapters bundled into
+     *                               one jar never see each other's {@code V1__} scripts.
+     * @param migrationHistoryTable  the Flyway history table for this persistence unit, for example
+     *                               {@code "flyway_history_task_progress"}. Each adapter gets its own
+     *                               table, so a second adapter's migrations are not checked against
+     *                               the first adapter's recorded versions.
+     * @param configSupplier         supplies the connection settings on first use, normally
+     *                               {@code DatabaseConfig::fromEnvironment}. Deferring this to a
+     *                               supplier (rather than accepting a resolved {@link DatabaseConfig})
+     *                               means the required-environment-variable check inside
+     *                               {@link DatabaseConfig#fromEnvironment()} is not run at construction
+     *                               time either.
      */
     protected AbstractJpaRepository(
-            String persistenceUnitName, String migrationLocation, Supplier<DatabaseConfig> configSupplier) {
+            String persistenceUnitName,
+            String migrationLocation,
+            String migrationHistoryTable,
+            Supplier<DatabaseConfig> configSupplier) {
         this.persistenceUnitName = persistenceUnitName;
         this.migrationLocation = migrationLocation;
+        this.migrationHistoryTable = migrationHistoryTable;
         this.configSupplier = configSupplier;
     }
 
@@ -105,6 +116,12 @@ public abstract class AbstractJpaRepository implements AutoCloseable {
             Flyway.configure()
                     .dataSource(config.jdbcUrl(), config.user(), config.password())
                     .locations(migrationLocation)
+                    .table(migrationHistoryTable)
+                    // Both adapters share the public schema, so the second adapter to start finds
+                    // tables it did not create and no history table of its own. Baselining that
+                    // history table at version 0 lets its V1 still apply instead of failing.
+                    .baselineOnMigrate(true)
+                    .baselineVersion("0")
                     .load()
                     .migrate();
         } catch (RuntimeException e) {

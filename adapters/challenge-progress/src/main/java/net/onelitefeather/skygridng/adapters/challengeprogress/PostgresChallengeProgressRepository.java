@@ -19,7 +19,7 @@ import java.util.function.Supplier;
  * behavior specific to the {@code challenge_tier} table.
  *
  * <p>The schema is owned by the Flyway migration bundled at
- * {@code classpath:db/migration/V1__create_challenge_tier.sql}, never a hand-edited
+ * {@code classpath:db/migration/challenge-progress/V1__create_challenge_tier.sql}, never a hand-edited
  * {@code CREATE TABLE} assumed to match this class; Hibernate never creates or alters that schema
  * itself ({@code hibernate.hbm2ddl.auto=validate} in {@code persistence.xml}), it only validates the
  * {@link ChallengeTierEntity} mapping against the table Flyway already created.
@@ -36,7 +36,11 @@ public final class PostgresChallengeProgressRepository extends AbstractJpaReposi
      *                       {@code DatabaseConfig::fromEnvironment}.
      */
     public PostgresChallengeProgressRepository(Supplier<DatabaseConfig> configSupplier) {
-        super("challenge-progress", "classpath:db/migration", configSupplier);
+        super(
+                "challenge-progress",
+                "classpath:db/migration/challenge-progress",
+                "flyway_history_challenge_progress",
+                configSupplier);
     }
 
     @Override
