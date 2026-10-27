@@ -29,7 +29,7 @@ jobs:
     if: needs.release-please.outputs.release_created == 'true'
     # Shared OneLiteFeather plugin publish workflow (CycloneDX SBOM upload only; Modrinth and
     # Hangar are not used by SkyGrid-ng).
-    uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-plugin-publish.yml@v2.4.0
+    uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-plugin-publish.yml@v2.5.0
     with:
       java-version: "25"
       tag-name: ${{ needs.release-please.outputs.tag_name }}
