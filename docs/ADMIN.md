@@ -60,6 +60,22 @@ Block ids are platform-neutral namespaced ids (`minecraft:stone`), not Bukkit `M
 a bare `stone` defaults to the `minecraft` namespace. Unknown ids fall back to a safe block instead
 of crashing.
 
+## Database
+
+Challenge tiers and task progress are stored in PostgreSQL. The connection comes from environment
+variables only, never from a config file:
+
+- `SKYGRID_DB_HOST`: the database host, default `localhost`.
+- `SKYGRID_DB_PORT`: the database port, default `5432`.
+- `SKYGRID_DB_NAME`: the database name, default `skygridng`.
+- `SKYGRID_DB_USER`: the database user. Required, no default.
+- `SKYGRID_DB_PASSWORD`: the database password. Required, no default.
+
+The connection is opened lazily, on the first use of a store, not when the server starts. On that
+first connection Flyway migrates the schema automatically, so the database user needs `CREATE`
+rights on the `public` schema of that database. Hibernate only validates the schema and never
+changes it.
+
 ## SkyGrid caveats
 
 - `minecraft:water` and `minecraft:lava` sit surrounded by air, so they can flow on a block update

@@ -41,6 +41,6 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Relevant logs / generator.json
-      description: Paste server logs and your generator.json. This is automatically formatted into code.
+      label: Relevant logs / config files
+      description: Paste server logs and your config files (for example config.yml and the active preset). This is automatically formatted into code.
       render: text
