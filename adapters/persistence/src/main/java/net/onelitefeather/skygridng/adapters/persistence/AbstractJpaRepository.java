@@ -95,6 +95,9 @@ public abstract class AbstractJpaRepository implements AutoCloseable {
      * short-lived, unpooled JDBC connection (Flyway needs a data source regardless of Hibernate); if
      * it fails, nothing is left open and {@link #entityManagerFactory} is never assigned, so a bad
      * migration or a briefly unreachable Postgres does not leak a connection pool on every retry.
+     * Flyway and the JPA provider find their plugins through the thread context class loader, which
+     * on a Paper server is the server's loader and cannot see this plugin's jar, so both run with
+     * this class's loader set as the context class loader and the previous one is restored after.
      */
     private EntityManagerFactory entityManagerFactory() {
         var existing = entityManagerFactory;
@@ -104,8 +107,14 @@ public abstract class AbstractJpaRepository implements AutoCloseable {
         synchronized (this) {
             if (entityManagerFactory == null) {
                 var config = configSupplier.get();
-                migrate(config);
-                entityManagerFactory = createEntityManagerFactory(config);
+                var previousContextClassLoader = Thread.currentThread().getContextClassLoader();
+                Thread.currentThread().setContextClassLoader(AbstractJpaRepository.class.getClassLoader());
+                try {
+                    migrate(config);
+                    entityManagerFactory = createEntityManagerFactory(config);
+                } finally {
+                    Thread.currentThread().setContextClassLoader(previousContextClassLoader);
+                }
             }
             return entityManagerFactory;
         }

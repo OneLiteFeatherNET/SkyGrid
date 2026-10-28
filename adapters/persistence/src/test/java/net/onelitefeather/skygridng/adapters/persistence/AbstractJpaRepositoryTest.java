@@ -7,6 +7,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -36,13 +38,17 @@ class AbstractJpaRepositoryTest {
 
     @BeforeAll
     static void startRepository() {
-        var config = new DatabaseConfig(
+        var config = containerConfig();
+        repository = new TestJpaRepository(() -> config);
+    }
+
+    private static DatabaseConfig containerConfig() {
+        return new DatabaseConfig(
                 POSTGRES.getHost(),
                 POSTGRES.getMappedPort(5432),
                 POSTGRES.getDatabaseName(),
                 POSTGRES.getUsername(),
                 POSTGRES.getPassword());
-        repository = new TestJpaRepository(() -> config);
     }
 
     @AfterAll
@@ -129,5 +135,30 @@ class AbstractJpaRepositoryTest {
 
         var found = repository.read(entityManager -> entityManager.find(TestItemEntity.class, id));
         assertThat(found).isNull();
+    }
+
+    /**
+     * The calling thread's context class loader can be one that sees none of the plugin's classes
+     * and service files (on Paper it is the server's loader). Flyway and the JPA provider look up
+     * their plugins and {@code persistence.xml} through that loader, so the first use must still
+     * bootstrap the schema and the entity manager factory with it in that state.
+     */
+    @Test
+    void bootstrapsWhenTheContextClassLoaderCannotSeeThePlugin() {
+        var id = "classloader-" + UUID.randomUUID();
+        var originalContextClassLoader = Thread.currentThread().getContextClassLoader();
+        var freshRepository = new TestJpaRepository(AbstractJpaRepositoryTest::containerConfig);
+        try {
+            Thread.currentThread().setContextClassLoader(new URLClassLoader(new URL[0], null));
+
+            assertThatCode(() -> freshRepository.inTransaction(entityManager -> {
+                entityManager.persist(new TestItemEntity(id, "bootstrapped"));
+                return null;
+            })).as("first use must bootstrap Flyway and Hibernate without the context class loader")
+                    .doesNotThrowAnyException();
+        } finally {
+            Thread.currentThread().setContextClassLoader(originalContextClassLoader);
+            freshRepository.close();
+        }
     }
 }
