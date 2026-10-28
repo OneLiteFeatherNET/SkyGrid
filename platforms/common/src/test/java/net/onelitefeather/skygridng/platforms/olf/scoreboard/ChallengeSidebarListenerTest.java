@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.scoreboard;
+package net.onelitefeather.skygridng.platforms.olf.scoreboard;
 
 import net.kyori.adventure.text.Component;
 import net.onelitefeather.skygridng.api.model.ChallengeRule;

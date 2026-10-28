@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
  * entity nor its schema is ever wired into a real adapter.
  *
  * <p>Deliberately not a record, for the same reason as {@code ChallengeTierEntity} in
- * {@code adapters/challenge-progress}: Hibernate needs a mutable, proxyable class for its
+ * {@code adapters/persistence}: Hibernate needs a mutable, proxyable class for its
  * dirty-checking machinery. The protected no-arg constructor exists for Hibernate only.
  */
 @Entity

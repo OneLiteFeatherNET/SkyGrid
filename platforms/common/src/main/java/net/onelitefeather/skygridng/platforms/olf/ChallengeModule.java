@@ -4,7 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import jakarta.inject.Singleton;
-import net.onelitefeather.skygridng.adapters.challenge.ChallengeBehavior;
+import net.onelitefeather.skygridng.platforms.olf.challenge.ChallengeBehavior;
 import net.onelitefeather.skygridng.adapters.config.BundledDefaults;
 import net.onelitefeather.skygridng.adapters.config.JacksonChallengeRepository;
 import net.onelitefeather.skygridng.core.service.ChallengeAdminService;

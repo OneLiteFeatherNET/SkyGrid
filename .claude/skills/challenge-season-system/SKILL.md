@@ -3,8 +3,8 @@ name: challenge-season-system
 description: >-
   Explains SkyGrid-ng's Challenge and Season system (Epic I in docs/USERSTORIES.md): the domain
   shape (ChallengeRule/ChallengeCatalog today; ChallengeRuleSet/Season/player-progress as
-  documented future extensions), why it is an OLF-only mechanic living in adapters/challenge and
-  the platforms.olf package inside platforms/common, and the reusable engagement-research
+  documented future extensions), why it is an OLF-only mechanic living in the
+  platforms.olf package inside platforms/common, and the reusable engagement-research
   methodology (an 8-point dark-pattern
   checklist, a structural-precedent checklist, and a fixed source list) that must be re-applied
   before designing any new challenge, season, or progression mechanic. Use when adding or reviewing
@@ -61,9 +61,9 @@ There is a single Paper distribution today (`platforms/paper-olf` was folded int
 once the project narrowed to running only on OneLiteFeather's own server); "OLF-only" is now a
 naming convention, not a module boundary. `platforms/common`'s own code (`OlfFeature`, `OlfModule`,
 `NetworkStartupReportFeature`, all in its `platforms.olf` package) and the `hexagonal-architecture`
-skill name "challenges" as the reference example of this convention. `adapters/challenge` is still
-the domain seam: it holds only `ChallengeBehavior`, a plain marker interface (mirroring
-`adapters/spawn`'s single-seam shape), framework-free like every other adapter. The four concrete
+skill name "challenges" as the reference example of this convention. `ChallengeBehavior` is still
+the domain seam: a plain marker interface in `platforms.olf.challenge` with no framework import,
+mirroring the single-seam shape of `adapters.spawn`. The four concrete
 Bukkit-facing implementations of `ChallengeBehavior` (`OneLifeListener`,
 `NoNaturalRegenerationListener`, `NoCraftingTableListener`, `LevelBorderWarningTask`) live in
 `platforms/common`'s `platforms.olf.challenge` package, wired via one
@@ -164,7 +164,7 @@ system was designed. Challenges and Seasons is Epic I; the economy sketch is Epi
 - The four concrete `ChallengeBehavior` implementations (Bukkit-facing):
   `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/olf/challenge/
   {OneLifeListener,NoNaturalRegenerationListener,NoCraftingTableListener,LevelBorderWarningTask}.java`.
-  The seam itself, `ChallengeBehavior`, stays in `adapters/challenge/src/main/java/net/
-  onelitefeather/skygridng/adapters/challenge/ChallengeBehavior.java`.
+  The seam itself, `ChallengeBehavior`, lives in `platforms/common/src/main/java/net/
+  onelitefeather/skygridng/platforms/olf/challenge/ChallengeBehavior.java`.
 - The config layout precedent this deliberately does not reuse: `config-schema-and-rules` skill.
 - The full requirements and acceptance criteria: `docs/USERSTORIES.md` Epic I and Epic J.

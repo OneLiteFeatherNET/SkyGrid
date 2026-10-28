@@ -149,7 +149,7 @@ toward beyond surviving under restrictions.
   `CommandDispatch`, `PlayerMessage`) and grants exactly once per player per task, the moment
   `ports.in.TaskProgressUseCase#completeTask` records a genuinely new completion (idempotent: a
   repeat call, or a sequential-order rejection, is a no-op, never a duplicate grant).
-- Task completion is durable per player (PostgreSQL, `adapters/task-progress`,
+- Task completion is durable per player (PostgreSQL, `adapters/persistence`,
   `ports.out.TaskCompletionRepository`, Flyway-migrated `task_completion` table keyed on
   `(player_id, challenge_id, task_id)`, row existence is the only fact stored, same
   data-minimization stance as `challenge_tier`), fronted by `TaskProgressUseCase` /
@@ -157,7 +157,7 @@ toward beyond surviving under restrictions.
   counter (I2a).
 - A player's task progress for the first active challenge (catalog order, a display
   simplification when more than one challenge is active) is always visible in-game via a live
-  per-player scoreboard sidebar (`adapters/scoreboard`, `platforms.olf.ChallengeSidebarFeature`):
+  per-player scoreboard sidebar (`platforms.olf.scoreboard`, `platforms.olf.ChallengeSidebarFeature`):
   built on join from `TaskProgressUseCase#tasksFor`, updated in place (no repeating task, no
   full re-render) via `TaskProgressUseCase#addCompletionListener` whenever a task flips to done.
 - Wired for three challenges in this slice: `one_life` (`survive_the_round`, extending the
@@ -167,7 +167,7 @@ toward beyond surviving under restrictions.
   matching-world player qualifies, an accepted attendance-not-achievement skeleton for this
   slice). `level_is_border` intentionally ships with no tasks: it has no round/elimination/
   violation concept today.
-- Reward-granting (`ports.out.RewardGrantor`, implemented by `adapters.challenge.RewardGrantorImpl`)
+- Reward-granting (`ports.out.RewardGrantor`, implemented by `platforms.olf.challenge.RewardGrantorImpl`)
   is Bukkit-aware only in the adapter: an item into the player's inventory, a server command with
   `{player}` substituted (run as console, scheduled onto the main thread), or an admin-authored
   MiniMessage chat line. Only the `message` reward type ships real content in this slice (all
@@ -178,7 +178,7 @@ toward beyond surviving under restrictions.
 As a **player**, I want my progress in a challenge to survive server restarts and be visible on
 request, so that repeated play is recognized instead of forgotten every reboot.
 - First database-backed persistence in the project: a PostgreSQL-backed
-  `ports.out.ChallengeProgressRepository` (`adapters/challenge-progress`, HikariCP pooled,
+  `ports.out.ChallengeProgressRepository` (`adapters/persistence`, HikariCP pooled,
   parameterized JDBC only, Flyway-migrated `challenge_tier` table keyed on `(player_id,
   challenge_id)`), fronted by `ports.in.ChallengeProgressUseCase` /
   `core.service.ChallengeProgressService`.

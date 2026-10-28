@@ -14,12 +14,7 @@ dependencies {
     api(project(":adapters:generator"))
     api(project(":adapters:command"))
     api(project(":adapters:config"))
-    api(project(":adapters:spawn"))
-    api(project(":adapters:challenge"))
-    api(project(":adapters:challenge-progress"))
     api(project(":adapters:persistence"))
-    api(project(":adapters:task-progress"))
-    api(project(":adapters:scoreboard"))
     api(libs.guice)
     api(libs.jakarta.inject)
 

@@ -22,7 +22,7 @@ Jakarta EE dependency to a framework-free module, ArchUnit already bans `jakarta
   transaction-lifecycle plumbing (lazy `EntityManagerFactory` construction under double-checked
   locking, Flyway migration, the `read`/`inTransaction` helpers) now lives once in a shared base
   class, `AbstractJpaRepository` in `adapters/persistence`, not as one-off code to imitate by eye.
-  `adapters/challenge-progress`'s `PostgresChallengeProgressRepository` is the worked example: it
+  `PostgresChallengeProgressRepository` (in `adapters/persistence`) is the worked example: it
   extends `AbstractJpaRepository` and keeps only the `challenge_tier`-specific query logic (the
   pessimistic-lock-plus-one-retry `recordCompletionAttempt`, and the `CriteriaDelete` bulk reset). A
   new Postgres-backed adapter extends `AbstractJpaRepository` too, supplying only its own `@Entity`,

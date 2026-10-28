@@ -58,12 +58,12 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
   `api` only. Holds `DecorationEngine` (the per-block decoration/chest/spawner pass), `StructurePlacer`,
   and `StillWater`, all driven through the new `ports.algorithm.RegionWriter` port instead of a native
   Bukkit type, so this module never imports Bukkit, Guice, or jakarta.inject.
-- `adapters/spawn` (`adapters.spawn`): framework-free, like `core`, depending on `ports` + `api`
+- `adapters.spawn` (in `adapters/generator`): framework-free, like `core`, depending on `ports` + `api`
   only. Holds `SafeLocationFinder` (the first-join safe-spawn search), driven through the new
   `ports.algorithm.GroundReader` port instead of a native Bukkit type, so this module never imports
   Bukkit, Guice, or jakarta.inject.
 - `adapters/command` (`adapters.command`): framework-free, like `core`/`adapters/generator`/
-  `adapters/spawn`, depending on `ports` + `api` only. Holds `Messages` (Adventure) and
+  `adapters.spawn`, depending on `ports` + `api` only. Holds `Messages` (Adventure) and
   `adapters.command.handler`'s `@Command`-annotated, Bukkit-free subcommand handlers (`PresetCommands`,
   `AlgorithmCommands`, `MaintenanceCommands`, `ChallengeCommands`, `HelpCommands`, each a
   `CloudCommandHandler` bound via Guice's set binder in `CommandModule`), driven entirely through
@@ -78,10 +78,8 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
   `PresetRepository` + `RuleRepository` + `ChallengeRepository`: the split `config` selector, one
   file per preset under `presets/`, one per block under `rules/`, one per challenge under
   `challenges/`, in JSON/YAML/TOML, plus the victools-generated editor `schema/`.
-- `adapters/challenge` (`adapters.challenge`): framework-free, like `core`/`adapters/generator`/
-  `adapters/spawn`/`adapters/command`, depending on `ports` + `api` only. Holds only
-  `ChallengeBehavior` (a plain marker interface); its four concrete implementations live in
-  `platforms/common`'s `platforms.olf.challenge` package instead.
+- `ChallengeBehavior` (`platforms.olf.challenge`, in `platforms/common`): a plain marker interface;
+  its four concrete implementations live in the same package.
 - `platforms/common` (`platforms.common.*`): the shared Bukkit composition root. `SkyGridNgPlugin`,
   `I18n`, the Guice modules (`PlatformModule`, `RepositoryModule`, `GeneratorModule`, `CommandModule`),
   the message bundles, `platforms.common.generator` (the Bukkit implementation of the generator:
@@ -96,7 +94,7 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
   `CloudCommandHandler` set onto it), and `platforms.olf.*` (`OlfModule`, `OlfFeature`,
   `ChallengeModule`, `ChallengeFeature`, and `platforms.olf.challenge` with the four
   `ChallengeBehavior` implementations: `OneLifeListener`, `NoNaturalRegenerationListener`,
-  `NoCraftingTableListener`, `LevelBorderWarningTask`):
+  `NoCraftingTableListener`, `LevelBorderWarningTask`), and `platforms.olf.scoreboard` (`ChallengeSidebarListener`):
   a naming convention, not a module boundary, for mechanics specific to this OneLiteFeather (OLF)
   server (challenges) rather than general-purpose plugin behavior. `SkyGridNgPlugin.modules()` and
   `onExtensionEnable()`/`onExtensionDisable()` always wire and enable every bound `OlfFeature`, there

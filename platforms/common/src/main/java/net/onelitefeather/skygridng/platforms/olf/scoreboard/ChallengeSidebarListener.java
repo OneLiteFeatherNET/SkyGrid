@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.scoreboard;
+package net.onelitefeather.skygridng.platforms.olf.scoreboard;
 
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import jakarta.inject.Inject;

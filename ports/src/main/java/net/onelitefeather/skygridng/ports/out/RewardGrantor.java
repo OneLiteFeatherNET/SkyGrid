@@ -6,7 +6,7 @@ import java.util.UUID;
 
 /**
  * Out port: grants a {@link Reward} to a player. Bukkit-aware only in its implementation (built in
- * {@code adapters.challenge}, an exhaustive switch over {@link Reward}'s permitted record shapes),
+ * {@code platforms.olf.challenge}, an exhaustive switch over {@link Reward}'s permitted record shapes),
  * framework-free here.
  */
 public interface RewardGrantor {

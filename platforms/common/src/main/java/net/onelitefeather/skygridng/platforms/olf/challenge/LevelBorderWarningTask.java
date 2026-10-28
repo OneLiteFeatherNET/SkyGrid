@@ -2,7 +2,6 @@ package net.onelitefeather.skygridng.platforms.olf.challenge;
 
 import jakarta.inject.Inject;
 import net.kyori.adventure.text.Component;
-import net.onelitefeather.skygridng.adapters.challenge.ChallengeBehavior;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import org.bukkit.World;
 import org.bukkit.entity.Player;

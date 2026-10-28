@@ -14,7 +14,7 @@ final class TestJpaRepository extends AbstractJpaRepository {
     TestJpaRepository(Supplier<DatabaseConfig> configSupplier) {
         super(
                 "abstract-jpa-repository-test",
-                "classpath:db/migration",
+                "classpath:db/migration/abstract-jpa-repository-test",
                 "flyway_history_abstract_jpa_repository_test",
                 configSupplier);
     }

@@ -28,11 +28,9 @@ adapter module has no `core` on its classpath):
 | `api` | `api.model`, `api.SkyGridApi`, `api.util` | no | published library |
 | `ports` | `ports.in`, `ports.out`, `ports.algorithm` | no | library (depends on api) |
 | `core` | `core.*` | no | library (depends on ports, api) |
-| `adapters/generator` | `adapters.generator` | yes (Bukkit) | library (depends on ports, api) |
+| `adapters/generator` | `adapters.generator`, `adapters.spawn` | yes (Bukkit) | library (depends on ports, api) |
 | `adapters/command` | `adapters.command`, `adapters.command.handler` | yes (Bukkit, Adventure, Incendo Cloud) | library (depends on ports, api) |
 | `adapters/config` | `adapters.config` | yes (Jackson) | library (depends on ports, api) |
-| `adapters/spawn` | `adapters.spawn` | yes (Bukkit) | library (depends on ports, api) |
-| `adapters/challenge` | `adapters.challenge` | yes (Bukkit) | library (depends on ports, api) |
 | `platforms/common` | `platforms.common`, `platforms.olf` | yes (Bukkit, Guice) | library (composition root) |
 | `platforms/paper` | (none) | yes | `skygrid-ng-<version>.jar` |
 
@@ -119,7 +117,7 @@ only; they depend on `ports` + `api`, never on `core`.
   `PresetRepository`/`RuleRepository`/`ChallengeRepository` via Jackson, mapped through
   `ConfigDtos`/`RuleDtos`/`ChallengeDtos`, and own the bundled default `presets/`, `rules/`, and
   `challenges/` resources. `adapters.spawn` `SpreadSpawnListener`/`SafeLocationFinder` place new
-  players. `adapters.challenge` the OneLiteFeather challenge rule listeners.
+  players. `platforms.olf.challenge` the OneLiteFeather challenge rule listeners.
 
 ### Composition Root (`platforms.common`)
 `SkyGridNgPlugin` builds a Guice object graph (`Stage.PRODUCTION`) from the modules in

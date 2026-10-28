@@ -1,11 +1,11 @@
 package net.onelitefeather.skygridng.platforms.olf;
 
 import jakarta.inject.Inject;
-import net.onelitefeather.skygridng.adapters.scoreboard.ChallengeSidebarListener;
+import net.onelitefeather.skygridng.platforms.olf.scoreboard.ChallengeSidebarListener;
 
 /**
- * OLF-only feature: bridges {@code adapters.scoreboard}'s {@link ChallengeSidebarListener}, a plain
- * {@link net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase}/
+ * OLF-only feature: bridges {@code platforms.olf.scoreboard}'s {@link ChallengeSidebarListener}, a
+ * plain {@link net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase}/
  * {@link net.onelitefeather.skygridng.ports.in.TaskProgressUseCase} consumer with no {@link
  * OlfFeature} awareness of its own, into the {@code platforms.olf} feature set. This class carries
  * no logic beyond the wiring: it exists only because {@link ChallengeSidebarListener} lives in a
