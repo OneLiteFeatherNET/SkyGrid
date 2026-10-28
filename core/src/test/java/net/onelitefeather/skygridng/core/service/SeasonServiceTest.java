@@ -85,6 +85,12 @@ class SeasonServiceTest {
                 new Resets(journal), listeners, () -> 99L);
     }
 
+    /** A new service over the same fake database, as after a server restart. */
+    private SeasonService restarted(Set<SeasonTransitionListener> listeners) {
+        return new SeasonService(CATALOG, SeasonSettings.defaults(), runs, worlds, challenges, announcer,
+                new Resets(journal), listeners, () -> 99L);
+    }
+
     /** Ticks at {@code now} until no step is due, the way the scheduler does over a few seconds. */
     private static void drain(SeasonService service, Instant now) {
         for (int step = 0; step < MAX_STEPS && service.tick(now); step++) {
@@ -336,5 +342,24 @@ class SeasonServiceTest {
                     assertThat(record.getLevel()).isEqualTo(Level.INFO);
                     assertThat(record.getMessage()).contains("alice", command.toString());
                 });
+    }
+
+    @Test
+    void postponedEndAndSentAnnouncementSurviveARestart() {
+        SeasonService first = service(Set.of(), run("s01", ACTIVE));
+        Instant postponedEnd = BOUNDARY.plus(Duration.ofHours(2));
+        Instant sevenDaysBefore = postponedEnd.minus(Duration.ofDays(7));
+        first.postpone(JAN.plus(Duration.ofDays(1)), Duration.ofHours(2));
+        drain(first, sevenDaysBefore);
+
+        SeasonService restarted = restarted(Set.of());
+        drain(restarted, sevenDaysBefore);
+
+        assertThat(restarted.list().seasons().get(0).end())
+                .as("the postponed end of the active season is restored from the database after a restart")
+                .isEqualTo(postponedEnd);
+        assertThat(journal.count("upcoming:s02:"))
+                .as("the seven day notice sent before the restart is not sent again")
+                .isEqualTo(1);
     }
 }

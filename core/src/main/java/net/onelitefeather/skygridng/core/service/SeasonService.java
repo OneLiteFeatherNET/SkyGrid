@@ -18,10 +18,10 @@ import net.onelitefeather.skygridng.ports.out.SeasonWorlds;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.logging.Level;
@@ -34,7 +34,9 @@ import java.util.logging.Logger;
  * progress writes do not read the database. Transition listeners run after the switch is committed; a failing
  * listener is logged and alerted, and the remaining listeners still run.
  *
- * <p>The announced notices and the last no-next-season warning are kept in memory: a restart may repeat a notice.
+ * <p>The effective end of the active season and the notices already sent are persisted on its run, so a restart
+ * neither loses a postponement nor repeats a notice. Each decision reads them back first, so the constructor never
+ * touches the database. The last no-next-season warning is kept in memory: a restart may repeat that warning.
  */
 public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
 
@@ -52,9 +54,8 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
     private final PlayerSeasonReset resets;
     private final Set<SeasonTransitionListener> listeners;
     private final LongSupplier seeds;
-    private final Set<SeasonAction.Announce> announced = new HashSet<>();
     private Optional<Instant> lastWarning = Optional.empty();
-    private SeasonId activeId;
+    private SeasonId activeId = SeasonId.LEGACY;
     private boolean busy;
 
     public SeasonService(
@@ -76,7 +77,6 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
         this.resets = resets;
         this.listeners = listeners;
         this.seeds = seeds;
-        this.activeId = readActiveId();
     }
 
     @Override
@@ -97,12 +97,13 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
     @Override
     public boolean tick(Instant now) {
         return guarded("tick", () -> {
-            List<SeasonRun> known = knownRuns();
+            Optional<SeasonRun> active = reconcile();
+            List<SeasonRun> known = knownRuns(active);
             SeasonAction action = known.stream()
                     .filter(run -> run.phase() == SeasonPhase.PREPARED && !worlds.isLoaded(run.worldKey()))
                     .findFirst()
                     .<SeasonAction>map(SeasonAction.Resume::new)
-                    .orElseGet(() -> SeasonTimeline.nextAction(now, catalog, settings, known, announced,
+                    .orElseGet(() -> SeasonTimeline.nextAction(now, catalog, settings, known, sentNotices(active),
                             lastWarning));
             if (!SeasonTimeline.isDue(action, now)) {
                 return false;
@@ -198,7 +199,7 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
         switch (action) {
             case SeasonAction.Announce notice -> {
                 announcer.upcoming(notice.season(), notice.kind().offset(), notice.boundary());
-                announced.add(notice);
+                runs.active().ifPresent(run -> runs.save(run.withAnnounced(notice.key())));
             }
             case SeasonAction.WarnNoNext warning -> {
                 announcer.adminAlert("no season follows " + activeId.value()
@@ -232,24 +233,57 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
         }
     }
 
-    private List<SeasonRun> knownRuns() {
+    /**
+     * Reads the active run and applies what it persists: the season it names becomes the cached {@link #id()}, and a
+     * stored effective end replaces the configured end. Without any configured season the database is not read.
+     */
+    private Optional<SeasonRun> reconcile() {
+        if (catalog.seasons().isEmpty()) {
+            return Optional.empty();
+        }
+        Optional<SeasonRun> active = runs.active();
+        activeId = active.map(SeasonRun::seasonId).orElse(SeasonId.LEGACY);
+        active.filter(run -> run.endsAt() != null).ifPresent(run -> season(run.seasonId())
+                .filter(season -> !season.end().equals(run.endsAt()))
+                .ifPresent(season -> shift(season, run.endsAt())));
+        return active;
+    }
+
+    private List<SeasonRun> knownRuns(Optional<SeasonRun> active) {
         List<SeasonRun> known = new ArrayList<>(runs.inFlight());
-        runs.active().ifPresent(known::add);
+        active.ifPresent(known::add);
         return known;
+    }
+
+    /** The notices already sent for the boundary of the active season. */
+    private static Set<SeasonAction.Announce> sentNotices(Optional<SeasonRun> active) {
+        return active.map(run -> run.announced().stream()
+                        .map(SeasonAction.Announce::fromKey)
+                        .collect(Collectors.toSet()))
+                .orElseGet(Set::of);
     }
 
     /** The active season, unless a transition step is running right now. */
     private Optional<Season> idleActiveSeason() {
+        Optional<SeasonRun> active = reconcile();
         if (runs.inFlight().stream().anyMatch(run -> RUNNING.contains(run.phase()))) {
             return Optional.empty();
         }
-        return runs.active().flatMap(run -> catalog.seasons().stream()
-                .filter(season -> season.id().equals(run.seasonId()))
-                .findFirst());
+        return active.flatMap(run -> season(run.seasonId()));
     }
 
-    /** Moves the end of {@code ending} to {@code newEnd} and shifts every later season that would overlap it. */
+    private Optional<Season> season(SeasonId id) {
+        return catalog.seasons().stream().filter(season -> season.id().equals(id)).findFirst();
+    }
+
+    /** Moves the end of {@code ending} to {@code newEnd}, persists it on the run, and shifts overlapping seasons. */
     private void reschedule(Season ending, Instant newEnd) {
+        shift(ending, newEnd);
+        runs.find(ending.id()).ifPresent(run -> runs.save(run.withEndsAt(newEnd)));
+    }
+
+    /** Moves the end of {@code ending} to {@code newEnd} in the catalog and shifts every later season that overlaps. */
+    private void shift(Season ending, Instant newEnd) {
         List<Season> rescheduled = new ArrayList<>();
         Instant previousEnd = null;
         for (Season season : catalog.seasons()) {
@@ -270,13 +304,4 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
                 season.challenges(), season.seed());
     }
 
-    private SeasonId readActiveId() {
-        try {
-            return runs.active().map(SeasonRun::seasonId).orElse(SeasonId.LEGACY);
-        } catch (RuntimeException failure) {
-            LOGGER.log(Level.WARNING, "season database unreachable at start, running as legacy: "
-                    + failure.getMessage(), failure);
-            return SeasonId.LEGACY;
-        }
-    }
 }

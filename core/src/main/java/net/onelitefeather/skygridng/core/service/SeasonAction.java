@@ -23,6 +23,19 @@ public sealed interface SeasonAction {
      * Each (season, kind, boundary) is announced once; the caller remembers it.
      */
     record Announce(SeasonId season, AnnouncementKind kind, Instant boundary, Instant at) implements SeasonAction {
+
+        /** The stable key stored in {@code season_run.announced}: season, kind and boundary, never a comma. */
+        public String key() {
+            return season.value() + "|" + kind.name() + "|" + boundary;
+        }
+
+        /** The notice a stored {@link #key()} stands for. The instant is derived, as the timeline derives it. */
+        public static Announce fromKey(String key) {
+            String[] parts = key.split("\\|");
+            AnnouncementKind kind = AnnouncementKind.valueOf(parts[1]);
+            Instant boundary = Instant.parse(parts[2]);
+            return new Announce(new SeasonId(parts[0]), kind, boundary, boundary.minus(kind.offset()));
+        }
     }
 
     /** Creates and prepares the world of the incoming season {@code season} at {@code at}. */

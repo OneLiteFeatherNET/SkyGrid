@@ -22,6 +22,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -37,6 +38,7 @@ class PostgresSeasonRunRepositoryTest {
     private static final Instant NOW = Instant.parse("2026-10-28T12:00:00Z");
     private static final Instant SWITCH_AT = Instant.parse("2026-11-01T00:00:00Z");
     private static final Instant STARTED = Instant.parse("2026-08-01T00:00:00Z");
+    private static final Instant POSTPONED_END = Instant.parse("2026-12-01T20:00:00Z");
 
     @Container
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -78,6 +80,18 @@ class PostgresSeasonRunRepositoryTest {
 
         assertThat(repository.find(new SeasonId("s01")))
                 .as("a saved run must be found with the same values")
+                .contains(run);
+    }
+
+    @Test
+    void postponedEndAndSentAnnouncementsRoundTrip() {
+        var sent = Set.of("s02|SEVEN_DAYS|2026-12-01T18:00:00Z", "s02|ONE_DAY|2026-12-01T18:00:00Z");
+        var run = new SeasonRun(new SeasonId("s01"), "skygridng:season_s01", 7L, SeasonPhase.ACTIVE, 0, STARTED,
+                null, POSTPONED_END, sent);
+        repository.save(run);
+
+        assertThat(repository.find(new SeasonId("s01")))
+                .as("the postponed end and the sent announcement keys must survive a save and a find")
                 .contains(run);
     }
 

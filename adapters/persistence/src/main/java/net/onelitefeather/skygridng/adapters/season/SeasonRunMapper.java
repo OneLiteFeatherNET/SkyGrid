@@ -4,6 +4,9 @@ import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.SeasonRun;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Data Mapper between the {@link SeasonRunEntity} row and the immutable {@link SeasonRun} record. The record is
@@ -22,7 +25,9 @@ final class SeasonRunMapper {
                 entity.getPhase(),
                 entity.getAttempts(),
                 entity.getStartedAt(),
-                entity.getEndedAt());
+                entity.getEndedAt(),
+                entity.getEndsAt(),
+                decode(entity.getAnnounced()));
     }
 
     static SeasonRunEntity toEntity(SeasonRun run, Instant updatedAt) {
@@ -39,6 +44,20 @@ final class SeasonRunMapper {
         entity.setAttempts(run.attempts());
         entity.setStartedAt(run.startedAt());
         entity.setEndedAt(run.endedAt());
+        entity.setEndsAt(run.endsAt());
+        entity.setAnnounced(encode(run.announced()));
         entity.setUpdatedAt(updatedAt);
+    }
+
+    /** Announcement keys hold no comma (season ids, kinds and ISO instants do not), so a comma separates them. */
+    static String encode(Set<String> keys) {
+        return keys.isEmpty() ? null : keys.stream().sorted().collect(Collectors.joining(","));
+    }
+
+    static Set<String> decode(String stored) {
+        if (stored == null || stored.isBlank()) {
+            return Set.of();
+        }
+        return Arrays.stream(stored.split(",")).collect(Collectors.toUnmodifiableSet());
     }
 }

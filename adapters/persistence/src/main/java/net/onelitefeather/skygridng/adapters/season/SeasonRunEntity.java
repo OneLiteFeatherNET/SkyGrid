@@ -59,6 +59,12 @@ public class SeasonRunEntity {
     @Column(name = "ended_at")
     private Instant endedAt;
 
+    @Column(name = "ends_at")
+    private Instant endsAt;
+
+    @Column(name = "announced")
+    private String announced;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
@@ -124,6 +130,22 @@ public class SeasonRunEntity {
 
     void setEndedAt(Instant endedAt) {
         this.endedAt = endedAt;
+    }
+
+    Instant getEndsAt() {
+        return endsAt;
+    }
+
+    void setEndsAt(Instant endsAt) {
+        this.endsAt = endsAt;
+    }
+
+    String getAnnounced() {
+        return announced;
+    }
+
+    void setAnnounced(String announced) {
+        this.announced = announced;
     }
 
     void setUpdatedAt(Instant updatedAt) {

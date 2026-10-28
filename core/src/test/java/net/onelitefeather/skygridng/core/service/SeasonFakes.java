@@ -119,9 +119,9 @@ final class SeasonFakes {
             SeasonRun ending = rows.get(from);
             SeasonRun incoming = rows.get(to);
             rows.put(from, new SeasonRun(from, ending.worldKey(), ending.seed(), SeasonPhase.CLOSING,
-                    ending.attempts(), ending.startedAt(), at));
+                    ending.attempts(), ending.startedAt(), at, ending.endsAt(), ending.announced()));
             rows.put(to, new SeasonRun(to, incoming.worldKey(), incoming.seed(), SeasonPhase.ACTIVE,
-                    incoming.attempts(), at, null));
+                    incoming.attempts(), at, null, incoming.endsAt(), incoming.announced()));
         }
     }
 

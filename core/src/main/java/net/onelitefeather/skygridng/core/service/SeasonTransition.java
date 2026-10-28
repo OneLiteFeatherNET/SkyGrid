@@ -151,6 +151,8 @@ public final class SeasonTransition {
             challenges.deactivate(challenge);
         }
         runs.switchActive(from, to, now);
+        // The incoming season keeps its effective end across a restart, even when an earlier postponement shifted it.
+        runs.find(to).ifPresent(run -> runs.save(run.withEndsAt(incoming.end())));
         activeChanged.accept(to);
         activateExactly(incoming);
         listeners.onSwitched(from, to);
@@ -270,6 +272,6 @@ public final class SeasonTransition {
 
     private static SeasonRun withPhase(SeasonRun run, SeasonPhase phase, int attempts) {
         return new SeasonRun(run.seasonId(), run.worldKey(), run.seed(), phase, attempts,
-                run.startedAt(), run.endedAt());
+                run.startedAt(), run.endedAt(), run.endsAt(), run.announced());
     }
 }
