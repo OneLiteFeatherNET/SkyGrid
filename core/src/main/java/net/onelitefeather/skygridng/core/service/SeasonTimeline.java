@@ -3,12 +3,18 @@ package net.onelitefeather.skygridng.core.service;
 import net.onelitefeather.skygridng.api.model.Season;
 import net.onelitefeather.skygridng.api.model.SeasonCatalog;
 import net.onelitefeather.skygridng.api.model.SeasonId;
+import net.onelitefeather.skygridng.api.model.SeasonPhase;
+import net.onelitefeather.skygridng.api.model.SeasonRun;
+import net.onelitefeather.skygridng.api.model.SeasonSettings;
 import net.onelitefeather.skygridng.ports.out.SeasonRepository;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -33,6 +39,102 @@ public final class SeasonTimeline {
             accepted = accepted == null ? SeasonCatalog.empty() : accepted;
             rejections = List.copyOf(rejections);
         }
+    }
+
+    /** Phases a restart resumes without waiting for a clock instant. Failed phases wait for an admin retry. */
+    private static final Set<SeasonPhase> RESUMABLE =
+            EnumSet.of(SeasonPhase.PREPARING, SeasonPhase.CLOSING, SeasonPhase.UNLOADING, SeasonPhase.ARCHIVING);
+
+    private static final Duration DAY = Duration.ofDays(1);
+
+    /**
+     * Decides the next action of the season lifecycle. Resumable runs come first. Otherwise the active season
+     * is the one whose end is the boundary: its notices, the preparation of the next world and the switch at the
+     * boundary are the candidates, and the earliest one wins. Without a next season the warning is returned,
+     * once per day from {@code lastWarning}.
+     *
+     * @param now         the instant of the decision, passed in so the method never reads the clock
+     * @param catalog     the validated seasons
+     * @param settings    the season settings, for the preparation lead
+     * @param runs        the persisted runs (active and in flight)
+     * @param sent        the notices already sent, keyed by season, kind and boundary
+     * @param lastWarning when the last no-next-season warning was sent, if ever
+     */
+    public static SeasonAction nextAction(
+            Instant now,
+            SeasonCatalog catalog,
+            SeasonSettings settings,
+            List<SeasonRun> runs,
+            Set<SeasonAction.Announce> sent,
+            Optional<Instant> lastWarning) {
+        Optional<SeasonRun> resumable = runs.stream().filter(run -> RESUMABLE.contains(run.phase())).findFirst();
+        if (resumable.isPresent()) {
+            return new SeasonAction.Resume(resumable.get());
+        }
+        Optional<SeasonRun> active = runs.stream().filter(run -> run.phase() == SeasonPhase.ACTIVE).findFirst();
+        Optional<Season> ending = active.flatMap(run -> season(catalog, run.seasonId()));
+        if (ending.isEmpty()) {
+            return new SeasonAction.None();
+        }
+        Instant boundary = ending.get().end();
+        Optional<Season> next = catalog.next(ending.get().id());
+        if (next.isEmpty()) {
+            return new SeasonAction.WarnNoNext(warningAt(boundary, lastWarning));
+        }
+        Season incoming = next.get();
+        Optional<SeasonRun> incomingRun = runs.stream()
+                .filter(run -> run.seasonId().equals(incoming.id()))
+                .findFirst();
+        List<SeasonAction> candidates = new ArrayList<>();
+        for (SeasonAction.AnnouncementKind kind : SeasonAction.AnnouncementKind.values()) {
+            SeasonAction.Announce notice =
+                    new SeasonAction.Announce(incoming.id(), kind, boundary, boundary.minus(kind.offset()));
+            if (!sent.contains(notice)) {
+                candidates.add(notice);
+            }
+        }
+        if (incomingRun.isEmpty()) {
+            candidates.add(new SeasonAction.Prepare(incoming, boundary.minus(settings.prepareLead())));
+        } else if (incomingRun.get().phase() == SeasonPhase.PREPARED) {
+            candidates.add(new SeasonAction.Switch(ending.get().id(), incoming.id(), boundary));
+        }
+        return candidates.stream()
+                .min(Comparator.comparing(SeasonTimeline::at))
+                .map(SeasonAction.class::cast)
+                .orElse(new SeasonAction.None());
+    }
+
+    /** Whether {@code action} is due at {@code now}: its instant has passed, a resume is always due. */
+    public static boolean isDue(SeasonAction action, Instant now) {
+        return switch (action) {
+            case SeasonAction.None none -> false;
+            case SeasonAction.Resume resume -> true;
+            case SeasonAction.Announce announce -> !announce.at().isAfter(now);
+            case SeasonAction.Prepare prepare -> !prepare.at().isAfter(now);
+            case SeasonAction.Switch clock -> !clock.at().isAfter(now);
+            case SeasonAction.WarnNoNext warning -> !warning.at().isAfter(now);
+        };
+    }
+
+    private static Instant at(SeasonAction action) {
+        return switch (action) {
+            case SeasonAction.Announce announce -> announce.at();
+            case SeasonAction.Prepare prepare -> prepare.at();
+            case SeasonAction.Switch clock -> clock.at();
+            case SeasonAction.WarnNoNext warning -> warning.at();
+            case SeasonAction.None none -> Instant.MAX;
+            case SeasonAction.Resume resume -> Instant.MIN;
+        };
+    }
+
+    private static Instant warningAt(Instant boundary, Optional<Instant> lastWarning) {
+        return lastWarning.map(last -> last.plus(DAY))
+                .filter(next -> next.isAfter(boundary))
+                .orElse(boundary);
+    }
+
+    private static Optional<Season> season(SeasonCatalog catalog, SeasonId id) {
+        return catalog.seasons().stream().filter(season -> season.id().equals(id)).findFirst();
     }
 
     /**

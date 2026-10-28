@@ -3,6 +3,8 @@ package net.onelitefeather.skygridng.core.service;
 import net.onelitefeather.skygridng.api.model.Season;
 import net.onelitefeather.skygridng.api.model.SeasonCatalog;
 import net.onelitefeather.skygridng.api.model.SeasonId;
+import net.onelitefeather.skygridng.api.model.SeasonPhase;
+import net.onelitefeather.skygridng.api.model.SeasonRun;
 import net.onelitefeather.skygridng.api.model.SeasonSettings;
 import net.onelitefeather.skygridng.ports.out.SeasonRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -11,9 +13,15 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static net.onelitefeather.skygridng.api.model.SeasonPhase.ACTIVE;
+import static net.onelitefeather.skygridng.api.model.SeasonPhase.CLOSING;
+import static net.onelitefeather.skygridng.api.model.SeasonPhase.PREPARED;
+import static net.onelitefeather.skygridng.api.model.SeasonPhase.PREPARE_FAILED;
+import static net.onelitefeather.skygridng.api.model.SeasonPhase.PREPARING;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -158,4 +166,152 @@ class SeasonTimelineTest {
         assertThat(SeasonTimeline.activeId(catalog, JAN)).isEqualTo(SeasonId.LEGACY);
         assertThat(catalog.next(SeasonId.LEGACY)).isEmpty();
     }
+
+    private static final SeasonSettings SETTINGS = SeasonSettings.defaults();
+    private static final Season A = season("s01", JAN, "standard");
+    private static final Season B = season("s02", JAN.plus(FOUR_WEEKS), "classic");
+    private static final Instant BOUNDARY = B.start();
+    private static final SeasonCatalog PAIR = new SeasonCatalog(List.of(A, B));
+
+    private static SeasonRun run(String id, SeasonPhase phase) {
+        return new SeasonRun(new SeasonId(id), "skygridng:season_" + id, 42L, phase, 0, null, null);
+    }
+
+    private static SeasonAction.Announce announce(SeasonAction.AnnouncementKind kind) {
+        return new SeasonAction.Announce(B.id(), kind, BOUNDARY, BOUNDARY.minus(kind.offset()));
+    }
+
+    private static Set<SeasonAction.Announce> allAnnounced() {
+        return Set.of(announce(SeasonAction.AnnouncementKind.SEVEN_DAYS),
+                announce(SeasonAction.AnnouncementKind.ONE_DAY),
+                announce(SeasonAction.AnnouncementKind.ONE_HOUR),
+                announce(SeasonAction.AnnouncementKind.FIVE_MINUTES));
+    }
+
+    @Test
+    void switchesAtTheEndInstantWhenTheNextSeasonIsPrepared() {
+        var action = SeasonTimeline.nextAction(BOUNDARY, PAIR, SETTINGS,
+                List.of(run("s01", ACTIVE), run("s02", PREPARED)), allAnnounced(), Optional.empty());
+
+        assertThat(action)
+                .as("a prepared next season must switch at the end instant of the active season")
+                .isEqualTo(new SeasonAction.Switch(A.id(), B.id(), BOUNDARY));
+    }
+
+    @Test
+    void preparesTheNextWorldOneLeadBeforeTheBoundary() {
+        var action = SeasonTimeline.nextAction(BOUNDARY.minus(Duration.ofHours(1)), PAIR, SETTINGS,
+                List.of(run("s01", ACTIVE)), allAnnounced(), Optional.empty());
+
+        assertThat(action)
+                .as("the next world is prepared the default 15 minutes before the boundary")
+                .isEqualTo(new SeasonAction.Prepare(B, BOUNDARY.minus(Duration.ofMinutes(15))));
+    }
+
+    @Test
+    void announcesSevenDaysBeforeTheBoundaryFirst() {
+        var action = SeasonTimeline.nextAction(BOUNDARY.minus(Duration.ofDays(8)), PAIR, SETTINGS,
+                List.of(run("s01", ACTIVE)), Set.of(), Optional.empty());
+
+        assertThat(action)
+                .as("the first notice is seven days before the boundary")
+                .isEqualTo(announce(SeasonAction.AnnouncementKind.SEVEN_DAYS));
+    }
+
+    @Test
+    void returnsTheNextNoticeOnceTheEarlierOneIsRecorded() {
+        var action = SeasonTimeline.nextAction(BOUNDARY.minus(Duration.ofDays(8)), PAIR, SETTINGS,
+                List.of(run("s01", ACTIVE)), Set.of(announce(SeasonAction.AnnouncementKind.SEVEN_DAYS)),
+                Optional.empty());
+
+        assertThat(action)
+                .as("a notice that was already sent is never returned again")
+                .isEqualTo(announce(SeasonAction.AnnouncementKind.ONE_DAY));
+    }
+
+    @Test
+    void returnsNoNoticeOnceAllFourAreRecorded() {
+        var action = SeasonTimeline.nextAction(BOUNDARY.minus(Duration.ofDays(8)), PAIR, SETTINGS,
+                List.of(run("s01", ACTIVE)), allAnnounced(), Optional.empty());
+
+        assertThat(action)
+                .as("with every notice sent, the next action is the preparation, not another notice")
+                .isEqualTo(new SeasonAction.Prepare(B, BOUNDARY.minus(Duration.ofMinutes(15))));
+    }
+
+    @Test
+    void resumesAnInFlightRunBeforeAnythingElse() {
+        var resumed = run("s02", PREPARING);
+
+        var action = SeasonTimeline.nextAction(BOUNDARY.minus(Duration.ofDays(8)), PAIR, SETTINGS,
+                List.of(run("s01", ACTIVE), resumed), Set.of(), Optional.empty());
+
+        assertThat(action)
+                .as("an in flight preparation is resumed before any notice is sent")
+                .isEqualTo(new SeasonAction.Resume(resumed));
+    }
+
+    @Test
+    void resumesAClosingRunOfTheEndingSeason() {
+        var closing = run("s01", CLOSING);
+
+        var action = SeasonTimeline.nextAction(BOUNDARY, PAIR, SETTINGS,
+                List.of(closing, run("s02", ACTIVE)), allAnnounced(), Optional.empty());
+
+        assertThat(action)
+                .as("a closing season is resumed at its unload and archive steps")
+                .isEqualTo(new SeasonAction.Resume(closing));
+    }
+
+    @Test
+    void doesNotResumeAFailedPreparationAutomatically() {
+        var action = SeasonTimeline.nextAction(BOUNDARY, PAIR, SETTINGS,
+                List.of(run("s01", ACTIVE), run("s02", PREPARE_FAILED)), allAnnounced(), Optional.empty());
+
+        assertThat(action)
+                .as("a failed preparation waits for an admin retry, the active season keeps running")
+                .isEqualTo(new SeasonAction.None());
+    }
+
+    @Test
+    void givesNoActionWithoutAnActiveRun() {
+        var action = SeasonTimeline.nextAction(BOUNDARY, PAIR, SETTINGS, List.of(), Set.of(), Optional.empty());
+
+        assertThat(action)
+                .as("with no active season run there is nothing to schedule")
+                .isEqualTo(new SeasonAction.None());
+    }
+
+    @Test
+    void warnsAtTheEndInstantWhenNoNextSeasonIsConfigured() {
+        var action = SeasonTimeline.nextAction(BOUNDARY.minus(Duration.ofDays(1)), new SeasonCatalog(List.of(A)),
+                SETTINGS, List.of(run("s01", ACTIVE)), Set.of(), Optional.empty());
+
+        assertThat(action)
+                .as("the first warning is due at the end of the active season")
+                .isEqualTo(new SeasonAction.WarnNoNext(BOUNDARY));
+    }
+
+    @Test
+    void warnsAgainOneDayAfterTheLastWarning() {
+        var action = SeasonTimeline.nextAction(BOUNDARY.plus(Duration.ofHours(2)), new SeasonCatalog(List.of(A)),
+                SETTINGS, List.of(run("s01", ACTIVE)), Set.of(), Optional.of(BOUNDARY));
+
+        assertThat(action)
+                .as("admins are warned once per day while no next season exists")
+                .isEqualTo(new SeasonAction.WarnNoNext(BOUNDARY.plus(Duration.ofDays(1))));
+    }
+
+    @Test
+    void anActionIsDueOnlyOnceItsInstantHasPassed() {
+        var prepare = new SeasonAction.Prepare(B, BOUNDARY.minus(Duration.ofMinutes(15)));
+
+        assertThat(SeasonTimeline.isDue(prepare, BOUNDARY.minus(Duration.ofMinutes(16))))
+                .as("a preparation one minute before its instant is not due yet")
+                .isFalse();
+        assertThat(SeasonTimeline.isDue(prepare, BOUNDARY.minus(Duration.ofMinutes(15))))
+                .as("a preparation is due at its instant")
+                .isTrue();
+    }
 }
+
