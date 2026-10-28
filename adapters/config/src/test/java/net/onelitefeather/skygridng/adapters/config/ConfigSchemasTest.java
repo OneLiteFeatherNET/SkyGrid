@@ -89,4 +89,27 @@ class ConfigSchemasTest {
             assertThat(parsed.isObject()).isTrue();
         }
     }
+
+    @Test
+    @DisplayName("the season schema describes the season file properties")
+    void seasonSchemaHasProperties() {
+        JsonNode properties = schemas.schema(ConfigSchemas.Kind.SEASON).get("properties");
+        assertThat(properties).isNotNull();
+        assertThat(properties.has("id")).isTrue();
+        assertThat(properties.has("start")).isTrue();
+        assertThat(properties.has("duration")).isTrue();
+        assertThat(properties.has("preset")).isTrue();
+        assertThat(properties.has("challenges")).isTrue();
+        assertThat(properties.has("seed")).isTrue();
+    }
+
+    @Test
+    @DisplayName("writeTo emits the season schema next to the other schemas")
+    void writesSeasonSchemaFile(@TempDir Path dir) throws IOException {
+        schemas.writeTo(dir);
+
+        Path file = dir.resolve("schema").resolve("season.schema.json");
+        assertThat(Files.exists(file)).as("season.schema.json").isTrue();
+        assertThat(new ObjectMapper().readTree(Files.readAllBytes(file)).isObject()).isTrue();
+    }
 }

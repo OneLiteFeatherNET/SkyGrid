@@ -19,9 +19,30 @@ final class ConfigDtos {
     private ConfigDtos() {
     }
 
-    /** The {@code config.<ext>} selector file: only the active preset id. */
+    /**
+     * The {@code config.<ext>} file: the active preset id and the optional {@code season} block. The block
+     * is kept on save so that switching the preset does not drop the season settings.
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record ConfigDto(String active) {
+    record ConfigDto(String active, SeasonSettingsDto season) {
+    }
+
+    /**
+     * The optional {@code season} block of {@code config}. Every key is boxed so an omitted key falls back to
+     * the domain default. Durations stay ISO-8601 strings here and are parsed by the season adapter.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record SeasonSettingsDto(String prepareLead, ArchiveDto archive, AdvanceDto advance) {
+    }
+
+    /** The {@code season.archive} section: the archive directory and whether to compress archived worlds. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record ArchiveDto(String directory, Boolean compress) {
+    }
+
+    /** The {@code season.advance} section: the minimum notice of a scheduled season end. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record AdvanceDto(String minNotice) {
     }
 
     /**

@@ -3,6 +3,7 @@ package net.onelitefeather.skygridng.adapters.config;
 import net.onelitefeather.skygridng.adapters.config.ConfigDtos.BlockWeightDto;
 import net.onelitefeather.skygridng.adapters.config.ConfigDtos.ConfigDto;
 import net.onelitefeather.skygridng.adapters.config.ConfigDtos.PresetDto;
+import net.onelitefeather.skygridng.adapters.config.ConfigDtos.SeasonSettingsDto;
 import net.onelitefeather.skygridng.adapters.config.ConfigDtos.SpawnDto;
 import net.onelitefeather.skygridng.api.model.BiomeId;
 import net.onelitefeather.skygridng.api.model.BlockId;
@@ -91,7 +92,7 @@ public final class JacksonPresetRepository implements PresetRepository {
             Files.createDirectories(presetsDir);
 
             Path configFile = existingConfigFile().orElse(dataFolder.resolve(CONFIG_BASE + "." + DEFAULT_EXTENSION));
-            writeValue(configFile, new ConfigDto(catalog.active()));
+            writeValue(configFile, new ConfigDto(catalog.active(), existingSeasonBlock()));
 
             for (Preset preset : catalog.presets().values()) {
                 Path file = presetFileFor(presetsDir, preset.name());
@@ -126,6 +127,17 @@ public final class JacksonPresetRepository implements PresetRepository {
             }
             Files.write(target, in.readAllBytes());
         }
+    }
+
+    /** The {@code season} block of the config file as it is on disk, kept when the preset is saved. */
+    private SeasonSettingsDto existingSeasonBlock() throws IOException {
+        Optional<Path> file = existingConfigFile();
+        if (file.isEmpty()) {
+            return null;
+        }
+        return ConfigFormats.mapperFor(file.get())
+                .readValue(Files.readAllBytes(file.get()), ConfigDto.class)
+                .season();
     }
 
     private Path configFile() throws IOException {

@@ -25,7 +25,8 @@ import java.nio.file.Path;
  *   <li>{@code config.<ext>} maps to {@link ConfigDtos.ConfigDto} (the active-preset selector),</li>
  *   <li>a {@code presets/<name>.<ext>} file maps to {@link ConfigDtos.PresetDto},</li>
  *   <li>a {@code rules/<block>.<ext>} file maps to {@link RuleDtos.RuleDto},</li>
- *   <li>a {@code challenges/<id>.<ext>} file maps to {@link ChallengeDtos.ChallengeDto}.</li>
+ *   <li>a {@code challenges/<id>.<ext>} file maps to {@link ChallengeDtos.ChallengeDto},</li>
+ *   <li>a {@code seasons/<id>.<ext>} file maps to {@link SeasonDtos.SeasonDto}.</li>
  * </ul>
  *
  * The schemas describe the structure only, so they are format-neutral: an editor (a YAML or JSON
@@ -35,12 +36,13 @@ import java.nio.file.Path;
  */
 final class ConfigSchemas {
 
-    /** The four schema kinds and their on-disk schema file names (under {@code schema/}). */
+    /** The five schema kinds and their on-disk schema file names (under {@code schema/}). */
     enum Kind {
         CONFIG("schema/config.schema.json"),
         PRESET("schema/preset.schema.json"),
         RULE("schema/rule.schema.json"),
-        CHALLENGE("schema/challenge.schema.json");
+        CHALLENGE("schema/challenge.schema.json"),
+        SEASON("schema/season.schema.json");
 
         private final String fileName;
 
@@ -56,6 +58,7 @@ final class ConfigSchemas {
     private final ObjectNode presetSchema;
     private final ObjectNode ruleSchema;
     private final ObjectNode challengeSchema;
+    private final ObjectNode seasonSchema;
 
     private ConfigSchemas() {
         SchemaGenerator generator = newGenerator();
@@ -63,6 +66,7 @@ final class ConfigSchemas {
         this.presetSchema = generator.generateSchema(ConfigDtos.PresetDto.class);
         this.ruleSchema = generator.generateSchema(RuleDtos.RuleDto.class);
         this.challengeSchema = generator.generateSchema(ChallengeDtos.ChallengeDto.class);
+        this.seasonSchema = generator.generateSchema(SeasonDtos.SeasonDto.class);
     }
 
     /** The shared instance; the schemas are generated once and reused. */
@@ -88,11 +92,12 @@ final class ConfigSchemas {
             case PRESET -> presetSchema;
             case RULE -> ruleSchema;
             case CHALLENGE -> challengeSchema;
+            case SEASON -> seasonSchema;
         };
     }
 
     /**
-     * Writes the three generated schemas as pretty-printed JSON into {@code <dataFolder>/schema/}.
+     * Writes the generated schemas as pretty-printed JSON into {@code <dataFolder>/schema/}.
      * Idempotent: the files are overwritten so an admin always sees the schema for the running build.
      */
     void writeTo(Path dataFolder) {
