@@ -22,14 +22,13 @@ commit (feat/fix) -> push to main -> release-please opens a Release PR
 | Workflow | Trigger | What it does |
 |----------|---------|--------------|
 | `build-pr.yml` | pull_request | Reuses `OneLiteFeatherNET/workflows/gradle-build-pr.yml`: builds on Linux/Windows/macOS, runs tests, publishes test and coverage reports. |
-| `release-please.yml` | push to `main` | Runs release-please. On a merged Release PR it tags and creates the GitHub release, then calls the shared `OneLiteFeatherNET/workflows/gradle-plugin-publish.yml` to attach the jar to the GitHub release and send the SBOM to Dependency-Track. |
+| `release-please.yml` | push to `main` | Runs release-please. On a merged Release PR it tags and creates the GitHub release, builds the shaded jar and the CycloneDX SBOM, attaches the jar to the GitHub release with `gh release upload`, and publishes the SBOM to Dependency-Track through the shared `OneLiteFeatherNET/workflows/sbom-publish.yml@v2.9.1`. |
 | `close-invalid-prs.yml` | pull_request_target | Reuses the org workflow to close PRs opened from `main`. |
 
 We reuse the central `OneLiteFeatherNET/workflows` repository wherever possible so pipeline
-maintenance happens once for all projects. Plugin publishing uses the shared
-`gradle-plugin-publish.yml` workflow (proposed in `docs/org-workflows/`); SkyGrid-ng overrides its
-`publish-task` input to `cyclonedxBom` so only the SBOM task runs through Gradle, since it does not
-use that workflow's Modrinth/Hangar upload steps.
+maintenance happens once for all projects. The release workflow attaches the shaded jar itself, so a
+Dependency-Track outage cannot block a release. Only the SBOM upload uses the shared
+`sbom-publish.yml` workflow, in its own job. SkyGrid-ng does not use any Modrinth or Hangar step.
 
 ## release-please
 
