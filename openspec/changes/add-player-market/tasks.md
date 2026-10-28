@@ -54,7 +54,3 @@ modules' tests, for example `./gradlew :core:test :adapters:economy:test --max-w
 ## 7. Pull request
 
 - [ ] 7.1 Open the pull request titled `feat(market): add player marketplace with item escrow`, branched from the remote main branch after `add-admin-shop` is merged, and verify the PR title is a valid Conventional Commit
-
-## Workflow follow-up
-
-- Tick the checkboxes and archive the change in a separate follow-up pull request when the maintainer asks for it.

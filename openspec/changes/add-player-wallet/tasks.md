@@ -81,7 +81,3 @@ modules' tests, for example `./gradlew :api:test :core:test --max-workers=2`.
 ## 7. Pull request
 
 - [ ] 7.1 Open the pull request titled `feat(economy): add coin wallet with pay, task rewards and vault provider`, branched from the remote main branch after `add-season-lifecycle` and the Flyway fix are merged, and verify the PR title is a valid Conventional Commit
-
-## Workflow follow-up
-
-- Tick the checkboxes and archive the change in a separate follow-up pull request when the maintainer asks for it.
