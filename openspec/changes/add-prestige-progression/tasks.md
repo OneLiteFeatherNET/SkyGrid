@@ -36,6 +36,8 @@ tests and documentation. Run only the touched modules' tests with `--max-workers
 - [ ] 5.1 Write `PrestigeCommandsTest` against `RecordingCommandSource` and a stub `PrestigeUseCase` (failing first): which `Messages` factory fires per `PrestigeChange` case, the console guard, `up` without `confirm` never calls `raise`, `reset` alone never resets, `info` without argument lists only challenges with a ladder
 - [ ] 5.2 Implement `PrestigeCommands implements CloudCommandHandler`, the `Messages` factories, the `prestige-challenge-ids` suggestion provider in `CloudCommandRegistrar` and the set-binder entry in `CommandModule`; verify `./gradlew :adapters:command:test --max-workers=2` passes
 - [ ] 5.3 Add the `skygridng.prestige.*` and `skygridng.command.prestige.*` keys to `Bundle_en.properties` and `Bundle_de.properties`, add the help line in `HelpCommands`, declare the `skygridng.prestige` permission (default true) in `plugin.yml`, and document the commands in the user documentation; verify a missing German key fails the bundle test
+- [ ] 5.4 Write a red `PrestigeCommandsTest` case that the `up` preview without `confirm` names the season end as an absolute date and says the current step resets to 0 there, and that it changes no step; verify it fails
+- [ ] 5.5 Add the `Messages` key that renders the season end date in the viewer locale and make the 5.4 test pass
 
 ## 6. Challenge behaviors apply modifiers (delivery slice 15, `feat(challenge)`)
 

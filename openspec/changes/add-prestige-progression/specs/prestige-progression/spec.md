@@ -23,12 +23,13 @@ reached as an all-time record.
 
 ### Requirement: Raise preview requires confirmation
 When a player runs `/skygrid prestige up <challenge>`, the system SHALL show the next step's complete
-modifier list and state that the tasks of that step start fresh, together with a confirm action. The
-system MUST NOT change the current step before the player confirms.
+modifier list, state that the tasks of that step start fresh, and state that the current step resets to 0
+at the end of the season on its absolute date, together with a confirm action. The system MUST NOT change
+the current step before the player confirms.
 
 #### Scenario: Preview does not change the step
 - **WHEN** a player runs `/skygrid prestige up one_life` without confirming
-- **THEN** the preview lists every modifier of the next step and states that its tasks start fresh
+- **THEN** the preview lists every modifier of the next step, states that its tasks start fresh and states that the current step resets to 0 at the end of the season on its absolute date
 - **AND** the current step is unchanged
 
 #### Scenario: Confirmed raise changes the step
@@ -99,7 +100,8 @@ the system SHALL apply exactly that step's configured modifiers to that player a
 ### Requirement: Task completion is recorded per prestige step
 The system SHALL record task completion per progress scope, consisting of season, player, challenge and
 prestige step, and per task. A task completed at step N SHALL remain completed at step N after any
-raise or lower.
+raise or lower. This record tracks progress only; it never decides whether a reward is granted (see the reward
+requirement).
 
 #### Scenario: Completion survives a lower and raise
 - **WHEN** a player completes task T at step 2, lowers to step 1, and raises back to step 2
@@ -109,17 +111,30 @@ raise or lower.
 - **WHEN** a player completed task T at step 1 and is now at step 2
 - **THEN** task T is not completed at step 2
 
-### Requirement: Rewards are granted at most once per step
-The system SHALL grant a task's configured reward at most once per player, challenge, task and prestige
-step. The reward definition SHALL be the same at every step.
+### Requirement: Rewards are granted at most once per player, season, challenge and task
+The system SHALL grant a task's configured reward at most once per player, season, challenge and task, at any prestige step, with the same reward definition at every step.
 
-#### Scenario: Re-completing at a visited step grants nothing
-- **WHEN** a player who received the reward for task T at step 1 lowers to step 0, completes T again and the reward was already granted at step 1
-- **THEN** the reward for task T at step 0 is granted only if it was not granted at step 0 before
+#### Scenario: Re-completing after a lower grants nothing
+- **WHEN** a player who received the reward for task T at step 1 lowers to step 0 and completes T again
+- **THEN** no reward is granted
 
-#### Scenario: Same reward at every step
-- **WHEN** a player completes task T for the first time at step 2
-- **THEN** the reward granted equals the reward configured for task T, the same as at step 0
+#### Scenario: Same reward definition
+- **WHEN** a player completes task T for the first time in the season
+- **THEN** the reward granted equals the reward configured for task T, whatever the step
+
+### Requirement: Higher steps pay only in recognition
+A completion at a higher step SHALL NOT grant the reward again. It SHALL count only in recognition, shown as the current and highest step.
+
+#### Scenario: Completion at a higher step grants nothing
+- **WHEN** a player who received the reward for task T at step 0 completes T at step 1
+- **THEN** no reward is granted and the current and highest step are shown in `info`
+
+### Requirement: Currency credit key has no prestige step
+The currency reward credit key SHALL be `task:<seasonId>:<challengeId>:<taskId>:<playerId>`, with no prestige step, so a credit is paid at most once per season, challenge, task and player.
+
+#### Scenario: Currency credit key has no step
+- **WHEN** a completion of task T with a currency reward is recorded at step 2 and the player already has a credit under `task:<seasonId>:<challengeId>:<taskId>:<playerId>`
+- **THEN** no second credit is posted
 
 ### Requirement: No reward, modifier or step derives from behavior signals
 The system MUST NOT derive a reward, its magnitude, a modifier or a prestige step from session length,

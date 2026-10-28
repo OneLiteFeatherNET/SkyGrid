@@ -50,12 +50,11 @@ join SHALL NOT create a second starting transaction.
 - **THEN** no new transaction is posted and the balance is unchanged
 
 ### Requirement: Own balance display
-The system SHALL show a player their own balance, formatted with the configured singular or plural currency name,
-when the player runs `/balance` or its alias `/bal`.
+The system SHALL show a player their own balance, formatted with the configured singular or plural currency name, together with the date on which the balance resets (the end of the active season, as an absolute date in the viewer's locale), when the player runs `/balance` or its alias `/bal`.
 
 #### Scenario: Player checks own balance
 - **WHEN** a player with 1 coin runs `/balance`
-- **THEN** the message shows the balance with the singular currency name
+- **THEN** the message shows the balance with the singular currency name and the absolute date of the season end on which it resets
 
 ### Requirement: Balance of another player
 The system SHALL show the balance of another player only to a sender holding `skygridng.economy.balance.others`.
@@ -77,8 +76,7 @@ show a cached balance as the current balance.
 - **THEN** the player sees the localized "economy unavailable" message and no balance value
 
 ### Requirement: Atomic payment
-The system SHALL execute `/pay <player> <amount>` as one database transaction that debits the payer and credits the
-recipient, or changes neither balance.
+The system SHALL execute `/pay <player> <amount>` as one database transaction that debits the payer and credits the recipient, or changes neither balance. When the amount is above `economy.pay.confirmPercent` percent of the payer's balance (default 50), the system SHALL debit nothing until the payer runs `/pay <player> <amount> confirm`, and SHALL show the amount and the payer's balance after the payment before that.
 
 #### Scenario: Successful payment
 - **WHEN** a payer with enough coins pays a recipient who has joined the server
@@ -87,6 +85,18 @@ recipient, or changes neither balance.
 #### Scenario: Failure during payment
 - **WHEN** the database fails after the debit but before the commit
 - **THEN** neither balance changes
+
+#### Scenario: Payment above the confirm share without confirm
+- **WHEN** a payer with 100 coins runs `/pay <player> 60`
+- **THEN** nothing is debited and the message shows 60 and the balance of 40 after the payment
+
+#### Scenario: Confirmed payment above the share
+- **WHEN** a payer with 100 coins runs `/pay <player> 60 confirm`
+- **THEN** the payer is debited 60 and the recipient is credited 60 in one transaction
+
+#### Scenario: Payment at the share needs no confirm
+- **WHEN** a payer with 100 coins runs `/pay <player> 50`
+- **THEN** the payment is processed without `confirm`
 
 ### Requirement: Payment rejections for funds
 The system SHALL reject a payment whose amount exceeds the payer's balance and SHALL echo the amount and the payer's
@@ -198,6 +208,17 @@ The system SHALL NOT update or delete any ledger transaction or posting. A corre
 #### Scenario: Correcting a mistaken give
 - **WHEN** an admin reverses a wrong give
 - **THEN** a new transaction debits the same account by the same amount and the original rows remain unchanged
+
+### Requirement: Ledger actor for every transaction
+The system SHALL record an actor on every ledger transaction: the payer's UUID for `/pay`, the acting admin's UUID or `console` for admin commands, `plugin:<name>` or `plugin:unknown` for Vault calls, and `system` for starting balances and season resets. The `audit` report SHALL count the transactions of the active season per actor, so console and plugin grants are identifiable.
+
+#### Scenario: Console grant is identifiable
+- **WHEN** the console gives 10 coins to a player
+- **THEN** the transaction records the actor `console` and `audit` counts it under `console`
+
+#### Scenario: Plugin deposit is identifiable
+- **WHEN** plugin "Shop" deposits 5 coins through Vault
+- **THEN** the transaction records the actor `plugin:Shop` and `audit` counts it under `plugin:Shop`
 
 ### Requirement: Balanced postings
 The system SHALL reject any transaction whose postings do not sum to zero, contain a zero delta, or name the same account twice.
@@ -379,9 +400,8 @@ balance equals the sum of its postings, naming each mismatch. The command SHALL 
 - **THEN** the report names that account as a mismatch
 
 ### Requirement: No real-money coins
-The plugin SHALL NOT offer any command, GUI or API that converts coins into real-world money. The README SHALL state that
-coins are never sold for real money.
+The plugin SHALL NOT offer any command, GUI or API that converts coins into real-world money. The README SHALL state that coins are never sold for real money, and SHALL state: "Granting coins, shop items or prestige for real money (store plugins, `eco give`, Vault deposits) violates the Minecraft EULA and is unsupported."
 
 #### Scenario: README statement
 - **WHEN** the README is read
-- **THEN** it states that coins are never sold for real money
+- **THEN** it states that coins are never sold for real money, and that granting coins, shop items or prestige for real money (store plugins, `eco give`, Vault deposits) violates the Minecraft EULA and is unsupported

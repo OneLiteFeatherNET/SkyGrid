@@ -90,16 +90,21 @@ they are never carried into the next season, the same as the inventory they woul
 1. **Drives.** Ownership (items in a shop) and accomplishment (buying what the grid lacks). Prices are fixed; there is no
    random stock, no crate and no timed restock.
 2. **Transparency.** Every price, quantity and the balance are shown in the GUI before a click; the buy confirm names
-   the balance after the purchase.
+   the balance after the purchase and, in the final 24 hours of a season, the absolute season end and that unclaimed
+   items are lost at that time (spec: Buy confirm states the season end).
 3. **Bartle.** Explorers use the catalogue as a guide to what the grid holds; achievers and socializers are not
    affected by the shop.
 4. **Adaptive rewards.** None; shop prices are static configuration.
-5. **Late joiners.** Shop prices do not depend on how early a player joined; mailbox items expire with the season, so a
-   late joiner cannot be disadvantaged by retained stock.
+5. **Late joiners.** Shop prices do not depend on how early a player joined. Mailbox items that are not claimed by the
+   season end expire with the season. That is a loss, so it is communicated three ways: on join (pending count and
+   absolute end date), in every season announcement (the player's own pending count), and on the buy confirm view in
+   the final 24 hours. Verdict: **pass, conditional on those three communications**.
 6. **Outside observer.** Shops trade only in-game items for in-game coins; no real-money path.
 7. **Metrics.** Share of players who bought or sold at least once per week; count of pending deliveries older than one
-   day (should trend to zero); count of journal reconciliations that discarded an intent (should stay near zero).
-8. **Timers.** No timer or countdown in the shop. Pending deliveries wait without expiring during a season.
+   day (should trend to zero); count of journal reconciliations that discarded an intent (should stay near zero); count
+   of pending deliveries expired at season end, per season.
+8. **Timers.** No timer or countdown in the shop. Pending deliveries wait without expiring during a season; the season end
+   is shown as an absolute date in the places listed in item 5, not as a countdown.
 
 ## Abuse and security review
 

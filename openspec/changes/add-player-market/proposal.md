@@ -15,12 +15,14 @@ from circulation (epic J1, delivery slice 24).
 - Add `player-market`: `/market sell <price>` moves the held stack into escrow and creates a listing for 48 hours.
   A player may hold at most 10 listings. Prices stay within configured bounds and the serialized item within a size cap.
 - Add the market GUI (`/market`) that pages listings newest first, filters by item id with `/market search <item>`,
-  and shows price, tax and the seller's net before a seller confirms a listing.
+  and shows price, tax and the seller's net before a seller confirms a listing, together with the absolute
+  expiry date and, when the season ends first, that the listing closes at season end and the item is not returned.
 - Buying a listing is one database transaction: the buyer is debited, the seller is credited the price minus a
   5 percent tax, the tax is posted to `system:market_tax` (removed from circulation), the listing is marked sold and
   the item is queued in the buyer's mailbox. Exactly one of two concurrent buyers succeeds.
 - Cancelling a listing and listing expiry (after 48 hours) return the item to the seller's mailbox.
-- At season end, every active or pending listing closes into the ending season's mailbox.
+- At season end, every active or pending listing closes. Its item is not returned: it is queued in the ending
+  season's mailbox, which expires with the season.
 - Add the `V3` migration for `market_listing` in the economy migration folder.
 
 No **BREAKING** changes. The market is new and no existing behavior changes.

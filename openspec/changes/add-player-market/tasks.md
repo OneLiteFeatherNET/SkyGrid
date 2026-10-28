@@ -42,6 +42,8 @@ modules' tests, for example `./gradlew :core:test :adapters:economy:test --max-w
 
 - [ ] 5.1 Write a test that the season transition closes active and pending listings of the ending season into the mailbox with source `market_season_end`, and that closed listings leave the market, and verify it fails
 - [ ] 5.2 Implement the season-end closure hook with the reconciliation of pending escrow first and verify the 5.1 test passes
+- [ ] 5.3 Write a test that a listing whose expiry falls after the season end closes at the season end with its item lost, and that a listing expiring before the season end returns its item to the seller's mailbox, and verify it fails
+- [ ] 5.4 Implement the ordering of expiry against the season end in the closure and verify the 5.3 test passes
 
 ## 6. Market GUI and commands (delivery slice 24, part 6)
 
@@ -49,7 +51,9 @@ modules' tests, for example `./gradlew :core:test :adapters:economy:test --max-w
 - [ ] 6.2 Implement `MarketCommands` for those subcommands and verify the 6.1 tests pass
 - [ ] 6.3 Write MockBukkit tests that the listing confirm view shows price, tax and net, that creative sells are refused, that a full inventory keeps a purchase in the mailbox, and that the GUI shows no countdown text, and verify they fail
 - [ ] 6.4 Implement `MarketView`, the listing confirm view, the expiry task and the permission `skygridng.economy.market` and verify the 6.3 tests pass
-- [ ] 6.5 Document the market, the 5 percent tax and the 48 hour listings in the README and verify the README states that coins are never sold for real money
+- [ ] 6.5 Write MockBukkit tests that the listing confirm view states the absolute season end and that the item is not returned when the season ends first, shows only the absolute expiry date otherwise, and that a seller's own listing view shows each absolute expiry date, and verify they fail
+- [ ] 6.6 Implement those lines in `MarketView` and the listing confirm view and verify the 6.5 tests pass
+- [ ] 6.7 Document the market, the 5 percent tax and the 48 hour listings in the README and verify the README states that coins are never sold for real money
 
 ## 7. Pull request
 

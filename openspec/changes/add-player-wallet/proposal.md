@@ -20,10 +20,14 @@ provider and a ledger integrity check.
 - Add `adapters/economy` with its own Flyway folder `db/migration/economy`, its own history table
   `flyway_history_economy` and an append-only double-entry ledger in PostgreSQL (accounts,
   transactions, postings). Only the wallet tables are created by this change.
-- Add `/balance` (alias `/bal`), `/pay <player> <amount>` and the audited admin commands
-  `/skygrid eco give|take|set|history`, with permissions, a pay cooldown and a confirmation for `set`.
+- Add `/balance` (alias `/bal`), which also shows the date the balance resets, `/pay <player> <amount>` and
+  the audited admin commands `/skygrid eco give|take|set|history`, with permissions, a pay cooldown, a
+  confirmation for `set`, and a confirmation for a payment above `economy.pay.confirmPercent` (default 50)
+  percent of the payer's balance.
 - Add `/skygrid eco audit` to verify that postings sum to zero and every balance equals the sum of
-  its postings.
+  its postings, and that counts the transactions per actor.
+- Record an actor on every ledger transaction (player, admin, `console`, `plugin:<name>`,
+  `plugin:unknown` or `system`), so console and plugin grants are identifiable.
 - Add `Reward.CurrencyGrant` so a challenge task can reward coins. The credit is keyed by an
   idempotent `RewardKey` and is re-applied on join when a crash lost it.
 - Add a Vault economy provider for the legacy `net.milkbowl.vault.economy.Economy` and for the
@@ -33,7 +37,7 @@ provider and a ledger integrity check.
   `SEASON_RESET` transaction per account that zeroes its balance.
 - Add the `economy` section to the configuration, with currency names, starting balance, maximum
   balance, pay settings, the root-label toggle and Vault settings.
-- State in the README that coins are never sold for real money.
+- State in the README that coins are never sold for real money, and quote this sentence: "Granting coins, shop items or prestige for real money (store plugins, `eco give`, Vault deposits) violates the Minecraft EULA and is unsupported."
 - Out of scope (later changes): mailbox, admin shop, player market.
 
 No **BREAKING** changes. The `RewardGrantor` port gains a `RewardKey` parameter, which is internal.

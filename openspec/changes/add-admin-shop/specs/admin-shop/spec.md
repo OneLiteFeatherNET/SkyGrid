@@ -125,6 +125,13 @@ The system SHALL cancel every click and drag that touches a shop view, and SHALL
 - **WHEN** a player shift-clicks an item in the shop view
 - **THEN** no item moves and no balance changes
 
+### Requirement: Buy confirm states the season end
+During the final 24 hours of the active season, the buy confirm view SHALL state the absolute season end and that items not claimed by then are lost.
+
+#### Scenario: Buy in the final day
+- **WHEN** a player opens the buy confirm view 2 hours before the season end
+- **THEN** the view states the absolute season end and that unclaimed items are lost at that time
+
 ### Requirement: Shop permission
 The system SHALL gate `/shop` with `skygridng.economy.shop`, which is granted to all players by default.
 

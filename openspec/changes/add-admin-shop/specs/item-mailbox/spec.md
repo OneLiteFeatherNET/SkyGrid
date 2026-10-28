@@ -45,12 +45,15 @@ the others in the mailbox.
 - **THEN** one stack is delivered and the other remains pending
 
 ### Requirement: Reconciliation on join
-When a player joins, the system SHALL reconcile that player's pending deliveries and pending item movements before it delivers
-anything new.
+When a player joins, the system SHALL reconcile that player's pending deliveries and pending item movements before it delivers anything new. After reconciliation, when the player has pending mailbox items, the system SHALL tell the player the pending item count and the absolute season end date at which unclaimed items expire.
 
 #### Scenario: Join with pending deliveries
 - **WHEN** a player with pending deliveries joins
 - **THEN** reconciliation runs first and new deliveries follow only after it completes
+
+#### Scenario: Join with pending items
+- **WHEN** a player with 2 pending items joins during season `s02`
+- **THEN** the player is told the count 2 and the absolute end date of `s02`
 
 ### Requirement: Inventory journal
 Every movement of a stack between a player's inventory and the database SHALL write a journal entry, stored in the player's data
@@ -100,11 +103,15 @@ verification fails, the system SHALL discard the pending row and SHALL change no
 - **THEN** the pending row is discarded and no balance or item changes
 
 ### Requirement: Season end for mailbox items
-The system SHALL expire pending mailbox items with the season, under the inventory policy of `add-season-lifecycle`, and SHALL NOT carry them into the next season.
+The system SHALL expire pending mailbox items with the season, under the inventory policy of `add-season-lifecycle`, and SHALL NOT carry them into the next season. An expiry is a loss, so the system SHALL communicate it before the season end: on join (pending count and absolute end date), in every season announcement (which states the player's own pending count), and on the shop buy confirm view in the final 24 hours.
 
 #### Scenario: Season ends with pending items
 - **WHEN** a season ends and a player has pending mailbox items
 - **THEN** those items are not delivered in the next season
+
+#### Scenario: Expiry communicated in advance
+- **WHEN** a player has 3 pending mailbox items during the final 7 days of the season
+- **THEN** the season announcements and the join message state the count 3 and the absolute season end date
 
 ### Requirement: Mailbox is season scoped
 The system SHALL store every mailbox row and sale intent with its season id.

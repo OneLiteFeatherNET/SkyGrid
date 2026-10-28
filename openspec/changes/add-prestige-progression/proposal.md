@@ -22,7 +22,8 @@ behaves.
 - Players keep a current prestige step per challenge and season. Step 0 is the challenge as it ships
   today and is the default for everyone. The all-time highest step is kept as a record.
 - `/skygrid prestige up <challenge>` shows the next step's complete modifier list, states that its
-  tasks start fresh, and waits for `confirm`. Nothing changes before confirmation.
+  tasks start fresh and that the current step resets to 0 at the season end (absolute date), and waits
+  for `confirm`. Nothing changes before confirmation.
 - A raise by one step requires every configured task of the challenge to be completed at the current
   step. It is rejected while the challenge is running, at the ladder's last step, or while a task is
   missing; the rejection names the missing tasks or the reason.
@@ -30,7 +31,8 @@ behaves.
   never touches the highest step or any recorded task completion.
 - Task completions are recorded per progress scope (season, player, challenge, prestige step). A task
   completed at step N stays completed at step N after any raise or lower. A task reward is granted at
-  most once per player, challenge, task and step, with the same reward definition at every step.
+  most once per player, season, challenge and task, at any step; a higher step pays no reward again and
+  counts only in recognition. The currency credit key has no step.
 - While a prestige step above 0 is current, its modifiers apply to that player only, and only in a
   SkyGrid world while the challenge is active. Modifiers are a fixed list of typed, bounded
   difficulty modifiers (for example `max_health`, `damage_taken_multiplier`, `denied_stations`).

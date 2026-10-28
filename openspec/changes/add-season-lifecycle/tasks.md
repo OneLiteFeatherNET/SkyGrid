@@ -41,13 +41,15 @@ modules' tests with `--max-workers=2`, for example `./gradlew :core:test --max-w
 
 ## 5. Timeline and transition state machine (delivery slice 6)
 
-- [ ] 5.1 Write red `SeasonTimelineTest` with fixed `Instant`s: next action for each phase combination, announcements at 24h, 1h and 5m exactly once each, no-next-season warning, WarnNoNext daily; verify it fails
+- [ ] 5.1 Write red `SeasonTimelineTest` with fixed `Instant`s: next action for each phase combination, announcements at season start, 7 days before the end, 24h, 1h and 5m exactly once each, no-next-season warning, WarnNoNext daily; verify it fails
 - [ ] 5.2 Implement `SeasonTimeline` (pure, `Clock`-free, takes `Instant`s) returning `None`, `Announce`, `Prepare`, `Switch`, `Resume` and `WarnNoNext`; verify the tests from 5.1 pass
 - [ ] 5.3 Write red `SeasonTransitionTest` with in-memory fakes for `SeasonRunRepository`, `SeasonWorlds` (scriptable success, failure and false unload), `PlayerSeasonReset` and `SeasonAnnouncer`: `worldCreationFailureKeepsCurrentSeasonActive`, `resumeFromPreparedAfterBoundaryClosesOldSeason`, `challengeDeactivationIsCreditedToEndingSeason`, `persistsPhaseBeforeEachSideEffect`; verify they fail
 - [ ] 5.4 Implement `SeasonTransition` (one step per phase, persist before and after each side effect, idempotent step checks) and verify the tests from 5.3 pass
 - [ ] 5.5 Write red `SeasonServiceTest`: `secondTickDuringTransitionIsANoOp`, `advanceAndRetryNeverRunTwoTransitionsAtOnce`, `databaseDownRefusesEveryTransition`, `postponeShiftsOverlappingSeasons`; verify they fail
 - [ ] 5.6 Implement `SeasonService` (implements `SeasonAdminUseCase` and `CurrentSeason`, single-flight guard, cached active season, transition listeners, `SeasonTransitionListener#onSwitched` fired after the switch and before players move) and verify the tests from 5.5 pass
 - [ ] 5.7 Write red `SeasonServiceTest` cases for the restart table (B `PREPARING` with and without an existing folder, B `PREPARED` before and after T, B `ACTIVE` with A `CLOSING`, A `ARCHIVING` with both folders present); verify they fail, then implement the resume mapping and verify they pass
+- [ ] 5.8 Write red `SeasonServiceTest` cases `advanceConfirmSchedulesNoEarlierThanMinNotice` (the boundary is at least `season.advance.minNotice` after the command and the announcements are sent) and `advanceNowConfirmLogsActor` (a captured appender asserts the admin and the instant); verify they fail
+- [ ] 5.9 Implement the minimum-notice scheduling and the `now confirm` path in `SeasonService` and verify the 5.8 tests pass
 
 ## 6. Platform world rotation and lobby (delivery slice 7)
 
@@ -60,6 +62,8 @@ modules' tests with `--max-workers=2`, for example `./gradlew :core:test --max-w
 - [ ] 6.7 Write red bootstrap test `SkyGridNgPluginTest`: the plugin enables with an empty `seasons/` directory and behaves as legacy with no transition scheduled; verify it fails
 - [ ] 6.8 Implement the season-scoped `Predicate<World>` that narrows challenge logic to the active season world, and the void lobby as the `level-name` world in the bundled defaults; verify the test from 6.7 passes and `./gradlew :platforms:paper:test --max-workers=2` is green
 - [ ] 6.9 Write red test that challenge behaviours do not fire in a prepared but not yet active season world; verify it fails, then verify it passes after 6.8
+- [ ] 6.10 Write red `SeasonJoinListenerTest` cases: a player joining 3 days before the season end gets exactly one chat line with the absolute end date and the deleted and kept lists, and a player joining 10 days before gets none; verify they fail
+- [ ] 6.11 Implement the final-week join line in `SeasonJoinListener` and verify the 6.10 tests pass
 
 ## 7. Season commands (delivery slice 8)
 
@@ -70,6 +74,10 @@ modules' tests with `--max-workers=2`, for example `./gradlew :core:test --max-w
 - [ ] 7.5 Register the `season-ids` suggestion provider in `CloudCommandRegistrar` and change `ChallengeCommands` to the season-scoped tier reset; verify the tests from 7.3 pass
 - [ ] 7.6 Write red tests that `Messages.season*` renders in the `de` bundle for a `de` client and in `en` otherwise, with absolute dates in the viewer locale; verify they fail, then add the bundle entries and verify they pass
 - [ ] 7.7 Write red test that no sidebar or boss-bar countdown is rendered during a running season; verify it fails, then verify it passes with the announcement wiring
+- [ ] 7.8 Write red `SeasonCommandsTest` cases that `season info` shows the absolute end date and the deleted and kept lists, and that `season advance now confirm` delegates while `season advance confirm` does not start the transition; verify they fail
+- [ ] 7.9 Implement the reset-scope lines in `season info`, the `season.reset.deleted`, `season.reset.kept` keys in both bundles and the `now confirm` branch in `SeasonCommands`; verify the 7.8 tests pass
+- [ ] 7.10 Write red tests that each season announcement names the deleted list, the kept list and the recipient's own pending mailbox count, and that the season start and T-7d announcements are sent; verify they fail
+- [ ] 7.11 Implement the announcement content in `Messages.season*`, `BukkitSeasonAnnouncer` and the `season.final_week.join` key, and verify the 7.10 tests pass
 
 ## 8. Admin documentation, CloudNet and pull request (delivery slice 9)
 

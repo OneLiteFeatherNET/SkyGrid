@@ -62,8 +62,14 @@ creates only the three ledger tables in `V1`. The mailbox and shop intent tables
 `add-admin-shop`, and the market table in `V3` with `add-player-market`, so every PR ships only the tables it
 uses and merges on its own.
 
+**Actor.** Every transaction row stores its actor: the payer's UUID for `/pay`, the admin UUID or `console` for admin
+commands, `plugin:<name>` or `plugin:unknown` for Vault calls, and `system` for starting balances and season resets.
+`history` shows it and `audit` counts the transactions per actor, so console and plugin grants are identifiable.
+
 **Pay and admin commands.** `WalletService` validates the amount, applies a Clock-based per-player cooldown
-(`CooldownTracker`, evicted on quit) and builds the postings: pay debits the payer and credits the recipient;
+(`CooldownTracker`, evicted on quit) and builds the postings. A payment above `pay.confirmPercent` percent of the
+payer's balance is previewed with the balance after it and posted only on `confirm`, and `/balance` shows the date the
+balance resets (the active season end, from `add-season-lifecycle`). Pay debits the payer and credits the recipient;
 give debits `system:mint` and credits the player; take is the reverse; set posts the difference. Balance
 rejections never clamp.
 
@@ -92,7 +98,7 @@ receive, which keeps `adapters/command` framework free. A per-player in-flight s
 the same player.
 
 **Configuration.** A new `economy` section: currency singular and plural names, `startingBalance` (default 0),
-`maxBalance` (default 1000000000000 coins), `pay.cooldown` (default 2 s), `pay.maxAmount`, `vault.enabled`,
+`maxBalance` (default 1000000000000 coins), `pay.cooldown` (default 2 s), `pay.maxAmount`, `pay.confirmPercent` (default 50, integer 0 to 100), `vault.enabled`,
 `vault.priority`. Amounts are whole-coin strings parsed by the same parser as the commands. Market and shop keys
 are added by their own changes.
 
@@ -103,7 +109,7 @@ are added by their own changes.
 - [Double credit on retry or double click] → unique idempotency key, per-command key, in-flight guard.
 - [Admin or plugin minting money without a trace] → every give, take, set and Vault write is a ledger row with
   actor and reason; `history` and `audit` expose them. A malicious plugin with Vault access can still mint;
-  this is accepted and documented as server policy.
+  this is accepted. Each such grant is a ledger row with its actor (see Actor), and the README states that granting coins for real money violates the Minecraft EULA and is unsupported (I5 item 6).
 - [Vault cache returns a stale balance to a placeholder] → cache is read-only and TTL bound; writes never use it.
 - [Main-thread stalls from Vault writes] → single-row primary-key updates; slow writes are logged at 50 ms.
 - [Vault class missing at runtime] → Vault types referenced only by `VaultRegistrar`, which is loaded only when the
@@ -117,16 +123,19 @@ are added by their own changes.
 
 1. **Drives.** Accomplishment (completing tasks earns coins) and ownership (a visible balance). No randomness, no
    crate or gambling sink, no balance decay and no upkeep. Any future lottery is a new I5 review.
-2. **Transparency.** Fixed prices and amounts only; `/pay` confirms the amount and the balance after it; admin
-   `set` shows the delta before it is confirmed. No hidden fees in this change.
+2. **Transparency.** Fixed prices and amounts only; `/pay` confirms the amount and the balance after it; a payment above
+   `pay.confirmPercent` percent of the payer's balance (default 50) is previewed with the balance after it and debited
+   only on `confirm`; admin `set` shows the delta before it is confirmed; `/balance` shows the date the balance resets
+   (the active season end, as an absolute date). No hidden fees in this change.
 3. **Bartle.** Achievers (earning), socializers (paying). The balance leaderboard is deferred because it rewards
    hoarding; the leaderboard is not part of this change.
 4. **Adaptive rewards.** None. Currency reward amounts are static configuration and never react to struggle or
    disengagement.
 5. **Late joiners.** A persistent balance would compound early advantage, so balances are season scoped and reset
    at season end with an audited `SEASON_RESET`; a new season starts everyone at the starting balance.
-6. **Outside observer.** The plugin has no path that sells coins for money, and the README states that. Vault lets
-   other plugins do so; that is server policy, documented in the README.
+6. **Outside observer.** The plugin has no path that sells coins for money. Vault lets other plugins move coins, which
+   the plugin cannot prevent, so the README states: "Granting coins, shop items or prestige for real money (store plugins, `eco give`, Vault deposits) violates the Minecraft EULA and is unsupported." Every such grant is a ledger row with its
+   actor, so `history` and `audit` show it. Verdict: **pass with mitigation**.
 7. **Metrics for `playtest-qa-coordinator`.** Balance Gini per week (fail above 0.8), share of active players with a
    trade, median coins of first-week players against the server median, and `audit` mismatch count (must be 0).
 8. **Timers.** The pay cooldown is a 2 s anti-spam guard, not a countdown pressure on the player. No timed sale

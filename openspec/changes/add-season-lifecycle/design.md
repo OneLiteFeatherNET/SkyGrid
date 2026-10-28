@@ -152,7 +152,8 @@ Progress migrations, applied in the existing adapters (archive by key, no copy):
 
 Happy path, current season A, next season B:
 
-1. **Announce** (T-24h, T-1h, T-5m): `SeasonAnnouncer#upcoming`. No state change.
+1. **Announce** (T-7d, T-24h, T-1h, T-5m before the boundary): `SeasonAnnouncer#upcoming`, with the
+   reset scope and the recipient's pending mailbox count (I5 item 2). No state change.
 2. **Prepare** (T minus `prepareLead`): resolve the seed; persist `season_run(B, key, seed, PREPARING)`
    before any world call; on the main thread `SeasonWorlds#prepare`; on success persist `PREPARED`.
    Players cannot reach B yet.
@@ -199,6 +200,10 @@ Failure handling:
 - **Server stops during world creation**: the half-written folder is reused on resume, because the
   seed is identical and Paper loads an existing folder rather than regenerating it.
 
+**Advance.** `advance confirm` schedules the boundary at an instant no earlier than now plus
+`season.advance.minNotice` (default `PT24H`) and sends the upcoming announcements for it. `advance now confirm`
+is the only path that starts the transition at once. Both paths log the acting admin and the instant.
+
 ### D7. Platform wiring (`platforms.olf.season`)
 
 - World creation: `WorldCreator.ofKey(NamespacedKey.fromString(worldKey))`, `.seed(seed)`,
@@ -218,18 +223,18 @@ Failure handling:
   and the resulting world step is handed back to the main thread.
 - Joins: `SeasonJoinListener` on `PlayerSpawnLocationEvent` (the event `SpreadSpawnListener` already
   uses) routes a player whose spawn world is not the active season world into it, and applies the
-  one-time reset.
+  one-time reset. It also sends the final-week join line (I5 item 2) when the join falls in the last 7 days.
 - Challenge scoping: the existing `Predicate<World>` (generator is `HexagonalChunkGenerator`) narrows
   to "is the active season world" when seasons are configured, so a prepared but not yet active world
   never triggers challenge logic.
 - Commands (`SeasonCommands`, Cloud annotations, `CommandSource`, no Bukkit): `season info` (permission
   `skygridng.season`, default true), `season history [player]` (other players need
-  `skygridng.admin`), `season list|status|retry`, `season advance [confirm]`,
+  `skygridng.admin`), `season list|status|retry`, `season advance [confirm]` and `season advance now confirm`,
   `season postpone <duration> confirm`, `season reload [confirm]` (admin). Suggestion provider
   `season-ids` is registered in `CloudCommandRegistrar`.
 - Messages: `Messages.season*` factory methods with keys such as `season.info`,
   `season.history.entry`, `season.status`, `season.announce.upcoming`, `season.announce.started`,
-  `season.advance.confirm`, `season.transition.failed`, `season.no_next` in `Bundle_en.properties`
+  `season.advance.confirm`, `season.transition.failed`, `season.no_next`, `season.reset.deleted`, `season.reset.kept`, `season.final_week.join` in `Bundle_en.properties`
   and `Bundle_de.properties`. Dates use the viewer locale.
 
 ### D8. Configuration
@@ -246,7 +251,7 @@ challenges: [one_life, no_crafting_table]    # must exist in challenges/; may be
 ```
 
 `config.yml` gains an optional `season` block (`prepareLead`, default `PT15M`; `archive.directory`,
-relative to the server root or absolute; `archive.compress`, default false). The bundled default ships
+relative to the server root or absolute; `archive.compress`, default false; `advance.minNotice`, default `PT24H`). The bundled default ships
 no active season: the example is written as `seasons/example.yml.disabled`, which is not a supported
 extension, so it is not loaded. `seasons/` absent: the example is seeded; `seasons/` present but
 empty: it stays empty, so an operator can opt out.
@@ -299,53 +304,67 @@ external BlueMap job; a shared read-only mount is the simplest contract.
 
 Applied item by item from `.claude/skills/challenge-season-system/SKILL.md`, Step 2.
 
-Mechanic in one sentence: fixed-length seasons that reset the world and per-player progress to zero on
-a published date, archiving past achievements, to give everyone a fair, fresh start and a predictable
-content cadence.
+Mechanic in one sentence: fixed-length seasons. At the season end the player's inventory, ender chest, XP,
+coins, pending mailbox items, market listings and current prestige step are deleted, and the next season
+starts everyone from zero on a new world. Tier and task history, the archived world and the highest prestige
+step are kept.
 
-1. **Octalysis drives.** Engages Development and Accomplishment (tiers, tasks), Epic Meaning (season
-   themes), Empowerment (fresh world exploration) and light Scarcity (time-boxed season). No
-   Unpredictability. Loss and Avoidance appear only as "progress resets". Restated without loss: the
-   reset is implemented and presented as an archive ("your Season 1 record is kept"), and history is
-   viewable (I3d AC3). Verdict: **pass**.
-2. **Full transparency.** Start, end, preset, challenges and reset scope are shown in `season info`
-   with absolute dates (I3e AC1). Announcements state exactly what resets. Nothing relies on players
-   misjudging timing or cost. Verdict: **pass**.
-3. **Bartle types.** Achievers (tasks, tiers), Explorers (new seed and preset each season),
-   Socializers (everyone restarts together). Killers are not served, and no PvP mechanic is added, so
-   the season does not hurt them; it does not target them. Verdict: **pass**, note for
-   `game-designer`.
-4. **Reward adaptation.** The mechanic changes no reward rate or magnitude, on any signal. No
-   compensation loop. Verdict: **pass**. The prestige change must re-run this item.
-5. **Late-join and irregular players.** The Hypixel SkyBlock Bingo precedent applies directly:
-   everyone starts from zero at season start, so a late joiner loses time, not relative standing.
-   Nothing earned is taken away; it is archived and shown in `history`. Risk: the vanilla reset
-   (decision 1) removes items built up in the old world. Verdict: **pass, conditional on decision 1
-   being announced** in season info and in the upcoming-transition announcement (I3e AC2).
-6. **Skeptical observer.** "The server wipes your stuff every eight weeks" is a plausible one-line
-   criticism. Mitigations: wipes are announced in advance, the old world is archived (viewable via
-   BlueMap), and history is kept. No "last chance" offers and no purchasable carry-over. Verdict:
+Reset scope, the one wording used by `season info`, every season announcement and the final-week join line:
+
+- Deleted: inventory, ender chest, XP, coins, pending mailbox items, market listings, current prestige step.
+- Kept: tier and task history, archived world, highest prestige step.
+
+1. **Octalysis drives.** Engages Development and Accomplishment (tiers, tasks), Epic Meaning (season themes),
+   Empowerment (fresh world exploration) and light Scarcity (time-boxed season). No Unpredictability. Loss is
+   real and is not presented as an archive: the items and coins in the deleted list are gone. What is kept is
+   tier and task history, viewable through `history` (I3d AC3), the archived world and the highest prestige step.
+   Both lists appear in `season info` and in every announcement, so the loss is known before it happens.
+   Verdict: **pass, conditional on the announcements in item 2**.
+2. **Full transparency.** The conditions are specified, not left to the implementer:
+   - `season info` shows the display name, the challenges, the absolute end date and both lists (I3e AC1).
+   - Season announcements are sent once each at the season start, 7 days before the season end, and 24 hours,
+     1 hour and 5 minutes before a transition boundary (I3e AC2). Each names the absolute end date, the deleted
+     list, the kept list and the recipient's own pending mailbox count.
+   - A player who joins during the last 7 days of the season gets one chat line with the absolute end date and
+     both lists, so a late joiner is not surprised by the reset.
+   - `advance confirm` schedules the boundary at least `season.advance.minNotice` (default 24 hours) after the
+     command, so the announcements always have that notice. `advance now confirm` skips it on purpose and is
+     logged with the acting admin.
+   Nothing relies on players misjudging timing or cost. Verdict: **pass**.
+3. **Bartle types.** Achievers (tasks, tiers), Explorers (new seed and preset each season), Socializers
+   (everyone restarts together). Killers are not served, and no PvP mechanic is added, so the season does not
+   hurt them; it does not target them. Verdict: **pass**, note for `game-designer`.
+4. **Reward adaptation.** The mechanic changes no reward rate or magnitude, on any signal. No compensation
+   loop. Verdict: **pass**. The prestige change must re-run this item.
+5. **Late-join and irregular players.** The Hypixel SkyBlock Bingo precedent applies to standing: everyone
+   starts from zero at season start, so a late joiner loses time, not relative standing. The reset does take
+   things away: the inventory, ender chest, XP, coins, pending mailbox items, market listings and the prestige
+   step in the deleted list (decision 1). That loss is not archived. It is communicated before it happens: the
+   announcements in item 2 reach online players, the final-week join line reaches late joiners, and pending
+   mailbox items are counted on join (`item-mailbox`). Risk: the vanilla reset removes items built up in the old
+   world. Verdict: **pass, conditional on the announcements in item 2 and the final-week join line**.
+6. **Skeptical observer.** "The server wipes your stuff every eight weeks" is a plausible one-line criticism.
+   Mitigations: every wipe is announced with its deleted and kept lists, the old world is archived (viewable via
+   BlueMap), and tier and task history is kept. No "last chance" offers and no purchasable carry-over. Verdict:
    **pass with mitigation**.
-7. **Falsifiable metric** (for `playtest-qa-coordinator`): (a) at least 60 percent of players active in
-   the last two weeks of season N return within seven days of season N+1 start; (b) join-to-first-task
-   time for players joining after week 4 is within 20 percent of week-1 joiners; (c) zero reports of
-   players stranded in an archived world. Failing (a) or (b) means the reset punishes rather than
-   refreshes. Verdict: **defined**.
-8. **Countdown.** The season end is an organizational, sports-season style timer. Announcements are
-   capped at three, with no sidebar or boss-bar countdown (I3e AC4) and no per-player timer.
-   Verdict: **pass**.
+7. **Falsifiable metric** (for `playtest-qa-coordinator`): (a) at least 60 percent of players active in the last
+   two weeks of season N return within seven days of season N+1 start; (b) join-to-first-task time for players
+   joining after week 4 is within 20 percent of week-1 joiners; (c) zero reports of players stranded in an
+   archived world. Failing (a) or (b) means the reset punishes rather than refreshes. Verdict: **defined**.
+8. **Countdown.** The season end is an organizational, sports-season style timer. Announcements are sent at five
+   fixed instants per boundary (season start, T-7d, T-24h, T-1h, T-5m), each once, with no sidebar or boss-bar
+   countdown (I3e AC4) and no per-player timer. Verdict: **pass**.
 
-Structural precedent: a season is an Origins-style named bundle of UHC-style modifiers (the challenge
-set), combined with the Bingo season-reset model. The Bingo reset is a confirmed precedent; the rest
-is inference.
+Structural precedent: a season is an Origins-style named bundle of UHC-style modifiers (the challenge set),
+combined with the Bingo season-reset model. The Bingo reset is a confirmed precedent; the rest is inference.
 
-Gate: `player-psychology-designer` signs off this section before the season lifecycle is implemented
-(see Open Questions).
+Gate: `player-psychology-designer` signs off this section before the season lifecycle is implemented (see Open
+Questions).
 
 ## Risks / Trade-offs
 
-- [Vanilla reset removes player items] → announce decision 1 in advance (I3e AC2), archive the old
-  world, keep history. The I5 item 5 verdict depends on this.
+- [Vanilla reset removes player items] → announce the deleted and kept lists in advance (I5 item 2), archive the
+  old world and keep history. Items in the deleted list are not archived. The I5 item 5 verdict depends on this.
 - [Transition stalls on world generation at the boundary] → pre-create with `prepareLead` (I3b AC7),
   and on failure continue the current season (I3b AC4, D6 failure handling).
 - [Crash between two steps repeats or skips work] → every step persists its phase first and checks
@@ -371,7 +390,7 @@ static state.
 Unit, `core` (no server, no database, milliseconds):
 
 - `SeasonTimelineTest`: next action for each phase combination at fixed instants; overlap and
-  unknown-id rejection; no-next-season warning; announcements at 24h, 1h and 5m exactly once each.
+  unknown-id rejection; no-next-season warning; announcements at season start, T-7d, T-24h, T-1h and T-5m exactly once each.
 - `SeasonServiceTest` and `SeasonTransitionTest`: in-memory fakes for `SeasonRunRepository` and
   `SeasonWorlds` (scriptable success, failure and false unload), `PlayerSeasonReset` and
   `SeasonAnnouncer`; a fixed `Clock` per step; a constant `LongSupplier`. Example names:
@@ -392,7 +411,7 @@ Adapters:
 - Migration test (extend `verification/PostgresAdapterMigrationTest` from the Flyway fix): all three
   adapters migrate one database; legacy rows land in `legacy`, with row counts unchanged.
 - `SeasonCommandsTest` with `RecordingCommandSource`: delegation, which `Messages.season*` fired, and
-  confirm gating for `advance`, `postpone` and `reload`.
+  confirm gating for `advance`, `postpone` and `reload`; `advance now confirm` logs the acting admin (captured appender).
 
 Platform (MockBukkit v4, fresh `ServerMock` per test, ticks driven with `performTicks(n)`, no sleeps):
 

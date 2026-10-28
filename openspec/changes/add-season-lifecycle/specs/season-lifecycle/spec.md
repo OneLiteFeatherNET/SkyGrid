@@ -322,23 +322,49 @@ When existing data is migrated, the system SHALL assign all pre-season rows to t
 
 ### Requirement: Season info display
 
-When a player runs `/skygrid season info`, the system SHALL show the season display name, its active challenges and its end date as an absolute date in the viewer's locale.
+When a player runs `/skygrid season info`, the system SHALL show the season display name, its active challenges, its absolute end date in the viewer's locale, and the reset scope as two lists: the deleted items and the kept items.
 
 #### Scenario: Player views the running season
 
 - **WHEN** a player runs `/skygrid season info` during season `s01`
-- **THEN** the output shows the display name, the active challenges and the end date of `s01`
+- **THEN** the output shows the display name, the active challenges, the end date of `s01` and the deleted and kept lists
 - **AND** the end date is formatted in the viewer's locale
 
-### Requirement: Upcoming transition announcements
+### Requirement: Season announcements
+The system SHALL send each season announcement once to every online player at the season start, 7 days before the season end, and 24 hours, 1 hour and 5 minutes before a transition boundary.
 
-The system SHALL announce an upcoming transition at most three times, at 24 hours, 1 hour and 5 minutes before the boundary, and each announcement SHALL state that progress is archived, not lost.
-
-#### Scenario: Three announcements per transition
+#### Announcements before a boundary
 
 - **WHEN** the boundary of a transition is approaching
 - **THEN** exactly one announcement is sent at 24 hours, one at 1 hour and one at 5 minutes before the boundary
-- **AND** each announcement states that progress is archived, not lost
+- **AND** each announcement states the deleted list and the kept list
+
+#### Announcements at season start and in the final week
+
+- **WHEN** a season starts, and when 7 days remain before its end
+- **THEN** one announcement is sent at each of these instants, stating the deleted list, the kept list and the absolute end date
+
+### Requirement: Announcement content
+Each season announcement SHALL state the absolute season end date, the deleted list (inventory, ender chest, XP, coins, pending mailbox items, market listings and the current prestige step), the kept list (tier and task history, the archived world and the highest prestige step), and the recipient's own count of pending mailbox items.
+
+#### Scenario: Pending mailbox count per player
+
+- **WHEN** an announcement is sent to a player with 3 pending mailbox items
+- **THEN** the announcement states the count 3 for that player and no other player's count
+
+### Requirement: Final-week join notice
+
+When a player joins during the last 7 days of the active season, the system SHALL send that player one chat line that names the absolute season end date and the deleted and kept lists.
+
+#### Scenario: Join in the final week
+
+- **WHEN** a player joins 3 days before the season end
+- **THEN** exactly one chat line names the absolute end date and the deleted and kept lists
+
+#### Scenario: Join earlier in the season
+
+- **WHEN** a player joins 10 days before the season end
+- **THEN** no season end chat line is sent
 
 #### Scenario: No countdown timer
 
@@ -369,18 +395,32 @@ When an admin runs `/skygrid season status`, the system SHALL show the active se
 - **THEN** the output shows the active season, its phase, the next season and the next scheduled action with its instant
 
 ### Requirement: Confirmed season advance
-
-When an admin runs `/skygrid season advance`, the system SHALL only warn and name what will happen. When the admin runs `/skygrid season advance confirm`, the system SHALL start the transition immediately.
+When an admin runs `/skygrid season advance`, the system SHALL only warn and name what will happen. When an admin runs `/skygrid season advance confirm`, the system SHALL schedule the transition no earlier than the configured minimum notice (`season.advance.minNotice`, default `PT24H`) after the command, and SHALL send the season announcements for that boundary.
 
 #### Scenario: Advance without confirm
 
 - **WHEN** an admin runs `/skygrid season advance`
-- **THEN** the system names the season change that will happen and does not start the transition
+- **THEN** the system names the season change that will happen and does not schedule or start the transition
 
-#### Scenario: Advance with confirm
+#### Scenario: Advance with confirm schedules the end
 
 - **WHEN** an admin runs `/skygrid season advance confirm`
+- **THEN** the transition is scheduled no earlier than 24 hours after the command
+- **AND** the season announcements for that boundary are sent
+
+#### Scenario: Plain confirm never starts the transition immediately
+
+- **WHEN** an admin runs `/skygrid season advance confirm`
+- **THEN** the transition does not start before the minimum notice has passed
+
+### Requirement: Immediate season advance
+An immediate transition SHALL require `/skygrid season advance now confirm`, and the system SHALL log the acting admin and the instant of that command.
+
+#### Scenario: Immediate advance
+
+- **WHEN** an admin runs `/skygrid season advance now confirm`
 - **THEN** the system starts the transition now
+- **AND** the log records the acting admin and the instant of the command
 
 ### Requirement: Retry a failed transition
 

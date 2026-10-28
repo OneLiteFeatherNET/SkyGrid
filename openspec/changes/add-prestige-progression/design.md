@@ -84,8 +84,9 @@ Bundled defaults (adjustable by the admin in the challenge files, not hardcoded)
 - `ports.out.PrestigeRepository`: `find(SeasonId, UUID, String)` returns `Optional<PlayerPrestige>`
   (absent means step 0), `save(PlayerPrestige)` is an upsert, `resetSeason(SeasonId)`, and
   `allTimeHighest(UUID, String)` returns the maximum `highestStep` over all seasons.
-- `ports.out.TaskCompletionRepository` is consumed, not changed here. Its `isCompleted` and
-  `markCompleted` take the `ProgressScope` from `add-season-lifecycle`.
+- `ports.out.TaskCompletionRepository` is consumed from `add-season-lifecycle`, where `isCompleted` and
+  `markCompleted` take the `ProgressScope`. This change adds one read, `isCompletedAtAnyStep(SeasonId, UUID,
+  String taskId)`, for the reward rule (D4). No schema change: it reads the same table.
 - `ports.in.PrestigeUseCase`: `statusOf`, `raise`, `lower`, `activeModifiers` (hot path), `forget`
   (quit), `resetCurrentSeason`, and `addChangeListener(PrestigeChangeListener)`.
 - `sealed interface PrestigeChange` with `Raised`, `Lowered`, `TasksMissing(List<Task>)`, `AtMaximum`,
@@ -105,6 +106,11 @@ construction.
   notify listeners. `lower` checks only unknown challenge and at minimum.
 - `core.service.TaskProgressService` (changed) takes `PrestigeLevels` and passes the current step into
   the completion repository.
+- Reward once per task (I4-10): `TaskProgressService` grants a task's reward only when
+  `isCompletedAtAnyStep` is false for that season, player, challenge and task, checked before the new row is
+  written. A completion at any higher step therefore grants nothing, and the currency credit key
+  `task:<seasonId>:<challengeId>:<taskId>:<playerId>` has no step, matching the wallet. Step-scoped rows keep
+  progress only.
 - Break the cycle: prestige eligibility needs task status, and task status needs the current step. The
   shared `PrestigeLevels` state is read by both services, so neither depends on the other.
 - Unlock notice (I4-16): `PrestigeService` listens to task completion. When a completion closes the
@@ -225,16 +231,18 @@ Checklist from `.claude/skills/challenge-season-system/SKILL.md`, applied item b
 with the design evidence.
 
 1. **Octalysis drives.** Accomplishment (visible step and highest step) and empowerment (the player
-   chooses and can lower). Prestige adds no new loss: lowering is free and keeps every record. Modifiers
+   chooses and can lower). Prestige adds no new loss: lowering is free and keeps every record. The season
+   reset of the current step is a loss, which the preview states with its absolute date (item 2). Modifiers
    are fixed and previewed, so there is no unpredictability. Result: pass.
-2. **Full transparency.** The preview lists the exact modifiers and states that tasks start fresh before
-   confirmation. `info`, sidebar and join line repeat them. No odds, no hidden costs. Result: pass.
+2. **Full transparency.** The preview lists the exact modifiers, states that tasks start fresh and states that
+   the current step resets to 0 at the season end (absolute date) before confirmation. `info`, sidebar and join line repeat them. No odds, no hidden costs. Result: pass.
 3. **Bartle types.** Serves achievers (steps, highest step) and explorers (new constraints on a known
    system). Step 0 keeps the identical game, so the season is unchanged for players who do not opt in.
    Result: pass, with a note: no public prestige leaderboard in this release. A social comparison
    pressure would need its own review.
 4. **Reward adapts to struggle or achievement?** Rewards do not adapt. The reward definition is the same
-   at every step and is granted once per step (I4-10). Difficulty changes only on an explicit player
+   at every step and is granted once per player, season, challenge and task (I4-10), at any step. A higher step pays
+   only in recognition. Difficulty changes only on an explicit player
    choice, gated by completed tasks. Behavior signals are not collected or used. A "you seem to
    struggle, try a lower step" message would be an unsolicited nudge built from disengagement, and
    "suggestion only" use would need per-player session data that the data-minimization stance of
@@ -274,8 +282,8 @@ production code they cover.
 - `core`, black-box on `PrestigeUseCase` and `TaskProgressUseCase`, with in-memory fakes of
   `PrestigeRepository` and `TaskCompletionRepository` in `testFixtures`: one test per `PrestigeChange`
   case; `raiseIsRejectedWhileChallengeActive`; `lowerIsAllowedWhileChallengeActive`;
-  `raiseKeepsLowerStepCompletions`; `taskRewardGrantedOncePerStep`;
-  `reRaisingToVisitedStepDoesNotRegrantReward`; `unlockFiresOnceWhenLastTaskCompletes`;
+  `raiseKeepsLowerStepCompletions`; `taskRewardGrantedOncePerTaskAtAnyStep`;
+  `higherStepCompletionGrantsNoReward`; `reRaisingToVisitedStepDoesNotRegrantReward`; `unlockFiresOnceWhenLastTaskCompletes`;
   `activeModifiersServedFromCacheAfterFirstRead` (counting fake); `forgetEvictsCache`;
   `resetSeasonClearsCacheAndRepository`.
 - `adapters/config`: round trip per format (JSON, YAML, TOML) with `@TempDir`; an invalid ladder file

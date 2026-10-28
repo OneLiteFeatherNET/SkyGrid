@@ -9,8 +9,7 @@ resolves to exactly one outcome, so no item or coin is duplicated or lost.
 ## ADDED Requirements
 
 ### Requirement: Creating a listing
-When a player runs `/market sell <price>`, the system SHALL move the held stack into escrow and create an active listing that
-expires 48 hours after its creation.
+When a player runs `/market sell <price>`, the system SHALL move the held stack into escrow and create an active listing that expires 48 hours after its creation. The system SHALL show each seller the absolute expiry date of each of the seller's own listings.
 
 #### Scenario: Listing a stack
 - **WHEN** a player holding 16 iron ingots runs `/market sell 40`
@@ -18,7 +17,15 @@ expires 48 hours after its creation.
 
 #### Scenario: Listing preview
 - **WHEN** a player opens the listing confirm view for a price of 100
-- **THEN** the view shows the price, the 5 percent tax of 5 and the seller's net of 95 before the seller confirms
+- **THEN** the view shows the price, the 5 percent tax of 5, the seller's net of 95 and the absolute expiry date before the seller confirms
+
+#### Scenario: Listing preview when the season ends first
+- **WHEN** a player opens the listing confirm view and the season ends before the 48 hour expiry
+- **THEN** the view states the absolute season end date, states that the listing closes at that date, and states that the item is not returned
+
+#### Scenario: Seller views own listing expiry
+- **WHEN** a seller opens the view of their own listings
+- **THEN** each listing shows its absolute expiry date
 
 ### Requirement: Listing limits
 The system SHALL reject a listing when the seller already has 10 listings in the pending or active state, when the price is outside
@@ -131,11 +138,15 @@ The system SHALL charge a sales tax of 5 percent of the price, configured as bas
 - **THEN** the tax of 5 coins is posted to `system:market_tax` and the sum of player balances drops by 5 coins
 
 ### Requirement: Season end closes listings
-When a season ends, the system SHALL close every active listing and every pending listing of that season into the mailbox of the ending season, and the closed listings SHALL leave the market.
+When a season ends, the system SHALL close every active listing and every pending listing of that season, and the closed listings SHALL leave the market. A closed item SHALL NOT be returned to its seller: it is queued in the mailbox of the ending season, which expires with that season under the item-mailbox rules, so the item is lost.
 
 #### Scenario: Season ends with listings
 - **WHEN** a season ends with two active listings and one pending listing
-- **THEN** all three leave the market and their items are queued in the mailbox of the ending season
+- **THEN** all three leave the market and their items are queued in the mailbox of the ending season, not returned to the sellers
+
+#### Scenario: Season ends before a listing's expiry
+- **WHEN** a listing's 48 hour expiry falls after the season end
+- **THEN** the listing closes at the season end instead of its expiry and its item is not returned
 
 ### Requirement: Market permission
 The system SHALL gate `/market` with `skygridng.economy.market`, which is granted to all players by default.

@@ -15,7 +15,9 @@ modules' tests, for example `./gradlew :api:test :core:test --max-workers=2`.
 - [ ] 1.8 Write `WalletService` unit tests for the cooldown with an advancing test clock and for admin give, take and set deltas, and verify they fail
 - [ ] 1.9 Implement `LedgerRepository`, `WalletUseCase`, `WalletService` and `CooldownTracker` in `ports` and `core` and verify the 1.7 and 1.8 tests pass
 - [ ] 1.10 Add the `economy` section to the configuration DTOs with a config round-trip test under `@TempDir`, first red then green, and verify the economy keys load with the documented defaults
-- [ ] 1.11 Run `.claude/skills/hexagonal-architecture/scripts/compile-core.sh` and verify api, ports and core compile without Bukkit, Guice or Jackson imports
+- [ ] 1.11 Write a red config test that `economy.pay.confirmPercent` defaults to 50, accepts 0 and 100, and rejects 101 and -1 with an error naming the key, and verify it fails
+- [ ] 1.12 Implement the `confirmPercent` key in the economy configuration DTOs and verify the 1.11 test passes
+- [ ] 1.13 Run `.claude/skills/hexagonal-architecture/scripts/compile-core.sh` and verify api, ports and core compile without Bukkit, Guice or Jackson imports
 
 ## 2. PostgreSQL ledger adapter (delivery slice 18)
 
@@ -42,8 +44,10 @@ modules' tests, for example `./gradlew :api:test :core:test --max-workers=2`.
 - [ ] 3.5 Write MockBukkit tests in `platforms/common` for the in-flight guard (double `/pay` drops the second), the first-join starting balance and the recipient notification on success only, and verify they fail
 - [ ] 3.6 Implement `EconomyModule`, `EconomyExecutor`, the in-flight set and the `EconomyFeature` wiring in `platforms/common` and verify the 3.5 tests pass
 - [ ] 3.7 Add the permission nodes and `softDepend` entries to `plugin.yml` and verify a bootstrap test in `platforms/paper` lists them
-- [ ] 3.8 Add the `/balance`, `/pay` and `/skygrid eco` section to the README, including the statement that coins are never sold for real money, and verify the README contains that sentence
-- [ ] 3.9 Run `./gradlew :adapters:command:test :platforms:common:test --max-workers=2` and verify green
+- [ ] 3.8 Add the `/balance`, `/pay` and `/skygrid eco` section to the README, including the statement that coins are never sold for real money and the sentence "Granting coins, shop items or prestige for real money (store plugins, `eco give`, Vault deposits) violates the Minecraft EULA and is unsupported.", and verify the README contains both sentences
+- [ ] 3.9 Write handler tests with `RecordingCommandSource` that `/pay` above `pay.confirmPercent` without `confirm` debits nothing and previews the balance after the payment, that `/pay` with `confirm` debits, that exactly 50 percent needs no confirm, and that `/balance` shows the reset date, and verify they fail
+- [ ] 3.10 Implement the confirm gate in the `/pay` handler and the reset date in the `/balance` message and verify the 3.9 tests pass
+- [ ] 3.11 Run `./gradlew :adapters:command:test :platforms:common:test --max-workers=2` and verify green
 
 ## 4. Currency task reward (delivery slice 20)
 
@@ -76,7 +80,9 @@ modules' tests, for example `./gradlew :api:test :core:test --max-workers=2`.
 - [ ] 6.2 Implement `LedgerRepository#audit` returning the named mismatches and verify the 6.1 tests pass
 - [ ] 6.3 Write a handler test for `/skygrid eco audit` that requires `skygridng.economy.admin` and prints each mismatch on its own line, and verify it fails
 - [ ] 6.4 Implement the `audit` handler and verify the 6.3 test passes
-- [ ] 6.5 Run the full `:adapters:economy:test` and `:verification:test` suites with `--max-workers=2` and verify green
+- [ ] 6.5 Write adapter tests that the `console` actor of a give and the `plugin:<name>` actor of a Vault deposit are stored on their transactions and that `audit` counts the transactions per actor, and verify they fail
+- [ ] 6.6 Implement the actor in the `history` output and the per-actor count in `audit` and verify the 6.5 test passes
+- [ ] 6.7 Run the full `:adapters:economy:test` and `:verification:test` suites with `--max-workers=2` and verify green
 
 ## 7. Pull request
 

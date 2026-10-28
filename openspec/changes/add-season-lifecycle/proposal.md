@@ -34,7 +34,13 @@ economy (J1) changes build on.
   active season, past seasons are kept as archived rows, and `season history` shows them.
 - Add commands: `season info`, `season history [player]` for players; `season list`, `status`,
   `advance`, `retry`, `postpone`, `reload` for admins, with `confirm` gating for destructive or
-  time-changing actions (F2 convention). `challenge tier reset` clears the active season only.
+  time-changing actions (F2 convention). `advance confirm` schedules the transition no earlier than
+  `season.advance.minNotice` (default 24 hours) ahead; an immediate end needs `advance now confirm` and is
+  logged with the actor. `challenge tier reset` clears the active season only.
+- Add season announcements at the season start, 7 days before the season end, and 24 hours, 1 hour and
+  5 minutes before a transition boundary. Each one states the absolute end date, what the reset deletes
+  and what it keeps, and the player's own pending mailbox count. A player who joins in the final 7 days
+  also gets one chat line with the same information.
 - Add persistence: a new `adapters/season` Postgres adapter with its own migration folder and
   history table, and season-scoped migrations for the challenge-progress and task-progress adapters.
 - Add operations documentation and a required CloudNet static service, because the season worlds,

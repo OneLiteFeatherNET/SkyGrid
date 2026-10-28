@@ -81,19 +81,28 @@ listings, so a sold listing cannot be shown as available after its purchase comm
 ## I5 dark-pattern review (challenge-season-system, items 1 to 8)
 
 1. **Drives.** Ownership and social influence (trading with other players). No randomness, no gambling, no loss
-   avoidance; expiry returns the item rather than taking it.
-2. **Transparency.** Price, tax and the seller's net are shown before a listing is confirmed; the buy confirm shows the
-   price and the balance after it; the tax rate is shown in the `/market` header.
+   avoidance in the 48 hour cycle: expiry returns the item to the seller's mailbox. Season end is different and is
+   stated as a loss: a listing still open when the season ends closes, and its item is not returned. It is queued
+   in the ending season's mailbox, which expires with the season (`item-mailbox`). The listing confirm view states
+   the absolute season end and that the item is not returned, and each seller sees the absolute expiry of every
+   own listing (spec: Creating a listing). Verdict: **pass, conditional on that preview**.
+2. **Transparency.** Price, tax and the seller's net are shown before a listing is confirmed, together with the
+   absolute expiry date and, when the season ends first, the season end and the non-return of the item; the buy
+   confirm shows the price and the balance after it; the tax rate is shown in the `/market` header.
 3. **Bartle.** Socializers and achievers trade; explorers browse. Killers are not served. No leaderboard.
 4. **Adaptive rewards.** None; the tax and bounds are static configuration.
-5. **Late joiners.** A late joiner can buy at fixed prices and cannot be shut out of trading; season close resets the market
-   with the season.
+5. **Late joiners.** A late joiner can buy at fixed prices and cannot be shut out of trading. Season close resets the
+   market with the season; a late joiner who had listings in the old season has the same loss as everyone else, and
+   the expiry date is shown on each listing and in the season announcements.
 6. **Outside observer.** The market trades in-game items for in-game coins; the README states that coins are never sold for
    money; no real-money path exists.
 7. **Metrics.** Sell-through rate of listings (sold over closed); share of active players with at least one trade per week;
    the median listing price against the shop price (for inflation); count of listings closed as `market_expire` against
-   `market_cancel` (a high expire ratio signals overpricing).
-8. **Timers.** The 48 h expiry is organizational and loses nothing; no countdown or "only N left" text is shown.
+   `market_cancel` (a high expire ratio signals overpricing); count of listings closed as `market_season_end` (items lost
+   at season end, should be compared against the expire ratio).
+8. **Timers.** The 48 h expiry is organizational: no countdown or "only N left" text is shown. The two endings differ and
+   both are shown before a listing is confirmed: at 48 hours the item returns, at season end it is lost. Both are
+   stated with absolute dates, not as a countdown. Verdict: **pass**.
 
 ## Abuse and security review
 

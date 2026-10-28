@@ -30,7 +30,9 @@ modules' tests, for example `./gradlew :core:test :adapters:economy:test --max-w
 - [ ] 3.6 Implement the snapshot verification and verify the 3.5 test passes
 - [ ] 3.7 Write MockBukkit tests for the whole-stack rule (full inventory keeps the stack pending and tells the player to claim) and for `/market claim` moving only the fitting stacks, and verify they fail
 - [ ] 3.8 Implement the immediate delivery, the join reconciliation hook and the `claim` subcommand registration under `/market`, and verify the 3.7 tests pass
-- [ ] 3.9 Run `./gradlew :platforms:common:test :adapters:economy:test --max-workers=2` and verify green
+- [ ] 3.9 Write MockBukkit tests that a join with 2 pending items sends the pending count and the absolute season end date, and verify they fail
+- [ ] 3.10 Implement the count and end-date message in the join reconciliation hook and verify the 3.9 test passes
+- [ ] 3.11 Run `./gradlew :platforms:common:test :adapters:economy:test --max-workers=2` and verify green
 
 ## 4. Shop configuration (delivery slice 23, part 1)
 
@@ -61,6 +63,8 @@ modules' tests, for example `./gradlew :core:test :adapters:economy:test --max-w
 - [ ] 6.4 Implement `ShopCommands` and the `shop` root label behind `economy.commands.rootLabels`, and verify the 6.3 tests pass
 - [ ] 6.5 Write a test that a player without `skygridng.economy.shop` is refused, and verify it fails; then declare the permission in `plugin.yml` and verify it passes
 - [ ] 6.6 Document `/shop`, the shop file layout and the arbitrage rule in the README and verify the README names the shops directory
+- [ ] 6.7 Write MockBukkit tests that the buy confirm view in the final 24 hours of a season states the absolute season end and that unclaimed items are lost, and that it states nothing about the season end earlier, and verify they fail
+- [ ] 6.8 Implement the season end line in `ConfirmView` and verify the 6.7 tests pass
 
 ## 7. Pull request
 
