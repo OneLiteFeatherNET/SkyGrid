@@ -8,19 +8,17 @@ import java.time.Duration;
  *
  * @param prepareLead      how long before a boundary the next season's world is created, never negative
  * @param archiveDirectory the archive directory, relative to the server root or absolute, never blank
- * @param archiveCompress  whether an archived world is written as a compressed {@code .tar.zst} file
  * @param advanceMinNotice the minimum notice of {@code season advance confirm}, never negative
  */
 public record SeasonSettings(
         Duration prepareLead,
         String archiveDirectory,
-        boolean archiveCompress,
         Duration advanceMinNotice
 ) {
 
     /** The settings used when the {@code season} block is absent or leaves a key out. */
     public static SeasonSettings defaults() {
-        return new SeasonSettings(Duration.ofMinutes(15), "archive", false, Duration.ofHours(24));
+        return new SeasonSettings(Duration.ofMinutes(15), "archive", Duration.ofHours(24));
     }
 
     public SeasonSettings {

@@ -91,13 +91,10 @@ public final class JacksonSeasonRepository implements SeasonRepository {
             String directory = block.archive() == null || block.archive().directory() == null
                     ? defaults.archiveDirectory()
                     : block.archive().directory();
-            boolean compress = block.archive() != null && block.archive().compress() != null
-                    ? block.archive().compress()
-                    : defaults.archiveCompress();
             Duration minNotice = block.advance() == null || block.advance().minNotice() == null
                     ? defaults.advanceMinNotice()
                     : SeasonDtos.parseDuration(block.advance().minNotice());
-            return new SeasonSettings(prepareLead, directory, compress, minNotice);
+            return new SeasonSettings(prepareLead, directory, minNotice);
         } catch (IOException e) {
             throw new UncheckedIOException("Could not read the season settings in " + dataFolder, e);
         }

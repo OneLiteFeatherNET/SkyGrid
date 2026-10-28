@@ -175,7 +175,6 @@ class JacksonSeasonRepositoryTest {
                   prepareLead: PT5M
                   archive:
                     directory: /srv/archive
-                    compress: true
                   advance:
                     minNotice: PT48H
                 """);
@@ -184,8 +183,23 @@ class JacksonSeasonRepositoryTest {
 
         assertThat(settings.prepareLead()).isEqualTo(Duration.ofMinutes(5));
         assertThat(settings.archiveDirectory()).isEqualTo("/srv/archive");
-        assertThat(settings.archiveCompress()).isTrue();
         assertThat(settings.advanceMinNotice()).isEqualTo(Duration.ofHours(48));
+    }
+
+    @Test
+    @DisplayName("an archive compress key left over in a season file is ignored, nothing is compressed")
+    void archiveCompressKeyIsNoLongerParsed(@TempDir Path dir) throws IOException {
+        writeConfig(dir, """
+                active: classic
+                season:
+                  archive:
+                    directory: /srv/archive
+                    compress: true
+                """);
+
+        assertThat(repository(dir).settings())
+                .as("compression was never implemented, so the key carries no setting")
+                .isEqualTo(new SeasonSettings(Duration.ofMinutes(15), "/srv/archive", Duration.ofHours(24)));
     }
 
     @Test
@@ -201,7 +215,6 @@ class JacksonSeasonRepositoryTest {
 
         assertThat(settings.prepareLead()).isEqualTo(Duration.ofMinutes(5));
         assertThat(settings.archiveDirectory()).isEqualTo(SeasonSettings.defaults().archiveDirectory());
-        assertThat(settings.archiveCompress()).isFalse();
         assertThat(settings.advanceMinNotice()).isEqualTo(Duration.ofHours(24));
     }
 

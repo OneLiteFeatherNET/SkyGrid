@@ -178,18 +178,26 @@ public class SkyGridNgPlugin extends JavaPlugin {
         onExtensionDisable();
         i18n.unregister();
 
-        // ChallengeProgressRepository's Postgres adapter lazily opens a HikariCP pool on first use;
-        // whether or not it was ever used this run, ask the injector for the bound singleton (Guice
-        // memoizes it, so this never reopens or duplicates anything) and close it if it is
-        // AutoCloseable, so a reload or server stop never leaks pooled connections or Hikari's
-        // housekeeping threads.
-        if (injector.getInstance(ChallengeProgressRepository.class) instanceof AutoCloseable closeable) {
-            try {
-                closeable.close();
-            } catch (Exception e) {
-                getLogger().log(Level.WARNING, "Failed to close the challenge progress repository.", e);
+        // The Postgres adapters lazily open a HikariCP pool on first use; whether or not they were ever used
+        // this run, close the bound singletons (Guice memoizes them, so this never reopens or duplicates
+        // anything), so a reload or server stop never leaks pooled connections or Hikari's housekeeping threads.
+        for (Object repository : databaseRepositories()) {
+            if (repository instanceof AutoCloseable closeable) {
+                try {
+                    closeable.close();
+                } catch (Exception e) {
+                    getLogger().log(Level.WARNING, "Failed to close " + repository.getClass().getSimpleName() + ".", e);
+                }
             }
         }
+    }
+
+    /** The database repositories this plugin owns and closes on disable. */
+    List<Object> databaseRepositories() {
+        return List.of(
+                injector.getInstance(ChallengeProgressRepository.class),
+                injector.getInstance(TaskCompletionRepository.class),
+                injector.getInstance(SeasonRunRepository.class));
     }
 
     /**

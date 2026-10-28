@@ -124,6 +124,22 @@ class BukkitSeasonWorldsTest {
     }
 
     @Test
+    void anArchiveWhoseManifestCannotBeWrittenIsNeverMoved() throws IOException {
+        Path folder = seasonFolder(ACTIVE);
+        Files.createDirectories(folder.resolve("season.json"));
+
+        assertThatThrownBy(() -> worlds().archive(ACTIVE, archivingRun()))
+                .as("a manifest that cannot be written must fail the archive")
+                .isInstanceOf(RuntimeException.class);
+        assertThat(Files.exists(archive().resolve("season_s01")))
+                .as("the manifest is written before the move, so an archive without a manifest never exists")
+                .isFalse();
+        assertThat(Files.exists(folder.resolve("level.dat")))
+                .as("the world stays in place when its manifest fails")
+                .isTrue();
+    }
+
+    @Test
     void failedArchiveLeavesTheFolderInPlace() throws IOException {
         Path folder = seasonFolder(ACTIVE);
         Files.createDirectories(archive().resolve("season_s01"));

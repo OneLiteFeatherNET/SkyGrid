@@ -8,6 +8,7 @@ import net.onelitefeather.skygridng.platforms.olf.challenge.OneLifeListener;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
+import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
@@ -160,6 +161,16 @@ class SkyGridNgPluginTest {
             }
         }
         return false;
+    }
+
+    @Test
+    @DisplayName("disable closes the season run repository together with the other database repositories")
+    void disableClosesTheSeasonRunRepository() {
+        SkyGridNgPlugin plugin = MockBukkit.load(SkyGridNgPlugin.class);
+
+        assertThat(plugin.databaseRepositories())
+                .as("the season run repository is one of the repositories closed on disable")
+                .contains(plugin.injector().getInstance(SeasonRunRepository.class));
     }
 
     @Test

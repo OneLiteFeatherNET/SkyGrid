@@ -35,9 +35,9 @@ final class ConfigDtos {
     record SeasonSettingsDto(String prepareLead, ArchiveDto archive, AdvanceDto advance) {
     }
 
-    /** The {@code season.archive} section: the archive directory and whether to compress archived worlds. */
+    /** The {@code season.archive} section: the archive directory. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record ArchiveDto(String directory, Boolean compress) {
+    record ArchiveDto(String directory) {
     }
 
     /** The {@code season.advance} section: the minimum notice of a scheduled season end. */

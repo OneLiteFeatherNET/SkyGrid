@@ -120,9 +120,10 @@ public final class BukkitSeasonWorlds implements SeasonWorlds {
             if (Files.exists(target)) {
                 throw new IllegalStateException("the archive target already exists: " + target);
             }
+            // The manifest goes into the folder first, so a failure cannot leave an archive without its manifest.
+            Files.writeString(source.resolve("season.json"), manifestJson(manifest));
             Files.createDirectories(directory);
             Files.move(source, target);
-            Files.writeString(target.resolve("season.json"), manifestJson(manifest));
         } catch (IOException e) {
             throw new UncheckedIOException("could not archive " + worldKey, e);
         }
