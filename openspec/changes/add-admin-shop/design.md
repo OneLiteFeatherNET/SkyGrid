@@ -25,26 +25,42 @@ The journal described below makes the two stores agree after any crash.
 ## Decisions
 
 **Mailbox and sale intents in the economy adapter, migration `V2`.** The mailbox row must commit in the same
-transaction as the ledger posting, which needs one persistence unit with the ledger. Tables: `mailbox_delivery`
-(id, season, player, item id, amount, item data as BYTEA, source, source ref, delivered at, created at) with a
-partial index on pending rows, and `shop_sale_intent` (id, season, player, shop, item, amount, payout,
-state `PENDING|COMMITTED|ABORTED`). `ItemPayload` keeps the platform bytes opaque; the item id and amount exist
+transaction as the ledger posting, which needs one persistence unit with the ledger. The `economy` persistence
+unit covers the ledger, the mailbox and the sale intents, so one Unit of Work can post and deliver. Tables:
+`mailbox_delivery` (id, season, player, item id, amount, item data as BYTEA, source discriminator `source`,
+`source_ref`, delivered at, created at, `version BIGINT NOT NULL DEFAULT 0`) with a partial index on pending rows,
+and `shop_sale_intent` (id, season, player, shop, item, amount, payout, state `PENDING|COMMITTED|ABORTED`,
+`version BIGINT NOT NULL DEFAULT 0`). `ItemPayload` keeps the platform bytes opaque; the item id and amount exist
 only for display and search. Alternative: a file-based mailbox (rejected: no atomicity with the ledger).
 
-**Buy is one transaction.** `MailboxRepository.postWithDelivery(Posting, Delivery)` posts the buyer's debit and the
-shop's credit and inserts the delivery row in one transaction. The ledger's row-lock and retry rules from
-`add-player-wallet` apply unchanged. Two concurrent buys by one player serialize on the buyer's account row.
+**Domain model and mapping (Data Mapper, GoF State).** `Delivery` and `SaleIntent` are aggregates: immutable records
+in `api.model` and `core`. `DeliverySource` is a sealed interface that permits `ShopPurchase` (a record carrying the
+purchase reference); the market change adds its sources to the same permits list. `IntentState` is a sealed
+interface permitting `Pending`, `Committed` and `Aborted`; `commit()` and `abort()` return a new state, and an
+illegal transition is a domain rejection. The JPA `@Entity` classes (`DeliveryEntity`, `SaleIntentEntity`) live
+only in `adapters/economy`, with a Data Mapper between entity and record. `DeliverySource` is stored as the
+discriminator text in `source` plus the reference in `source_ref`; `Money` and `SeasonId` map through the shared
+converters in `adapters/persistence`. Both aggregates carry `@Version long version`; a lost race surfaces as
+`OptimisticLockException`, which the adapter maps to the domain outcome.
+
+**Buy is one transaction.** One Unit of Work (`inTransaction`) posts the `ShopPurchase` ledger operation (buyer
+debit, shop credit) and persists the `Delivery` aggregate in the same transaction. The buyer's account row is
+loaded with `PESSIMISTIC_WRITE`, and the ledger's lock order rules from `add-player-wallet` apply unchanged. Two
+concurrent buys by one player serialize on the buyer's account row.
 
 **Inventory journal in the player data file (PDC).** A PDC list `skygridng:economy_journal` of operation UUIDs on
 the `Player`, bounded at 64 entries. The inventory change and the journal write happen in the same main-thread
 tick, followed by `Player#saveData()`. Any saved state therefore contains both or neither. Alternative: a
 journal table in Postgres only (rejected: it cannot tell whether the inventory change was saved).
 
-**Movement steps.** Sell follows: insert `PENDING` intent (async), verify and remove the items and add the intent
-id to the journal then save (main thread), post the credit with key `shopsale:<intent>` and mark the intent
-`COMMITTED` in one transaction (async). Delivery follows: the delivery row is committed with the money; on the main
-thread add the item and the delivery id to the journal and save; then mark `delivered_at` and drop the journal id.
-Reconciliation on join runs the table of the item-mailbox spec, before any new delivery.
+**Movement steps.** Sell follows: persist a `SaleIntent` in `Pending` (async), verify and remove the items and add
+the intent id to the journal then save (main thread), then in one Unit of Work post the `ShopSale` ledger operation
+with key `shopsale:<intent>` and commit the aggregate with `intent.commit()` (async). The key is a `@NaturalId`
+with a unique constraint, so a duplicate posting raises `ConstraintViolationException`, which the adapter maps to
+`AlreadyApplied`. Delivery follows: the `Delivery` is committed with the money; on the main thread add the item and
+the delivery id to the journal and save; then `delivery.markDelivered(now)` through the aggregate and drop the
+journal id. A concurrent second delivery attempt loses on `@Version`, and its `OptimisticLockException` maps to
+"already delivered". Reconciliation on join runs the table of the item-mailbox spec, before any new delivery.
 
 **Arbitrage check.** `ShopService` compares unit prices with exact integer cross-multiplication
 (`sell * buyQuantity > buy * sellQuantity`) across all loaded shops, including the entry itself. A violating file
@@ -65,7 +81,9 @@ change with only `claim`; `add-player-market` adds the other subcommands to the 
 behind `economy.commands.rootLabels`, as decided in `economy.md` section 6.2.
 
 **Season end.** Pending deliveries expire with the season, under the inventory policy of `add-season-lifecycle`:
-they are never carried into the next season, the same as the inventory they would have entered.
+they are never carried into the next season, the same as the inventory they would have entered. The mailbox season
+policy is a `SeasonTransitionListener` registered through a Guice `Multibinder` in `platforms/common`; the season
+core iterates the registered listeners and never names economy types.
 
 ## Risks / Trade-offs
 
@@ -83,7 +101,7 @@ they are never carried into the next season, the same as the inventory they woul
   several movements occur together.
 - [Item data bomb in mailbox payloads] → payloads are opaque bytes, never deserialized off the main thread, and bounded by the
   market's `maxItemBytes` for listings; shop stock comes from admin files only.
-- [SQL injection] → JPA parameter binding only.
+- [SQL injection] → JPA named queries with bound parameters only; no `createNativeQuery`.
 
 ## I5 dark-pattern review (challenge-season-system, items 1 to 8)
 
@@ -111,7 +129,7 @@ they are never carried into the next season, the same as the inventory they woul
 | Threat | Mitigation |
 |---|---|
 | Money lost or created when a purchase crashes | one transaction for debit and mailbox row |
-| Two buys at once overdraw the balance | row lock on the buyer account; concurrency test |
+| Two buys at once overdraw the balance | `PESSIMISTIC_WRITE` on the buyer account row; concurrency test |
 | Item dupe through a crash between database and inventory | journal in the player data file, same-tick save, reconciliation |
 | GUI dupes | cancel-first handlers, display copies, in-flight guard |
 | Selling items not from the shop | pristine match, creative and spectator refusal |
@@ -122,9 +140,11 @@ they are never carried into the next season, the same as the inventory they woul
 ## Test plan (F.I.R.S.T.)
 
 - Unit (core, in-memory fakes): arbitrage check across catalogs including equal prices and the same entry; buy and
-  sell branches; intent state machine.
+  sell branches; intent state machine (every state against every action, table-driven).
 - Testcontainers (adapters/economy): buy with mailbox row in one transaction, failure rollback, two concurrent buys that
-  exceed the balance, sale intent commit and abort, `V2` migration after `V1`.
+  exceed the balance, sale intent commit and abort, `V2` migration after `V1`, two concurrent `markDelivered` calls and two concurrent
+  intent commits (one `OptimisticLockException`, mapped to the domain outcome), a duplicate `shopsale` key (mapped to
+  `AlreadyApplied`), and Hibernate `validate` against the V2 schema.
 - MockBukkit (platforms/common): journal reconciliation rows one by one with a fake repository; GUI cancels shift-click,
   hotbar swap, drag and double-click collect; display items carry the PDC tag; full inventory keeps the stack in the
   mailbox; creative refusal; unknown item disables the entry.

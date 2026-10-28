@@ -11,6 +11,8 @@ modules' tests, for example `./gradlew :api:test :core:test --max-workers=2`.
 - [ ] 1.4 Implement `EconomySettings.parse` with `BigDecimal.longValueExact` and verify the 1.3 tests pass
 - [ ] 1.5 Write `Posting` and `TransferResult` tests for sum-to-zero, zero delta and duplicate account rejection, and verify they fail
 - [ ] 1.6 Implement `Posting`, `Leg`, `AccountId`, `TransferReason` and `TransferResult` in `api.model` and verify the 1.5 tests pass
+- [ ] 1.6a Write tests for the sealed `Actor` (`PlayerActor`, `ConsoleActor`, `PluginActor`, `SystemActor`, where a blank plugin name is rejected) and for each `LedgerOperation` record (`Payment`, `AdminGrant`, `AdminTake`, `AdminSet`, `StartingBalance`, `SeasonReset`, `TaskReward`): each builds its expected idempotency key and postings that sum to zero, and verify they fail
+- [ ] 1.6b Implement the sealed `Actor` and `LedgerOperation` interfaces with their records, `postings(...)` and `IdempotencyKey`, all in `api.model`, and verify the 1.6a tests pass
 - [ ] 1.7 Write `WalletService` unit tests with an in-memory `LedgerRepository` fake for pay validation branches (insufficient funds, zero, fractional, maximum amount, self, unknown recipient, balance cap) and verify they fail
 - [ ] 1.8 Write `WalletService` unit tests for the cooldown with an advancing test clock and for admin give, take and set deltas, and verify they fail
 - [ ] 1.9 Implement `LedgerRepository`, `WalletUseCase`, `WalletService` and `CooldownTracker` in `ports` and `core` and verify the 1.7 and 1.8 tests pass
@@ -22,18 +24,25 @@ modules' tests, for example `./gradlew :api:test :core:test --max-workers=2`.
 ## 2. PostgreSQL ledger adapter (delivery slice 18)
 
 - [ ] 2.1 Write Testcontainers tests for `adapters/economy` with `postgres:16-alpine`: fresh schema per test, first `V1` migration creates the three ledger tables, verify they fail
-- [ ] 2.2 Add `db/migration/economy/V1__create_economy_ledger.sql` with `economy_account`, `economy_transaction` and `economy_posting` and the history table `flyway_history_economy`, and verify the 2.1 migration test passes
+- [ ] 2.2 Add `db/migration/economy/V1__create_economy_ledger.sql` with `economy_account`, `economy_transaction` (with the `kind TEXT NOT NULL` discriminator and nullable reference columns) and `economy_posting` and the history table `flyway_history_economy`, and verify the 2.1 migration test passes
+- [ ] 2.2a Write converter tests: `MoneyConverter` round-trips minor units through `BIGINT` and `ActorConverter` round-trips each `Actor` variant through `TEXT` and rejects unknown text, and verify they fail
+- [ ] 2.2b Implement `MoneyConverter` in `adapters/persistence` and `ActorConverter` in `adapters/economy`, both `@Converter(autoApply = true)`, reusing the `SeasonIdConverter` from `add-season-lifecycle`, and verify the 2.2a tests pass
+- [ ] 2.2c Write mapping tests for `LedgerTransactionEntity` with `@Inheritance(strategy = SINGLE_TABLE)`: a `TaskReward` row reloads as its own subclass with `task_id`, and a second row with the same `@NaturalId` key raises Hibernate's `ConstraintViolationException`, and verify they fail
+- [ ] 2.2d Implement the entities (`EconomyAccountEntity`, `LedgerTransactionEntity` with `@DiscriminatorColumn(name = "kind")` and one `@DiscriminatorValue` subclass per operation, `LedgerPostingEntity`), the entity to domain mapper, and the `economy` persistence unit with `hibernate.hbm2ddl.auto=validate`, and verify the 2.2c tests pass
 - [ ] 2.3 Write adapter tests for `post`: applied, already applied for the same key, insufficient funds rolled back, cap exceeded rolled back, unknown account, and verify they fail
-- [ ] 2.4 Implement the Postgres `LedgerRepository` with `ON CONFLICT` insert, ordered `FOR UPDATE` locks, exact balance math and the 40P01/40001 retry, and verify the 2.3 tests pass
+- [ ] 2.4 Implement the JPA `LedgerRepository` as one Unit of Work with the `@NaturalId` duplicate mapped to `AlreadyApplied`, ordered `PESSIMISTIC_WRITE` account loads, exact balance math in the `Account` aggregate, and the retry on `PessimisticLockException`, `LockTimeoutException` or SQLState 40P01/40001, and verify the 2.3 tests pass
 - [ ] 2.5 Write the race test: 200 concurrent transfers in both directions between ten accounts from 16 threads released by one barrier, asserting no negative balance, unchanged sum and a clean audit, and verify it fails
 - [ ] 2.6 Write the race test: eight threads posting the same idempotency key yield exactly one applied result, and verify it fails
 - [ ] 2.7 Write the deadlock retry test with two explicit transactions forcing a 40P01 retry, and verify the balance changes once
 - [ ] 2.8 Make the 2.5, 2.6 and 2.7 tests pass by the implementation from 2.4 and verify they are green
 - [ ] 2.9 Write the season reset adapter test: a reset zeroes balances against `system:mint`, a second reset posts nothing and the audit stays clean, and verify it fails
 - [ ] 2.10 Implement the season reset posting with keys `season-reset:<seasonId>:<accountId>` and verify the 2.9 test passes
-- [ ] 2.10a Write a test that the season transition port from `add-season-lifecycle` triggers the reset for the ending season only, and verify it fails; then connect the transition to `WalletUseCase` and verify it passes
+- [ ] 2.10a Write a test that the season transition port from `add-season-lifecycle` triggers the reset for the ending season only, and verify it fails; then connect the transition to the wallet reset as a `SeasonTransitionListener` and verify it passes
+- [ ] 2.10b Write a Guice test that the wallet reset is bound in the `SeasonTransitionListener` `Multibinder` in `platforms/common`, and that the season core iterates the bound listeners without naming economy types, and verify it fails
+- [ ] 2.10c Implement the `Multibinder<SeasonTransitionListener>` registration of the wallet reset in `platforms/common` and verify the 2.10b test passes
 - [ ] 2.11 Extend `PostgresAdapterMigrationTest` so the economy adapter migrates the same database as the other adapters without clashing, first red then green, and verify it passes
-- [ ] 2.12 Write the ArchUnit rule `economyAdapterIsFrameworkFree` in `verification`, verify it fails on a deliberately added Bukkit import in a scratch test, then keep it green on the real adapter
+- [ ] 2.12 Write the ArchUnit rule `economyAdapterIsFrameworkFree` in `verification` (no Bukkit, Guice or `jakarta.inject` in `adapters/economy`; JPA is allowed there), verify it fails on a deliberately added Bukkit import in a scratch test, then keep it green on the real adapter
+- [ ] 2.12a Run the JPA ArchUnit rules from `add-season-lifecycle` (`jakarta.persistence..` and `org.hibernate..` only in `..adapters..`, `@Entity` only in `..adapters..`, no `EntityManager#createNativeQuery`) against `adapters/economy` and verify they stay green
 
 ## 3. Balance, pay and audited admin commands (delivery slice 19)
 

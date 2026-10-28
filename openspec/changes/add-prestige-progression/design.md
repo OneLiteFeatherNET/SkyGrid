@@ -82,15 +82,17 @@ Bundled defaults (adjustable by the admin in the challenge files, not hardcoded)
 
 ### D3. Ports
 - `ports.out.PrestigeRepository`: `find(SeasonId, UUID, String)` returns `Optional<PlayerPrestige>`
-  (absent means step 0), `save(PlayerPrestige)` is an upsert, `resetSeason(SeasonId)`, and
-  `allTimeHighest(UUID, String)` returns the maximum `highestStep` over all seasons.
+  (absent means step 0), `save(PlayerPrestige)` is an upsert returning `SaveOutcome` (`Saved` or
+  `Conflict`, see D5), `resetSeason(SeasonId)`, and `allTimeHighest(UUID, String)` returns the maximum
+  `highestStep` over all seasons. The port exposes domain records and outcomes only.
 - `ports.out.TaskCompletionRepository` is consumed from `add-season-lifecycle`, where `isCompleted` and
   `markCompleted` take the `ProgressScope`. This change adds one read, `isCompletedAtAnyStep(SeasonId, UUID,
   String taskId)`, for the reward rule (D4). No schema change: it reads the same table.
 - `ports.in.PrestigeUseCase`: `statusOf`, `raise`, `lower`, `activeModifiers` (hot path), `forget`
   (quit), `resetCurrentSeason`, and `addChangeListener(PrestigeChangeListener)`.
 - `sealed interface PrestigeChange` with `Raised`, `Lowered`, `TasksMissing(List<Task>)`, `AtMaximum`,
-  `AtMinimum`, `ChallengeRunning`, `NoLadder`, `UnknownChallenge`. Returning a result type keeps
+  `AtMinimum`, `ChallengeRunning`, `NoLadder`, `UnknownChallenge`, `ConcurrentChange` (a second lost race on
+  the same row, see D4). Returning a result type keeps
   rejections explicit and testable, and lets the command adapter map each case to one message.
 - `ports.in.TaskProgressUseCase` keeps its signatures. `tasksFor` and `completeTask` resolve the
   player's current step inside the core.
@@ -104,6 +106,11 @@ construction.
 - `core.service.PrestigeService` implements `PrestigeUseCase`. Order of checks for `raise`: unknown
   challenge, no ladder, at maximum, challenge active, missing tasks at the current step. Then save and
   notify listeners. `lower` checks only unknown challenge and at minimum.
+- Concurrency (Optimistic Lock, one retry): a `Conflict` from `save` means another request changed the same
+  row first. `PrestigeService` drops the cached entry, reloads the row through the repository, and runs the
+  check order again once. A second `Conflict` returns `PrestigeChange.ConcurrentChange`, which the command
+  maps to one "try again" message and changes nothing. This is the existing rejection style: an explicit
+  `PrestigeChange` case per outcome, not an exception reaching the player. The same rule applies to `lower`.
 - `core.service.TaskProgressService` (changed) takes `PrestigeLevels` and passes the current step into
   the completion repository.
 - Reward once per task (I4-10): `TaskProgressService` grants a task's reward only when
@@ -132,10 +139,12 @@ Config (`adapters/config`):
   `@JsonPropertyDescription`, so editors show them.
 
 Persistence (`adapters/prestige`, new module, package `adapters.prestige`):
-- `PostgresPrestigeRepository extends AbstractJpaRepository` with
+- `PostgresPrestigeRepository extends AbstractJpaRepository` (the shared base in `adapters/persistence`) with
   `super("prestige", "classpath:db/migration/prestige", "flyway_history_prestige", configSupplier)`.
-  Its own `PlayerPrestigeEntity` and id class, and its own `META-INF/persistence.xml` with
-  `hbm2ddl.auto=validate`.
+  Data Mapper: `PlayerPrestigeEntity` is the only JPA class, keyed by an `@EmbeddedId` record
+  `PlayerPrestigeId(seasonId, playerId, challengeId)`; a mapper converts entity and `PlayerPrestige` record
+  both ways, so the domain never sees a JPA type. The season id uses the shared `SeasonIdConverter` from
+  `add-season-lifecycle`. Its own `META-INF/persistence.xml` with `hibernate.hbm2ddl.auto=validate`.
 - Migration `db/migration/prestige/V1__create_player_prestige.sql`:
 
 ```sql
@@ -145,13 +154,21 @@ CREATE TABLE player_prestige (
     challenge_id TEXT NOT NULL CHECK (char_length(challenge_id) <= 64),
     current_step SMALLINT NOT NULL CHECK (current_step >= 0 AND current_step <= 10),
     highest_step SMALLINT NOT NULL CHECK (highest_step >= current_step AND highest_step <= 10),
+    version      BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (season_id, player_id, challenge_id)
 );
 ```
 
 - Only counters are stored: no timestamps, no history, no behavior data. Row absence means step 0.
   Season rows are archived with their season and never deleted by this change.
-- The all-time highest step is the maximum `highest_step` over all seasons of a player and challenge.
+- `@Version long version` on every row (Optimistic Lock). A raise or lower loads the row, changes it and
+  flushes; a stale copy fails with `OptimisticLockException`, which `save` returns as `Conflict` (D4). A duplicate
+  first insert of the same key from two requests fails on the primary key, Hibernate's
+  `ConstraintViolationException`, and is returned as `Conflict` as well.
+- `resetSeason` is a named bulk update that sets `currentStep` to 0 and increments `version` in the same
+  statement, so a request that still holds the old row cannot overwrite the reset: its save fails as `Conflict`.
+- The all-time highest step is a named query that returns the maximum `highestStep` over all seasons of a
+  player and challenge.
 
 Commands (`adapters/command`): a new `PrestigeCommands implements CloudCommandHandler`, bound in
 `CommandModule`, shaped like `ChallengeCommands`. Console senders are refused by the same guard as
@@ -220,6 +237,8 @@ archived with their season.
   `supportedModifiers()` checked at feature enable.
 - [Unlock message becomes nagging] → Sent once per player, challenge and step, never on later joins,
   and disabled per challenge by `prestige.announceUnlock: false`.
+- [Concurrent raise and lower of the same row] → `@Version`; the loser gets `Conflict`, reloads once, and a
+  second loss returns `ConcurrentChange` (D4). Nothing is written by the losing request.
 - [Migration of existing completions] → Owned by `add-season-lifecycle`; this change only consumes step 0
   for existing rows.
 - [Dependency on `add-season-lifecycle`] → This change is implemented after that change is merged. Its
@@ -285,14 +304,17 @@ production code they cover.
   `raiseKeepsLowerStepCompletions`; `taskRewardGrantedOncePerTaskAtAnyStep`;
   `higherStepCompletionGrantsNoReward`; `reRaisingToVisitedStepDoesNotRegrantReward`; `unlockFiresOnceWhenLastTaskCompletes`;
   `activeModifiersServedFromCacheAfterFirstRead` (counting fake); `forgetEvictsCache`;
-  `resetSeasonClearsCacheAndRepository`.
+  `resetSeasonClearsCacheAndRepository`; `raiseRetriesOnceAfterConflict`, `secondConflictReturnsConcurrentChange`,
+  `lowerRetriesOnceAfterConflict` (the fake returns `Conflict` on scripted calls).
 - `adapters/config`: round trip per format (JSON, YAML, TOML) with `@TempDir`; an invalid ladder file
   loads its challenge with an empty ladder while the others are unaffected; `ConfigSchemasTest` asserts
   the `prestige` property and the modifier `type` enum appear in the challenge schema.
 - `adapters/prestige` and the task progress persistence (Testcontainers `postgres:16-alpine`, one
   container per class, fresh random `UUID`s per test): find on an empty table is absent; save and
-  upsert; check constraints reject `current > highest`; `resetSeason` clears the current steps only; a
-  completion row migrated from before the scope key reads as completed at step 0 and not at step 1.
+  upsert; check constraints reject `current > highest`; `resetSeason` clears the current steps only and bumps
+  `version`; a completion row migrated from before the scope key reads as completed at step 0 and not at step 1;
+  two `EntityManager`s load the same row and the second flush fails with `OptimisticLockException`, returned as
+  `Conflict` (sequential, no threads, no sleeps); a duplicate first insert of one key returns `Conflict`.
   Extend `verification/PostgresAdapterMigrationTest` to migrate all adapters into one database.
 - `adapters/command`: `PrestigeCommandsTest` against `RecordingCommandSource` and a stub
   `PrestigeUseCase`: which `Messages` factory fired per case; console guard; `up` without `confirm` never
