@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  * adapters are pointed at the same Postgres database, the way a single plugin install runs them. Each
  * test builds its own repositories and closes them again, so no state is shared between tests.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class PostgresAdapterMigrationTest {
 
     @Container
