@@ -48,6 +48,13 @@ import java.util.function.Supplier;
  */
 public abstract class AbstractJpaRepository implements AutoCloseable {
 
+    /**
+     * Every persistence unit shares one role's connection limit, and a Minecraft server makes few,
+     * short queries, so each pool stays far below HikariCP's default of ten connections.
+     */
+    private static final int POOL_MAXIMUM_SIZE = 4;
+    private static final int POOL_MINIMUM_IDLE = 1;
+
     private final String persistenceUnitName;
     private final String migrationLocation;
     private final String migrationHistoryTable;
@@ -95,6 +102,9 @@ public abstract class AbstractJpaRepository implements AutoCloseable {
      * short-lived, unpooled JDBC connection (Flyway needs a data source regardless of Hibernate); if
      * it fails, nothing is left open and {@link #entityManagerFactory} is never assigned, so a bad
      * migration or a briefly unreachable Postgres does not leak a connection pool on every retry.
+     * Flyway and the JPA provider find their plugins through the thread context class loader, which
+     * on a Paper server is the server's loader and cannot see this plugin's jar, so both run with
+     * this class's loader set as the context class loader and the previous one is restored after.
      */
     private EntityManagerFactory entityManagerFactory() {
         var existing = entityManagerFactory;
@@ -104,8 +114,14 @@ public abstract class AbstractJpaRepository implements AutoCloseable {
         synchronized (this) {
             if (entityManagerFactory == null) {
                 var config = configSupplier.get();
-                migrate(config);
-                entityManagerFactory = createEntityManagerFactory(config);
+                var previousContextClassLoader = Thread.currentThread().getContextClassLoader();
+                Thread.currentThread().setContextClassLoader(AbstractJpaRepository.class.getClassLoader());
+                try {
+                    migrate(config);
+                    entityManagerFactory = createEntityManagerFactory(config);
+                } finally {
+                    Thread.currentThread().setContextClassLoader(previousContextClassLoader);
+                }
             }
             return entityManagerFactory;
         }
@@ -148,13 +164,25 @@ public abstract class AbstractJpaRepository implements AutoCloseable {
                 "hibernate.hikari.jdbcUrl", config.jdbcUrl(),
                 "hibernate.hikari.dataSource.user", config.user(),
                 "hibernate.hikari.dataSource.password", config.password(),
-                "hibernate.hikari.poolName", "skygridng-" + persistenceUnitName);
+                "hibernate.hikari.poolName", "skygridng-" + persistenceUnitName,
+                "hibernate.hikari.maximumPoolSize", String.valueOf(POOL_MAXIMUM_SIZE),
+                "hibernate.hikari.minimumIdle", String.valueOf(POOL_MINIMUM_IDLE));
         try {
             return Persistence.createEntityManagerFactory(persistenceUnitName, overrides);
         } catch (RuntimeException e) {
             throw new PersistenceException(
                     "Failed to build the " + persistenceUnitName + " entity manager factory", e);
         }
+    }
+
+    /**
+     * Runs the lazy bootstrap now (config, Flyway migration, entity manager factory) instead of on the
+     * first {@link #read} or {@link #inTransaction}, so a caller can pay that cost off the main thread
+     * ahead of time. A failure is thrown to the caller and the bootstrap is retried on the next use,
+     * exactly as if this method had never been called.
+     */
+    public void warmUp() {
+        entityManagerFactory();
     }
 
     /**

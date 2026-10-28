@@ -1,5 +1,9 @@
 package net.onelitefeather.skygridng.adapters.persistence;
 
+import com.zaxxer.hikari.HikariDataSource;
+import jakarta.persistence.EntityManager;
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -7,8 +11,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,13 +43,17 @@ class AbstractJpaRepositoryTest {
 
     @BeforeAll
     static void startRepository() {
-        var config = new DatabaseConfig(
+        var config = containerConfig();
+        repository = new TestJpaRepository(() -> config);
+    }
+
+    private static DatabaseConfig containerConfig() {
+        return new DatabaseConfig(
                 POSTGRES.getHost(),
                 POSTGRES.getMappedPort(5432),
                 POSTGRES.getDatabaseName(),
                 POSTGRES.getUsername(),
                 POSTGRES.getPassword());
-        repository = new TestJpaRepository(() -> config);
     }
 
     @AfterAll
@@ -129,5 +140,81 @@ class AbstractJpaRepositoryTest {
 
         var found = repository.read(entityManager -> entityManager.find(TestItemEntity.class, id));
         assertThat(found).isNull();
+    }
+
+    /**
+     * {@link AbstractJpaRepository#warmUp()} runs the lazy bootstrap on its own, so the first real
+     * call after it does no bootstrap work: the config is resolved once, by warmUp, and never again.
+     */
+    @Test
+    void warmUpBootstrapsSoTheNextCallReusesTheBuiltFactory() {
+        var configResolutions = new AtomicInteger();
+        var warmedRepository = new TestJpaRepository(() -> {
+            configResolutions.incrementAndGet();
+            return containerConfig();
+        });
+        try {
+            warmedRepository.warmUp();
+            assertThat(configResolutions).as("warmUp must resolve the config and build the factory").hasValue(1);
+
+            warmedRepository.read(entityManager -> null);
+
+            assertThat(configResolutions).as("a call after warmUp must reuse the built factory").hasValue(1);
+        } finally {
+            warmedRepository.close();
+        }
+    }
+
+    /**
+     * The calling thread's context class loader can be one that sees none of the plugin's classes
+     * and service files (on Paper it is the server's loader). Flyway and the JPA provider look up
+     * their plugins and {@code persistence.xml} through that loader, so the first use must still
+     * bootstrap the schema and the entity manager factory with it in that state.
+     */
+    @Test
+    void bootstrapsWhenTheContextClassLoaderCannotSeeThePlugin() {
+        var id = "classloader-" + UUID.randomUUID();
+        var originalContextClassLoader = Thread.currentThread().getContextClassLoader();
+        var freshRepository = new TestJpaRepository(AbstractJpaRepositoryTest::containerConfig);
+        try {
+            Thread.currentThread().setContextClassLoader(new URLClassLoader(new URL[0], null));
+
+            assertThatCode(() -> freshRepository.inTransaction(entityManager -> {
+                entityManager.persist(new TestItemEntity(id, "bootstrapped"));
+                return null;
+            })).as("first use must bootstrap Flyway and Hibernate without the context class loader")
+                    .doesNotThrowAnyException();
+        } finally {
+            Thread.currentThread().setContextClassLoader(originalContextClassLoader);
+            freshRepository.close();
+        }
+    }
+
+    /**
+     * The factory's pool is the real HikariCP pool, so its settings are read directly rather than
+     * inferred from connection counts: four connections at most, one kept idle. That cap is what keeps
+     * every persistence unit under the role's connection limit.
+     */
+    @Test
+    void theBuiltPoolIsCappedAtFourConnectionsWithOneKeptIdle() {
+        var freshRepository = new TestJpaRepository(AbstractJpaRepositoryTest::containerConfig);
+        try {
+            freshRepository.warmUp();
+            var factory = freshRepository.read(EntityManager::getEntityManagerFactory);
+
+            var pool = factory.unwrap(SessionFactoryImplementor.class)
+                    .getServiceRegistry()
+                    .getService(ConnectionProvider.class)
+                    .unwrap(HikariDataSource.class);
+
+            assertThat(pool.getMaximumPoolSize())
+                    .as("the pool must hold at most four connections per persistence unit")
+                    .isEqualTo(4);
+            assertThat(pool.getMinimumIdle())
+                    .as("the pool must keep one connection idle instead of HikariCP's default of ten")
+                    .isEqualTo(1);
+        } finally {
+            freshRepository.close();
+        }
     }
 }
