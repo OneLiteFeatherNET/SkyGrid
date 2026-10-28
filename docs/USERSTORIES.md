@@ -197,19 +197,81 @@ request, so that repeated play is recognized instead of forgotten every reboot.
 - Credentials (`SKYGRID_DB_HOST`/`PORT`/`NAME`/`USER`/`PASSWORD`) come from environment variables,
   never a config file.
 
-### I3: Season lifecycle
-As a **server owner**, I want challenges bundled into fixed-duration Seasons with their own content
-package, so that I can deliver new content on a predictable cadence.
-- Backlog. Needs a Season model (start/end, bound challenge rule set) layered orthogonally to
-  Presets; not implemented yet.
+### I3a: Seasons defined in config
+As a **server owner**, I want each season described in one config file (dates, duration, preset, challenge set), so that I can plan a season's content without touching code.
+- Status: Specified, not implemented (`docs/design/seasons.md`).
+- [Must] When the server starts, the system shall load one season per file from `seasons/<id>.<ext>` (JSON, YAML or TOML).
+- [Must] If a season names an unknown preset or challenge, or overlaps another season, then the system shall reject that season with a log line naming the file and the bad value, and keep loading the other seasons.
+- [Must] Where `seasons/` is empty or absent, the system shall run one implicit `legacy` season without scheduled transitions.
+- [Should] When an admin runs `/skygrid season reload confirm`, the system shall apply changes to future seasons only, never to the running season.
 
-### I4: Adaptive meta-progression
-As a **player**, I want repeating/prestige-style progression that scales challenge difficulty to my
-own play patterns, so that the game stays appropriately challenging over time.
-- Adapts difficulty/pacing to behavior signals (session-length trend, completion ratio, drop-off
-  point, voluntary return rate); must never adapt reward magnitude to a struggle/disengagement
-  signal (the "compensation loop" risk).
-- Backlog. Needs the per-player state store; not implemented yet.
+### I3b: Automatic season transition with a fresh world
+As a **server owner**, I want the server to switch to the next season on schedule, with a new SkyGrid world, so that each season is a clean start without a manual reset.
+- Status: Specified, not implemented (`docs/design/seasons.md`).
+- [Must] When the active season ends and a next season is configured, the system shall create the next world with a new seed under its own world key, and activate exactly that season's challenge set.
+- [Must] The system shall persist each transition phase before and after its side effects, and after a restart shall resume from the last persisted phase without repeating a finished step.
+- [Must] If world creation fails, then the system shall keep the current season playable, alert admins and retry.
+- [Must] If no next season is configured at the end instant, then the system shall extend the current season and warn admins once per day.
+- [Should] The system shall pre-create the next world 15 minutes before the boundary by default.
+
+### I3c: Players move safely into the new season
+As a **player**, I want to land safely in the new season's world, whether I am online at the switch or join later, so that I never get stuck in an archived world.
+- Status: Specified, not implemented (`docs/design/seasons.md`).
+- [Must] When the season switches, the system shall move every online player from the old world to a spread-spawn slot in the new world.
+- [Must] When a player joins while their last world is an archived season world, the system shall place them at a spread-spawn slot in the active season world.
+- [Must] When a player first enters a season, the system shall reset their vanilla state (inventory, ender chest, XP, health, hunger, effects, respawn point, game mode) exactly once per player per season.
+
+### I3d: Per-season progress archive
+As a **player**, I want my tiers and task completions of past seasons kept, so that what I achieved is recognized after the reset.
+- Status: Specified, not implemented (`docs/design/seasons.md`).
+- [Must] The system shall key every tier and task completion by season id, write new progress only to the active season, and leave ended seasons unchanged.
+- [Must] When a player runs `/skygrid season history [player]`, the system shall list that player's tier and completed task count for each past season.
+- [Must] When an admin runs `/skygrid challenge tier reset confirm`, the system shall clear the active season's progress only.
+- [Must] When existing data is migrated, the system shall assign every pre-season row to season `legacy`.
+
+### I3e: Season visibility and announcements
+As a **player**, I want to see which season is running and when it ends, so that I can plan my play without a countdown pressure.
+- Status: Specified, not implemented (`docs/design/seasons.md`).
+- [Must] When a player runs `/skygrid season info`, the system shall show the season name, its active challenges and its end date as an absolute date in the viewer's locale.
+- [Must] The system shall announce an upcoming transition at most three times (24 h, 1 h and 5 min before), each stating that progress is archived, not lost.
+- [Won't] A sidebar or boss bar countdown timer in this release.
+
+### I3f: Admin control over the lifecycle
+As a **server admin**, I want to inspect, force, retry and postpone a transition, so that I can handle maintenance windows and failures without editing the database.
+- Status: Specified, not implemented (`docs/design/seasons.md`).
+- [Must] When an admin runs `/skygrid season status`, the system shall show the active season, its phase, the next season and the next scheduled action with its instant.
+- [Must] When an admin runs `/skygrid season advance`, the system shall only describe what will happen; with `confirm` it shall start the transition now.
+- [Must] When an admin runs `/skygrid season retry`, the system shall resume a failed transition from its persisted phase.
+- [Should] When an admin runs `/skygrid season postpone <duration> confirm`, the system shall move the active season's end and announce the new end.
+- [Must] If the database is unreachable, then the system shall refuse every transition, report the reason in `status`, and keep the current world running.
+
+### I3g: Archived worlds on disk
+As a **server owner**, I want each finished season world kept as a self-describing folder, so that an external renderer or a later restore can use it.
+- Status: Specified, not implemented (`docs/design/seasons.md`).
+- [Must] When the old world unloads, the system shall move its folder to `<archive.directory>/<seasonId>/` and write a `season.json` manifest (id, name, seed, preset, start, end, world key, plugin version).
+- [Must] If the archive move fails, then the system shall leave the folder in place, mark the run `ARCHIVE_FAILED`, and keep the new season playable.
+- [Could] Where `archive.compress` is set, the system shall write a `.tar.zst` archive instead of a folder.
+
+### I4: Opt-in prestige per challenge
+As a **player**, I want to choose a harder prestige step of a challenge I have already mastered, and to see exactly what changes, so that the challenge stays interesting on replay without the game deciding for me.
+- Status: Specified, not implemented (`docs/design/prestige.md`).
+- [Must] When a player runs `/skygrid prestige up <challenge>`, the system shall show the next step's full modifier list, that its tasks start fresh, and a confirm action, and shall not change the step before confirmation.
+- [Must] When a player confirms a raise and every task of the challenge is complete at the current step, the system shall raise the current step by exactly one.
+- [Must] If a task is incomplete at the current step, or the challenge is active, or the step is the ladder maximum, then the system shall reject the raise and say why.
+- [Must] When a player runs `/skygrid prestige down <challenge>`, the system shall lower the step at any time without confirmation, keeping every completion and the highest step reached.
+- [Must] While a step above 0 is current, the system shall apply exactly that step's modifiers to that player only.
+- [Must] The system shall grant each task reward at most once per player, challenge, task and step, with the same reward definition at every step.
+- [Must] The system shall never derive a reward, a modifier or a step from session length, completion ratio, drop-off point, return rate or deaths.
+- [Should] When a player completes the last open task at the current step and a higher step exists, the system shall send one neutral chat line, unless the admin disabled it for that challenge.
+- [Won't] Behavior-signal suggestions, automatic step changes, per-step reward overrides and a cross-challenge global prestige in this release.
+
+### I4a: Admin-defined prestige ladders
+As a **server admin**, I want to define prestige steps per challenge within hard limits, so that I control how hard prestige gets and cannot ship an absurd step by mistake.
+- Status: Specified, not implemented (`docs/design/prestige.md`).
+- [Must] The system shall read an optional `prestige` block from `challenges/<id>.<ext>` and include it in the generated challenge schema.
+- [Must] If a ladder has non-contiguous steps, more than 10 steps, a value outside a modifier's bounds, a step that is not strictly harder than the previous one, or a modifier type the challenge does not support, then the system shall disable prestige for that challenge, log a warning naming the file and the step, and keep loading the other challenges.
+- [Must] When an admin runs `/skygrid prestige of <player> [challenge]`, the system shall show that player's steps.
+- [Must] When an admin runs `/skygrid prestige reset confirm`, the system shall reset every player's current step in the active season and keep the all-time highest record.
 
 ### I5: Ethical engagement review gate
 As a **player**, I want every challenge/season/progression mechanic vetted against dark-pattern
@@ -217,15 +279,86 @@ risks before release, so that the game stays fun rather than manipulative.
 - Every new mechanic passes the checklist in `.claude/skills/challenge-season-system/SKILL.md`,
   reviewed by `player-psychology-designer`, before implementation.
 
-## Epic J: Economy and marketplace (sketch only, not scheduled)
+## Epic J: Economy and marketplace
 
-### J1: SkyBlock-style player economy (sketch)
-As a **server owner**, I want a configurable player economy, so that progression has a persistent
-goods/trade layer.
-- Sketch only; needs a full requirements pass before implementation.
-- Do not use JSR 354 (`javax.money`/Moneta): it hard-requires `jakarta.annotation` and `okhttp3` at
-  runtime, violating the framework-free-core rule. Use a small `Money`-style record in `api.model`
-  instead (same pattern as `BlockId`).
-- The per-player persistence gap it shared with Epic I2-I4 has a first concrete solution now (see
-  I2a); this economy sketch would follow the same repository/use-case pattern rather than
-  reinventing one.
+Roles as above, plus **player** and **plugin developer** (a third-party plugin that consumes Vault).
+The design is in `docs/design/economy.md`. Coins are whole (0 fractional digits, fixed for go-live)
+and are never sold for real money by the server.
+
+### J1: Balance and payments
+As a **player**, I want to see my coin balance and pay other players, so that I know what I can afford and can trade outside the market.
+- Status: Specified, not implemented (`docs/design/economy.md`).
+- [Must] The system shall store each balance as a non-negative whole number of coins per season.
+- [Must] When a player joins for the first time in a season, the system shall create the account with the configured starting balance (default 0) as one audited ledger transaction.
+- [Must] When a player runs `/balance` (alias `/bal`), the system shall show the balance with the configured currency name, and with `skygridng.economy.balance.others`, another player's balance.
+- [Must] When a player runs `/pay <player> <amount>`, the system shall debit the payer and credit the recipient in one transaction, or change neither.
+- [Must] If the amount is zero, negative, has a fractional part, exceeds `economy.pay.maxAmount` or the payer's balance, or would push the recipient above `economy.maxBalance`, then the system shall reject the payment and echo the value and the balance.
+- [Must] While the payer's pay cooldown (2 s by default) runs, the system shall reject another `/pay` and show the remaining time.
+- [Must] If the database is unreachable, then the system shall reply with an "economy unavailable" message and never show a cached value as current.
+
+### J1c: Audited admin adjustments
+As a **server admin**, I want to give, take and set balances with a full audit trail, so that I can fix mistakes without losing track of where coins came from.
+- Status: Specified, not implemented (`docs/design/economy.md`).
+- [Must] When an admin with `skygridng.economy.admin` runs `/skygrid eco give|take <player> <amount> [reason]`, the system shall post one ledger transaction recording the actor and the reason.
+- [Must] If `take` exceeds the balance, then the system shall reject it and echo the balance, without clamping.
+- [Must] When an admin runs `/skygrid eco set <player> <amount>`, the system shall require `confirm` and post the difference as a delta.
+- [Must] When an admin runs `/skygrid eco history <player> [page]`, the system shall list that player's ledger entries newest first.
+- [Must] The system shall never update or delete a ledger row; corrections are new, opposite transactions.
+
+### J1d: Currency task reward
+As a **server admin**, I want a task to reward coins, so that challenges feed the economy.
+- Status: Specified, not implemented (`docs/design/economy.md`).
+- [Must] The system shall accept `type: currency` with a decimal `amount` as a task reward in `challenges/<id>.<ext>` and in the generated challenge schema.
+- [Must] When a new task completion carries a currency reward, the system shall credit the player under a season-scoped idempotency key, also while the player is offline.
+- [Must] If a completion is recorded but its credit is missing (a crash between the two commits), then the system shall apply the credit on the player's next join.
+
+### J1e: Vault economy provider
+As a **plugin developer**, I want SkyGrid's currency behind the Vault API, so that existing shop, rank and placeholder plugins work with it unchanged.
+- Status: Specified, not implemented (`docs/design/economy.md`).
+- [Must] Where Vault or VaultUnlocked is installed, the system shall register SkyGrid's economy with it at the configured priority (default `Normal`), and log a warning naming any competing provider.
+- [Must] Where neither is installed, the system shall start normally and keep every other economy feature working.
+- [Must] When a Vault call passes a negative, NaN, infinite or fractional amount, the system shall return a failure response and change nothing.
+- [Must] Every successful Vault deposit or withdrawal shall be one ledger transaction, tagged with the calling plugin's name where the API provides it.
+
+### J1f: Admin shop
+As a **player**, I want to buy and sell items at fixed prices in a shop GUI, so that I can turn SkyGrid loot into coins and coins into blocks I lack.
+- Status: Specified, not implemented (`docs/design/economy.md`).
+- [Must] When a player runs `/shop [id]`, the system shall show a chest GUI with each entry's item, quantity, buy price, sell price and the player's balance, loaded from `shops/<id>.<ext>`.
+- [Must] When a player buys an entry, the system shall debit the price and queue the item to the mailbox in one transaction.
+- [Must] When a player sells an entry, the system shall remove exactly the configured quantity of matching, unmodified items and credit the sell price, in a crash-safe way.
+- [Must] If a shop sells an item above the lowest buy price of the same item in any shop, then the system shall reject the shop file on load, naming both entries.
+- [Must] While a player is in creative or spectator mode, the system shall refuse shop sales.
+
+### J1g: Player marketplace with item escrow
+As a **player**, I want to list items for a price and buy other players' listings, so that a player-driven market forms.
+- Status: Specified, not implemented (`docs/design/economy.md`).
+- [Must] When a player runs `/market sell <price>`, the system shall move the held stack into escrow and create an active listing for the configured duration (48 h by default).
+- [Must] When a player buys a listing, the system shall in one transaction verify that it is still active, debit the buyer, credit the seller minus the 5% market tax, credit the tax to the market tax sink, mark the listing sold, and queue the item to the buyer's mailbox.
+- [Must] If two players buy the same listing concurrently, then exactly one purchase shall succeed and the other shall get an "already sold" message with no balance change.
+- [Must] If the player already has 10 active listings, the price is outside the configured range, or the item exceeds the size cap, then the system shall reject the listing and keep the item in hand.
+- [Must] When a seller cancels a listing or it expires, the system shall queue the item to the seller's mailbox.
+- [Must] The system shall not let a player buy their own listing, and the market GUI shall show the price, the tax and the seller's net before the seller confirms.
+
+### J1h: Mailbox for undelivered items
+As a **player**, I want items I bought, or listings that came back, to wait for me, so that nothing is lost while I am offline or my inventory is full.
+- Status: Specified, not implemented (`docs/design/economy.md`).
+- [Must] When a delivery is queued for an online player with enough inventory space, the system shall deliver it immediately.
+- [Must] If the inventory has no room for the whole stack, then the system shall keep the item in the mailbox and tell the player to run `/market claim`.
+- [Must] When a player joins, the system shall reconcile pending deliveries and pending escrows before delivering anything new.
+- [Must] When a season ends, the system shall expire mailbox contents with the season, under the same inventory policy as the player's inventory.
+
+### J1i: Ledger integrity check
+As a **server owner**, I want to verify that no coins were created or lost, so that I can trust the economy after a crash.
+- Status: Specified, not implemented (`docs/design/economy.md`).
+- [Should] When an admin runs `/skygrid eco audit`, the system shall report whether the postings of every transaction sum to zero and every balance equals the sum of its postings, naming each mismatch.
+
+### J1j: Market browsing
+As a **player**, I want to find listings quickly, so that I do not have to scroll through the whole market.
+- Status: Specified, not implemented (`docs/design/economy.md`).
+- [Should] The market GUI shall page listings newest first and filter them by item id with `/market search <item>`.
+- [Could] The market GUI shall sort listings by unit price.
+
+### J1k: Balance leaderboard
+- Status: Deferred (`docs/design/economy.md`, section 3.2 item 3).
+- [Won't] A balance leaderboard in this release, until the I5 review of social comparison has been done.
+

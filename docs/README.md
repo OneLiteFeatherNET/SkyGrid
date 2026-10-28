@@ -29,6 +29,16 @@ only changes newly generated chunks, never the seed-to-world mapping.
 - [Per-block rules](rules.md): the rule model, `state`, `physics`, `placement`, water modes, and
   worked examples from the shipped defaults.
 
+## Design specs
+
+Backlog designs for seasons, prestige and the economy are specified but not implemented yet. They
+contain the user stories, the design, the test plan and the decisions. The index and the delivery plan
+are in [design/README.md](design/README.md):
+
+- [Seasons](design/seasons.md): fixed-length seasons with their own world and challenge set.
+- [Prestige](design/prestige.md): opt-in prestige steps per challenge.
+- [Economy](design/economy.md): the coin ledger, pay, shop, market, mailbox and Vault provider.
+
 ## At a glance
 
 ```
