@@ -105,6 +105,17 @@ class SeasonCommandsTest {
     }
 
     @Test
+    @DisplayName("'season status' says no season is configured while the server runs the legacy season")
+    void statusWithoutSeasonsSaysNoSeason() {
+        when(seasons.status()).thenReturn(Optional.of(new SeasonStatus(SeasonId.LEGACY,
+                SeasonPhase.ACTIVE, null, null)));
+
+        subject.status(source);
+
+        assertThat(source.messages()).containsExactly(Messages.seasonNone());
+    }
+
+    @Test
     @DisplayName("'season status' reports a refusal when the status cannot be read")
     void statusReportsRefusalWhenUnreadable() {
         when(seasons.status()).thenReturn(Optional.empty());

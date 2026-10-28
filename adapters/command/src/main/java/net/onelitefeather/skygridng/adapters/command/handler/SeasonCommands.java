@@ -82,6 +82,10 @@ public final class SeasonCommands implements CloudCommandHandler {
             return;
         }
         SeasonStatus value = status.get();
+        if (value.activeSeason().equals(SeasonId.LEGACY) && value.nextSeason() == null) {
+            source.sendMessage(Messages.seasonNone());
+            return;
+        }
         String next = value.nextSeason() == null ? null : value.nextSeason().value();
         String endsAt = value.nextActionAt() == null ? "-" : Messages.seasonDate(value.nextActionAt(), source.locale());
         source.sendMessage(Messages.seasonStatus(value.activeSeason().value(), value.phase().name(), next, endsAt));
