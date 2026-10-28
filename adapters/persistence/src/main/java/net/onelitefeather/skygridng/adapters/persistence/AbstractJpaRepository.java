@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 /**
  * Shared, reusable base for every Postgres-backed, Jakarta Persistence (JSR 338) via Hibernate ORM
  * repository in this project. This is the generic factory-bootstrap and transaction-lifecycle
- * plumbing that {@code PostgresChallengeProgressRepository} (in {@code adapters/challenge-progress})
+ * plumbing that {@code PostgresChallengeProgressRepository} (in {@code adapters/persistence})
  * originally implemented by hand for the {@code challenge_tier} table alone; every future
  * Postgres-backed adapter (for example an analytics store) should extend this class instead of
  * writing a second copy of the same bootstrap. A concrete subclass needs only its own {@code

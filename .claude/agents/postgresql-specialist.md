@@ -21,7 +21,7 @@ Non-negotiable rules:
   Postgres-backed adapter: Jakarta Persistence (JSR 338) via Hibernate ORM, standalone bootstrapped
   (lazy `EntityManagerFactory` construction, Flyway migration, `read`/`inTransaction` transaction
   helpers). Extend it rather than writing a new bootstrap from scratch or reverting to raw JDBC by
-  default; `adapters/challenge-progress`'s `PostgresChallengeProgressRepository` is the worked
+  default; `PostgresChallengeProgressRepository` (in `adapters/persistence`) is the worked
   example of extending it (a new adapter needs only its own `@Entity` class, migration, and a small
   repository built on the inherited `read`/`inTransaction`).
 - **Parameterized queries only.** Never build SQL by string concatenation or interpolation; this is

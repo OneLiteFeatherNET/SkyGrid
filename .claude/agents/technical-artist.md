@@ -17,7 +17,7 @@ Scope:
 
 - Particle effects and sound cues attached to generation or decoration events (for example a sound
   when a spawner/chest populates, or an effect on a first-join safe-spawn teleport), implemented
-  in `adapters/generator` or `adapters/spawn` alongside `paper-adapter`, using vanilla Bukkit
+  in `adapters/generator` or `adapters.spawn` alongside `paper-adapter`, using vanilla Bukkit
   `Particle`/`Sound` enums only, no custom assets.
 - Reviewing whether a proposed visual/audio addition is worth its performance cost (particles and
   sounds are sent to every nearby client, they are not free).

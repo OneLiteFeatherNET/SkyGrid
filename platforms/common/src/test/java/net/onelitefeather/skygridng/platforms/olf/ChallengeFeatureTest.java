@@ -1,6 +1,6 @@
 package net.onelitefeather.skygridng.platforms.olf;
 
-import net.onelitefeather.skygridng.adapters.challenge.ChallengeBehavior;
+import net.onelitefeather.skygridng.platforms.olf.challenge.ChallengeBehavior;
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import org.bukkit.plugin.java.JavaPlugin;

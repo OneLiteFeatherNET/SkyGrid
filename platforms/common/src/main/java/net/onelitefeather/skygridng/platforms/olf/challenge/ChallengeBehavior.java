@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.challenge;
+package net.onelitefeather.skygridng.platforms.olf.challenge;
 
 /**
  * A self-registering challenge enforcement unit: the counterpart to {@code OlfFeature} at the

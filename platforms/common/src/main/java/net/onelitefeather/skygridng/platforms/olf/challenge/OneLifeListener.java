@@ -1,7 +1,6 @@
 package net.onelitefeather.skygridng.platforms.olf.challenge;
 
 import jakarta.inject.Inject;
-import net.onelitefeather.skygridng.adapters.challenge.ChallengeBehavior;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
 import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;

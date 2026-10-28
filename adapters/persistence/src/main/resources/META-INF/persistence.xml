@@ -1,22 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  JSR 338 (Jakarta Persistence) descriptor for the task progress persistence unit.
+  JSR 338 (Jakarta Persistence) descriptor for every Postgres-backed persistence unit in this module.
+  One file on purpose: the shaded plugin jar may carry only one META-INF/persistence.xml, so each
+  adapter's unit is declared here with its own explicit <class> list.
 
   transaction-type is RESOURCE_LOCAL, not JTA: this plugin has no application server and no JTA
   transaction manager, only Hikari-pooled JDBC connections managed directly by Hibernate. There is
   therefore no jta-data-source element; the actual connection settings (host, port, credentials)
   are only known at runtime from environment variables via DatabaseConfig, so they are supplied as
-  property overrides to Persistence.createEntityManagerFactory(unitName, overrides) in
-  PostgresTaskCompletionRepository, not hardcoded here.
+  property overrides to Persistence.createEntityManagerFactory(unitName, overrides) in each
+  adapter's repository, not hardcoded here.
+
+  exclude-unlisted-classes=true: each unit scans nothing and loads only the entities listed in it.
 
   hibernate.hbm2ddl.auto=validate: Hibernate never creates or alters the schema. Flyway owns the
-  schema (src/main/resources/db/migration); Hibernate only validates that this entity mapping
-  matches the table Flyway already created, every time the entity manager factory is built.
+  schema (src/main/resources/db/migration/<adapter>); Hibernate only validates that each entity
+  mapping matches the table Flyway already created, every time the entity manager factory is built.
 -->
 <persistence xmlns="https://jakarta.ee/xml/ns/persistence"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd"
              version="3.1">
+
+    <persistence-unit name="challenge-progress" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <class>net.onelitefeather.skygridng.adapters.challengeprogress.ChallengeTierEntity</class>
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
+        <properties>
+            <property name="hibernate.hbm2ddl.auto" value="validate"/>
+        </properties>
+    </persistence-unit>
 
     <persistence-unit name="task-progress" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>

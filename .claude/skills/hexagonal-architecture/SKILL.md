@@ -41,7 +41,7 @@ build-file drift (add paper-api to the core and it compiles, but the framework-f
 you add a legitimately new layer or package, update `ArchitectureTest` in the same change.
 
 Per-adapter rules (`generatorAdapterIsFrameworkFree`, `spawnAdapterIsFrameworkFree`,
-`commandAdapterIsFrameworkFree`, `challengeAdapterIsFrameworkFree`, `configAdapterIsFrameworkFree`)
+`commandAdapterIsFrameworkFree`, `configAdapterIsFrameworkFree`)
 lock in the same framework-free guarantee for each of those adapters individually: none of them may
 depend on `org.bukkit..`, `io.papermc..`, Guice, or jakarta.inject (`adapters.command` additionally
 bans `org.incendo.cloud.paper..`/`org.incendo.cloud.brigadier..`, while plain Cloud core/annotation
@@ -67,7 +67,7 @@ ArchUnit in `:verification`:
   the seam whose Bukkit implementation (`LimitedRegionWriter`, wrapping a live `LimitedRegion`) lives
   in `platforms/common` alongside the rest of the Bukkit-flavored generator classes
   (`HexagonalChunkGenerator`, `RuleResolver`, `MaterialResolver`, `BiomeResolver`).
-- `adapters/spawn` (`adapters.spawn`): framework-free, like `core`, not Bukkit glue. Depends on
+- `adapters.spawn` (in `adapters/generator`): framework-free, like `core`, not Bukkit glue. Depends on
   `ports` + `api` only and resolves nothing through a native type directly; it drives the first-join
   safe-spawn search entirely through `ports.algorithm.GroundReader`, the seam whose Bukkit
   implementation (`BukkitGroundReader`, wrapping a live `World`) lives in `platforms/common`
@@ -95,19 +95,18 @@ ArchUnit in `:verification`:
   library, not a Bukkit/Paper binding, the same reasoning as Adventure's carve-out for
   `api`/`ports`/`core` (see "Enforcement (ArchUnit)" above); this module is not awaiting inversion
   into `platforms/*` the way the Bukkit edges the sibling adapters used to hold were.
-- `adapters/challenge` (`adapters.challenge`): framework-free, like `core`, not Bukkit glue. Depends
-  on `ports` + `api` only and holds nothing but `ChallengeBehavior`, a plain marker interface (no
-  Bukkit, Guice, or jakarta.inject import); its four concrete implementations
+- `ChallengeBehavior` (`platforms.olf.challenge`, in `platforms/common`): a plain marker interface
+  (no Bukkit, Guice, or jakarta.inject import). Its four concrete implementations
   (`OneLifeListener`, `NoNaturalRegenerationListener`, `NoCraftingTableListener`,
-  `LevelBorderWarningTask`) live in `platforms/common`'s `platforms.olf.challenge` package instead.
-- `adapters/challenge-progress` (`adapters.challengeprogress.*`): the Postgres-backed
-  `ChallengeProgressRepository` implementation (`PostgresChallengeProgressRepository`), depends on
-  `ports` + `api` + `adapters/persistence` (`challenge-season-system` skill).
+  `LevelBorderWarningTask`) live in the same package.
+- `adapters.challengeprogress.*` (a package of `adapters/persistence`): the Postgres-backed
+  `ChallengeProgressRepository` implementation (`PostgresChallengeProgressRepository`), built on that
+  module's JPA bootstrap (`challenge-season-system` skill).
 - `adapters/persistence` (`adapters.persistence.*`): shared, reusable Jakarta Persistence (JSR 338)
   via Hibernate ORM infrastructure (`DatabaseConfig`, `AbstractJpaRepository`: the lazy
   `EntityManagerFactory` bootstrap, Flyway migration, and `read`/`inTransaction` helpers), depends on
-  `ports` + `api` only. Every Postgres-backed adapter (for example `adapters/challenge-progress`'s
-  `PostgresChallengeProgressRepository`) extends `AbstractJpaRepository` instead of writing a new
+  `ports` + `api` only. Every Postgres-backed adapter (for example `PostgresChallengeProgressRepository` in
+  `adapters.challengeprogress`) extends `AbstractJpaRepository` instead of writing a new
   factory-bootstrap/transaction-lifecycle from scratch; a new one only needs its own `@Entity`,
   migration, and a small repository built on `read`/`inTransaction`.
 - `platforms/common` (`platforms.common.*`, `platforms.olf.*`): the shared Bukkit composition root
@@ -182,7 +181,7 @@ The second package segment matches the module: `api.*`, `ports.*`, `core.*`, `ad
   split into a `config` selector, one file per preset under `presets/`, one per block under
   `rules/`, and one per challenge under `challenges/`. Domain of the `config-schema-and-rules` skill.
 - `adapters.spawn`: `SafeLocationFinder` (the first-join safe-spawn search).
-- `adapters.challenge`: `ChallengeBehavior` only (a plain marker interface). Domain of the
+- `platforms.olf.challenge.ChallengeBehavior`: a plain marker interface (in `platforms/common`). Domain of the
   `challenge-season-system` skill.
 - `platforms.common`: `SkyGridNgPlugin` (composition root), `I18n`, the `injection/` modules
   (`PlatformModule`, `RepositoryModule`, `GeneratorModule`, `CommandModule`), the `messages/` bundles,
@@ -196,7 +195,7 @@ The second package segment matches the module: `api.*`, `ports.*`, `core.*`, `ad
 - `platforms.olf` (inside `platforms/common`): `OlfModule`, `OlfFeature`, `NetworkStartupReportFeature`,
   `ChallengeModule`, `ChallengeFeature`, and its `platforms.olf.challenge` subpackage
   (`OneLifeListener`, `NoNaturalRegenerationListener`, `NoCraftingTableListener`,
-  `LevelBorderWarningTask`: the Bukkit-facing implementations of `adapters.challenge.ChallengeBehavior`).
+  `LevelBorderWarningTask`: the Bukkit-facing implementations of `platforms.olf.challenge.ChallengeBehavior`).
 
 For exact constructor and method signatures, read `references/api-surface.md` before editing. Do not
 guess signatures; the records have validating compact constructors that throw

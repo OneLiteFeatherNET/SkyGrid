@@ -22,9 +22,10 @@ The build is grouped under category folders (see the `hexagonal-architecture` sk
 responsibilities and the dependency arrows):
 
 - `api`, `ports`, `core`: framework-free `java-library` modules, no platform plugins.
-- `adapters/generator`, `adapters/command`, `adapters/config`, `adapters/spawn`, `adapters/challenge`,
-  `adapters/challenge-progress`: the Bukkit/Jackson/persistence adapter libraries.
-- `adapters/persistence`: shared Jakarta Persistence (Hibernate ORM) infrastructure, no Bukkit.
+- `adapters/generator` (including `adapters.spawn`), `adapters/command`, `adapters/config`: the
+  Bukkit/Jackson adapter libraries.
+- `adapters/persistence`: shared Jakarta Persistence (Hibernate ORM) infrastructure, no Bukkit, and
+  the challenge and task progress repositories.
 - `platforms/common`: the shared Bukkit composition root, a library (no platform plugins).
 - `platforms/paper`: the single Paper distribution. Applies shadow, plugin-yml, run-paper, and
   CycloneDX SBOM generation. Produces `skygrid-ng-<version>.jar`.
