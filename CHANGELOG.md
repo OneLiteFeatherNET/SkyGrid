@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.1.0...v0.1.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **persistence:** make the database work inside the plugin jar on paper ([#35](https://github.com/OneLiteFeatherNET/SkyGrid/issues/35)) ([a5d2623](https://github.com/OneLiteFeatherNET/SkyGrid/commit/a5d2623a6930361e61fa2a436b0bf0048ac20246))
+
 ## [0.1.0](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.1.0...v0.1.0) (2026-10-28)
 
 
