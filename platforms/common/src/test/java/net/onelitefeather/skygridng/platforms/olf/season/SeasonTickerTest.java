@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
+import org.mockbukkit.mockbukkit.scheduler.RepeatingTask;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -53,15 +54,24 @@ class SeasonTickerTest {
     }
 
     @Test
-    void aTickCallsTheServiceWithTheClockInstantEvery600Ticks() {
-        gate.markWarmedUp();
+    void startSchedulesOneRepeatingRunEvery600Ticks() {
         ticker().start();
 
-        // The first run is on the first tick, the next one 600 ticks later: two runs within 601 ticks.
-        server.getScheduler().performTicks(601);
+        assertThat(server.getScheduler().getPendingTasks())
+                .as("the ticker schedules exactly one repeating task with the 600 tick period")
+                .singleElement()
+                .isInstanceOfSatisfying(RepeatingTask.class,
+                        task -> assertThat(task.getPeriod()).isEqualTo(SeasonTicker.PERIOD_TICKS));
+    }
+
+    @Test
+    void aRunHandsTheClockInstantToTheService() {
+        gate.markWarmedUp();
+
+        ticker().run();
         server.getScheduler().waitAsyncTasksFinished();
 
-        verify(admin, times(2)).tick(NOW);
+        verify(admin, times(1)).tick(NOW);
     }
 
     @Test
