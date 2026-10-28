@@ -1,5 +1,9 @@
 package net.onelitefeather.skygridng.adapters.persistence;
 
+import com.zaxxer.hikari.HikariDataSource;
+import jakarta.persistence.EntityManager;
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -182,6 +186,34 @@ class AbstractJpaRepositoryTest {
                     .doesNotThrowAnyException();
         } finally {
             Thread.currentThread().setContextClassLoader(originalContextClassLoader);
+            freshRepository.close();
+        }
+    }
+
+    /**
+     * The factory's pool is the real HikariCP pool, so its settings are read directly rather than
+     * inferred from connection counts: four connections at most, one kept idle. That cap is what keeps
+     * every persistence unit under the role's connection limit.
+     */
+    @Test
+    void theBuiltPoolIsCappedAtFourConnectionsWithOneKeptIdle() {
+        var freshRepository = new TestJpaRepository(AbstractJpaRepositoryTest::containerConfig);
+        try {
+            freshRepository.warmUp();
+            var factory = freshRepository.read(EntityManager::getEntityManagerFactory);
+
+            var pool = factory.unwrap(SessionFactoryImplementor.class)
+                    .getServiceRegistry()
+                    .getService(ConnectionProvider.class)
+                    .unwrap(HikariDataSource.class);
+
+            assertThat(pool.getMaximumPoolSize())
+                    .as("the pool must hold at most four connections per persistence unit")
+                    .isEqualTo(4);
+            assertThat(pool.getMinimumIdle())
+                    .as("the pool must keep one connection idle instead of HikariCP's default of ten")
+                    .isEqualTo(1);
+        } finally {
             freshRepository.close();
         }
     }

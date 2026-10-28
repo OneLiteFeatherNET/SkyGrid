@@ -48,6 +48,13 @@ import java.util.function.Supplier;
  */
 public abstract class AbstractJpaRepository implements AutoCloseable {
 
+    /**
+     * Every persistence unit shares one role's connection limit, and a Minecraft server makes few,
+     * short queries, so each pool stays far below HikariCP's default of ten connections.
+     */
+    private static final int POOL_MAXIMUM_SIZE = 4;
+    private static final int POOL_MINIMUM_IDLE = 1;
+
     private final String persistenceUnitName;
     private final String migrationLocation;
     private final String migrationHistoryTable;
@@ -157,7 +164,9 @@ public abstract class AbstractJpaRepository implements AutoCloseable {
                 "hibernate.hikari.jdbcUrl", config.jdbcUrl(),
                 "hibernate.hikari.dataSource.user", config.user(),
                 "hibernate.hikari.dataSource.password", config.password(),
-                "hibernate.hikari.poolName", "skygridng-" + persistenceUnitName);
+                "hibernate.hikari.poolName", "skygridng-" + persistenceUnitName,
+                "hibernate.hikari.maximumPoolSize", String.valueOf(POOL_MAXIMUM_SIZE),
+                "hibernate.hikari.minimumIdle", String.valueOf(POOL_MINIMUM_IDLE));
         try {
             return Persistence.createEntityManagerFactory(persistenceUnitName, overrides);
         } catch (RuntimeException e) {
