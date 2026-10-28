@@ -1,0 +1,34 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+context: |
+  SkyGrid-ng is a Paper 26.1 chunk generator plugin (Java 25, Gradle multi-module build:
+  api, ports, core, adapters/*, platforms/common, platforms/paper, verification) with a
+  hexagonal architecture: api, ports, core and the framework-free adapters never import
+  Bukkit, Guice or jakarta.inject; Bukkit code lives in platforms/common only.
+  Persistence is PostgreSQL through HikariCP, Hibernate and Flyway, one migration folder
+  and one history table per adapter. Tests use JUnit 5, AssertJ, MockBukkit and
+  Testcontainers; ArchUnit in verification enforces the dependency rule.
+  Repository text is English only and never uses em dashes.
+  Commits and pull request titles follow Conventional Commits (lower case, imperative,
+  no trailing period); release-please reads them.
+
+# Per-artifact rules (optional)
+rules:
+  proposal:
+    - Name the Conventional Commits type and scope the change ships under (for example
+      `feat(seasons)`); a change that mixes types is split into several changes.
+  design:
+    - Every challenge, season, progression or economy mechanic includes the I5 dark-pattern
+      review from .claude/skills/challenge-season-system/SKILL.md, item by item.
+  tasks:
+    - The last task opens the pull request, titled with the Conventional Commit from the proposal.
+    - Test tasks come before the production code they cover (red, then green).
+
+# Per-operation guidance (optional)
+operations:
+  apply:
+    guidance:
+      - "Commit one Conventional Commit type per commit; archive commits use 'docs(openspec): archive <change-name>'."
+      - "Run only the touched modules' tests with --max-workers=2, for example ./gradlew :core:test --max-workers=2."
