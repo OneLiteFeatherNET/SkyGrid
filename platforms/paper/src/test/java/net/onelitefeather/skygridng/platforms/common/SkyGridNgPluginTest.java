@@ -5,6 +5,10 @@ import net.onelitefeather.skygridng.platforms.common.generator.HexagonalChunkGen
 import net.onelitefeather.skygridng.platforms.olf.challenge.NoCraftingTableListener;
 import net.onelitefeather.skygridng.platforms.olf.challenge.NoNaturalRegenerationListener;
 import net.onelitefeather.skygridng.platforms.olf.challenge.OneLifeListener;
+import net.onelitefeather.skygridng.api.model.SeasonId;
+import net.onelitefeather.skygridng.ports.in.CurrentSeason;
+import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
+import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -21,6 +25,7 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
 import java.io.File;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -155,5 +160,25 @@ class SkyGridNgPluginTest {
             }
         }
         return false;
+    }
+
+    @Test
+    @DisplayName("an empty seasons directory keeps the legacy season and schedules no transition")
+    void emptySeasonsDirectoryKeepsTheLegacySeason() {
+        SkyGridNgPlugin plugin = MockBukkit.load(SkyGridNgPlugin.class);
+        var seasons = plugin.injector().getInstance(SeasonAdminUseCase.class);
+
+        assertThat(plugin.injector().getInstance(CurrentSeason.class).id())
+                .as("without configured seasons every progress write goes to the legacy season")
+                .isEqualTo(SeasonId.LEGACY);
+        assertThat(seasons.list().seasons())
+                .as("no season is configured, so none is loaded")
+                .isEmpty();
+        assertThat(seasons.tick(Instant.parse("2027-01-01T00:00:00Z")))
+                .as("no transition is scheduled, so a tick does nothing")
+                .isFalse();
+        assertThat(Bukkit.getWorlds())
+                .as("no season world is created")
+                .noneMatch(world -> world.getKey().getKey().startsWith("season_"));
     }
 }

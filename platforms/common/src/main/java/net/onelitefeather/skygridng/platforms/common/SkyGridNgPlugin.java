@@ -18,6 +18,7 @@ import net.onelitefeather.skygridng.platforms.common.spawn.SpreadSpawnListener;
 import net.onelitefeather.skygridng.platforms.olf.ChallengeModule;
 import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
 import net.onelitefeather.skygridng.platforms.olf.OlfModule;
+import net.onelitefeather.skygridng.platforms.olf.season.SeasonModule;
 import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
 import net.onelitefeather.skygridng.api.SkyGridApi;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
@@ -25,6 +26,7 @@ import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
+import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;
 import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import org.bukkit.generator.ChunkGenerator;
@@ -84,6 +86,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
         modules.add(new CommandModule());
         modules.add(new OlfModule());
         modules.add(new ChallengeModule());
+        modules.add(new SeasonModule());
         return modules;
     }
 
@@ -147,18 +150,25 @@ public class SkyGridNgPlugin extends JavaPlugin {
     private void warmUpDatabases() {
         List<Object> repositories = List.of(
                 injector.getInstance(ChallengeProgressRepository.class),
-                injector.getInstance(TaskCompletionRepository.class));
+                injector.getInstance(TaskCompletionRepository.class),
+                injector.getInstance(SeasonRunRepository.class));
+        DatabaseWarmUpGate gate = injector.getInstance(DatabaseWarmUpGate.class);
         getServer().getScheduler().runTaskAsynchronously(this, () -> {
-            for (Object repository : repositories) {
-                if (repository instanceof AbstractJpaRepository database) {
-                    try {
-                        database.warmUp();
-                    } catch (RuntimeException e) {
-                        getLogger().log(Level.WARNING, "Database warm-up failed for "
-                                + database.getClass().getSimpleName() + ", it will retry on first use: "
-                                + e.getMessage(), e);
+            try {
+                for (Object repository : repositories) {
+                    if (repository instanceof AbstractJpaRepository database) {
+                        try {
+                            database.warmUp();
+                        } catch (RuntimeException e) {
+                            getLogger().log(Level.WARNING, "Database warm-up failed for "
+                                    + database.getClass().getSimpleName() + ", it will retry on first use: "
+                                    + e.getMessage(), e);
+                        }
                     }
                 }
+            } finally {
+                // The season ticker waits for this gate, whether the warm-up succeeded or failed.
+                gate.markWarmedUp();
             }
         });
     }

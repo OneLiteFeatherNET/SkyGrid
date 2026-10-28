@@ -204,4 +204,18 @@ class JacksonSeasonRepositoryTest {
         assertThat(settings.archiveCompress()).isFalse();
         assertThat(settings.advanceMinNotice()).isEqualTo(Duration.ofHours(24));
     }
+
+    @Test
+    void absentSeasonsDirectoryIsSeededWithTheDisabledExampleThatIsNotLoaded(@TempDir Path dir) {
+        byte[] example = "id = \"s01_overgrowth\"\n".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        SeasonRepository seeded = new JacksonSeasonRepository(dir,
+                path -> path.equals("seasons/example.yml.disabled") ? new java.io.ByteArrayInputStream(example) : null);
+
+        assertThat(seeded.load().seasons())
+                .as("the example is written but never loaded, so no season is active by default")
+                .isEmpty();
+        assertThat(dir.resolve("seasons/example.yml.disabled"))
+                .as("an absent seasons directory is seeded with the disabled example")
+                .exists();
+    }
 }

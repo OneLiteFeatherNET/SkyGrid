@@ -7,8 +7,10 @@ import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
 import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
 import net.onelitefeather.skygridng.api.model.ProgressScope;
 import net.onelitefeather.skygridng.api.model.SeasonId;
+import net.onelitefeather.skygridng.api.model.SeasonRun;
 import net.onelitefeather.skygridng.platforms.common.injection.RepositoryModule;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
+import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;
 import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
 import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.PluginDescriptionFile;
@@ -19,9 +21,11 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
 import java.io.StringReader;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -64,6 +68,9 @@ class DatabaseWarmUpTest {
         assertThat(plugin.taskDatabase.bootstrapThreads)
                 .as("the task-progress database must be warmed up exactly once at enable")
                 .hasSize(1);
+        assertThat(plugin.seasonDatabase.bootstrapThreads)
+                .as("the season run database must be warmed up exactly once at enable")
+                .hasSize(1);
         assertThat(plugin.challengeDatabase.bootstrapThreads)
                 .as("the warm-up must not run on the thread that enables the plugin")
                 .doesNotContain(enablingThread);
@@ -83,7 +90,8 @@ class DatabaseWarmUpTest {
                 .extracting(LogRecord::getMessage)
                 .anySatisfy(message -> assertThat(message).contains("challenge-progress database is down"))
                 .anySatisfy(message -> assertThat(message).contains("task-progress database is down"))
-                .hasSize(2);
+                .anySatisfy(message -> assertThat(message).contains("season-run database is down"))
+                .hasSize(3);
     }
 
     /**
@@ -172,6 +180,7 @@ class DatabaseWarmUpTest {
 
         final DownDatabase challengeDatabase = new DownDatabase("challenge-progress");
         final DownDatabase taskDatabase = new DownDatabase("task-progress");
+        final DownDatabase seasonDatabase = new DownDatabase("season-run");
         final CapturingHandler log = new CapturingHandler();
 
         public ProbedPlugin() {
@@ -194,7 +203,40 @@ class DatabaseWarmUpTest {
             protected void configure() {
                 bind(ChallengeProgressRepository.class).toInstance(new ProbeChallengeRepository(challengeDatabase));
                 bind(TaskCompletionRepository.class).toInstance(new ProbeTaskRepository(taskDatabase));
+                bind(SeasonRunRepository.class).toInstance(new ProbeSeasonRepository(seasonDatabase));
             }
+        }
+    }
+
+    static final class ProbeSeasonRepository extends AbstractJpaRepository implements SeasonRunRepository {
+
+        ProbeSeasonRepository(DownDatabase database) {
+            super("season", "classpath:db/migration/season", "flyway_history_probe_season", database);
+        }
+
+        @Override
+        public Optional<SeasonRun> find(SeasonId seasonId) {
+            throw new UnsupportedOperationException("probe");
+        }
+
+        @Override
+        public Optional<SeasonRun> active() {
+            throw new UnsupportedOperationException("probe");
+        }
+
+        @Override
+        public List<SeasonRun> inFlight() {
+            throw new UnsupportedOperationException("probe");
+        }
+
+        @Override
+        public void save(SeasonRun run) {
+            throw new UnsupportedOperationException("probe");
+        }
+
+        @Override
+        public void switchActive(SeasonId from, SeasonId to, Instant at) {
+            throw new UnsupportedOperationException("probe");
         }
     }
 

@@ -8,11 +8,12 @@ import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
 import net.onelitefeather.skygridng.adapters.config.BundledDefaults;
 import net.onelitefeather.skygridng.adapters.config.JacksonPresetRepository;
 import net.onelitefeather.skygridng.adapters.config.JacksonRuleRepository;
+import net.onelitefeather.skygridng.adapters.season.PostgresSeasonRunRepository;
 import net.onelitefeather.skygridng.adapters.taskprogress.PostgresTaskCompletionRepository;
 import net.onelitefeather.skygridng.core.service.ChallengeProgressService;
-import net.onelitefeather.skygridng.core.service.LegacyCurrentSeason;
 import net.onelitefeather.skygridng.core.service.TaskProgressService;
 import net.onelitefeather.skygridng.core.state.ChallengeState;
+import net.onelitefeather.skygridng.adapters.config.JacksonSeasonRepository;
 import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;
@@ -20,10 +21,13 @@ import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
 import net.onelitefeather.skygridng.ports.out.PresetRepository;
 import net.onelitefeather.skygridng.ports.out.RewardGrantor;
 import net.onelitefeather.skygridng.ports.out.RuleRepository;
+import net.onelitefeather.skygridng.ports.out.SeasonRepository;
+import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;
 import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Path;
+import java.time.Clock;
 
 /**
  * Binds the out ports {@link PresetRepository}, {@link RuleRepository},
@@ -73,10 +77,26 @@ public final class RepositoryModule extends AbstractModule {
         return new PostgresChallengeProgressRepository(DatabaseConfig::fromEnvironment);
     }
 
+    /**
+     * The season definitions, read from {@code seasons/}. Construction reads no file; the first load happens when the
+     * season service is built during {@code onLoad}, like the preset and rule repositories.
+     */
     @Provides
     @Singleton
-    CurrentSeason provideCurrentSeason() {
-        return new LegacyCurrentSeason();
+    SeasonRepository provideSeasonRepository(JavaPlugin plugin, Path dataFolder) {
+        BundledDefaults defaults = plugin::getResource;
+        return new JacksonSeasonRepository(dataFolder, defaults);
+    }
+
+    /**
+     * Construction is cheap for the same reason as {@link #provideChallengeProgressRepository}: the environment,
+     * the pool and the Flyway migration of the {@code season} unit wait for the first call, which the async warm-up
+     * triggers.
+     */
+    @Provides
+    @Singleton
+    SeasonRunRepository provideSeasonRunRepository(Clock clock) {
+        return new PostgresSeasonRunRepository(DatabaseConfig::fromEnvironment, clock);
     }
 
     @Provides

@@ -3,12 +3,16 @@ package net.onelitefeather.skygridng.platforms.common.injection;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import jakarta.inject.Singleton;
+import net.onelitefeather.skygridng.platforms.common.DatabaseWarmUpGate;
 import net.onelitefeather.skygridng.platforms.common.generator.HexagonalChunkGenerator;
 import net.onelitefeather.skygridng.platforms.common.spawn.SpreadSpawnListener;
 import net.onelitefeather.skygridng.ports.in.SpawnPoints;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Path;
+import java.security.SecureRandom;
+import java.time.Clock;
+import java.util.function.LongSupplier;
 
 /**
  * Binds the Bukkit platform into the object graph: the plugin instance and its data folder.
@@ -33,6 +37,27 @@ public final class PlatformModule extends AbstractModule {
     @Singleton
     Path provideDataFolder(JavaPlugin plugin) {
         return plugin.getDataFolder().toPath();
+    }
+
+    /** The only time source of the season lifecycle; tests inject a fixed clock instead. */
+    @Provides
+    @Singleton
+    Clock provideClock() {
+        return Clock.systemUTC();
+    }
+
+    /** The seed source of a new season world, drawn from a secure random generator. */
+    @Provides
+    @Singleton
+    LongSupplier provideSeedSupplier() {
+        SecureRandom random = new SecureRandom();
+        return random::nextLong;
+    }
+
+    @Provides
+    @Singleton
+    DatabaseWarmUpGate provideDatabaseWarmUpGate() {
+        return new DatabaseWarmUpGate();
     }
 
     /**

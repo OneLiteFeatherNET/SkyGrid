@@ -10,6 +10,7 @@ import net.onelitefeather.skygridng.api.model.SeasonSettings;
 import net.onelitefeather.skygridng.ports.out.SeasonRepository;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,17 +35,30 @@ public final class JacksonSeasonRepository implements SeasonRepository {
     private static final String CONFIG_BASE = "config";
     private static final List<String> CONFIG_EXTENSIONS = List.of("json", "yml", "yaml", "toml");
 
+    private static final String EXAMPLE = "example.yml.disabled";
+
     private final Path dataFolder;
+    private final BundledDefaults defaults;
     private final ConfigSchemas schemas = ConfigSchemas.shared();
 
     public JacksonSeasonRepository(Path dataFolder) {
+        this(dataFolder, path -> null);
+    }
+
+    /**
+     * @param defaults supplies the bundled {@code seasons/example.yml.disabled}, which is written when the
+     *                 {@code seasons/} directory is absent; an absent bundled example is skipped
+     */
+    public JacksonSeasonRepository(Path dataFolder, BundledDefaults defaults) {
         this.dataFolder = dataFolder;
+        this.defaults = defaults;
     }
 
     @Override
     public SeasonCatalog load() {
         try {
             schemas.writeTo(dataFolder);
+            seedExampleIfAbsent();
 
             List<Season> seasons = new ArrayList<>();
             for (Path file : seasonFiles()) {
@@ -107,6 +121,21 @@ public final class JacksonSeasonRepository implements SeasonRepository {
         } catch (RuntimeException e) {
             throw new IllegalStateException(
                     "season file " + file.getFileName() + " is invalid: " + e.getMessage(), e);
+        }
+    }
+
+    /** An absent {@code seasons/} directory gets the disabled example; an existing one (even empty) is left alone. */
+    private void seedExampleIfAbsent() throws IOException {
+        Path seasonsDir = dataFolder.resolve(SEASONS_DIR);
+        if (Files.isDirectory(seasonsDir)) {
+            return;
+        }
+        try (InputStream bundled = defaults.open(SEASONS_DIR + "/" + EXAMPLE)) {
+            if (bundled == null) {
+                return;
+            }
+            Files.createDirectories(seasonsDir);
+            Files.copy(bundled, seasonsDir.resolve(EXAMPLE));
         }
     }
 
