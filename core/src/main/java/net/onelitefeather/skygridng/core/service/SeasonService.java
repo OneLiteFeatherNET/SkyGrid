@@ -103,7 +103,7 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
                     .filter(run -> run.phase() == SeasonPhase.PREPARED && !worlds.isLoaded(run.worldKey()))
                     .findFirst()
                     .<SeasonAction>map(SeasonAction.Resume::new)
-                    .orElseGet(() -> SeasonTimeline.nextAction(now, catalog, settings, known, sentNotices(active),
+                    .orElseGet(() -> SeasonTimeline.nextAction(now, catalog, settings, known, sentNotices(known),
                             lastWarning));
             if (!SeasonTimeline.isDue(action, now)) {
                 return false;
@@ -199,7 +199,8 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
         switch (action) {
             case SeasonAction.Announce notice -> {
                 announcer.upcoming(notice.season(), notice.kind().offset(), notice.boundary());
-                runs.active().ifPresent(run -> runs.save(run.withAnnounced(notice.key())));
+                runs.save(runs.find(notice.season()).orElseGet(() -> planned(notice.season()))
+                        .withAnnounced(notice.key()));
             }
             case SeasonAction.WarnNoNext warning -> {
                 announcer.adminAlert("no season follows " + activeId.value()
@@ -255,12 +256,20 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
         return known;
     }
 
-    /** The notices already sent for the boundary of the active season. */
-    private static Set<SeasonAction.Announce> sentNotices(Optional<SeasonRun> active) {
-        return active.map(run -> run.announced().stream()
-                        .map(SeasonAction.Announce::fromKey)
-                        .collect(Collectors.toSet()))
-                .orElseGet(Set::of);
+    /**
+     * The notices already sent. Each one is recorded on the run of the season it announces, so the union over the
+     * known runs holds every sent notice, also while no season is active yet.
+     */
+    private static Set<SeasonAction.Announce> sentNotices(List<SeasonRun> known) {
+        return known.stream()
+                .flatMap(run -> run.announced().stream())
+                .map(SeasonAction.Announce::fromKey)
+                .collect(Collectors.toSet());
+    }
+
+    /** The run of a season that has not been prepared yet, holding only the notices sent for it. */
+    private SeasonRun planned(SeasonId id) {
+        return new SeasonRun(id, SeasonTransition.worldKey(id), 0L, SeasonPhase.PLANNED, 0, null, null);
     }
 
     /** The active season, unless a transition step is running right now. */

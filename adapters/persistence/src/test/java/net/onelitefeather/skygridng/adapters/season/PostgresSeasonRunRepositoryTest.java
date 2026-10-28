@@ -187,6 +187,21 @@ class PostgresSeasonRunRepositoryTest {
                         SeasonPhase.ACTIVE, 0, SWITCH_AT, null));
     }
 
+    @Test
+    void switchActiveFromLegacyActivatesTheIncomingRunWithoutAStoredLegacyRow() {
+        repository.save(run("s01", SeasonPhase.PREPARED));
+
+        repository.switchActive(SeasonId.LEGACY, new SeasonId("s01"), SWITCH_AT);
+
+        assertThat(repository.find(new SeasonId("s01")))
+                .as("the first season becomes ACTIVE and starts at the switch instant")
+                .contains(new SeasonRun(new SeasonId("s01"), "skygridng:season_s01", 42L,
+                        SeasonPhase.ACTIVE, 0, SWITCH_AT, null));
+        assertThat(repository.find(SeasonId.LEGACY))
+                .as("the implicit legacy season never gets a stored row")
+                .isEmpty();
+    }
+
     /**
      * The old run is flushed to CLOSING before the new run becomes ACTIVE. If the new run's ACTIVE write fails
      * (here another ACTIVE run still exists), both runs must stay unchanged, so no moment with two active seasons

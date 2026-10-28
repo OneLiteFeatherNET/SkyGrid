@@ -12,12 +12,15 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static net.onelitefeather.skygridng.api.model.SeasonPhase.ACTIVE;
+import static net.onelitefeather.skygridng.api.model.SeasonPhase.PLANNED;
 import static net.onelitefeather.skygridng.api.model.SeasonPhase.CLOSING;
 import static net.onelitefeather.skygridng.api.model.SeasonPhase.PREPARED;
 import static net.onelitefeather.skygridng.api.model.SeasonPhase.PREPARE_FAILED;
@@ -36,6 +39,7 @@ class SeasonTimelineTest {
     private static final Instant JAN = Instant.parse("2027-01-01T00:00:00Z");
     private static final Instant MAR = Instant.parse("2027-03-01T00:00:00Z");
     private static final Duration FOUR_WEEKS = Duration.ofDays(28);
+    private static final Duration DAY = Duration.ofDays(1);
 
     private static Season season(String id, Instant start, String preset, List<String> challenges) {
         return new Season(new SeasonId(id), id, start, FOUR_WEEKS, preset, challenges, null);
@@ -181,6 +185,13 @@ class SeasonTimelineTest {
         return new SeasonAction.Announce(B.id(), kind, BOUNDARY, BOUNDARY.minus(kind.offset()));
     }
 
+    private static Set<SeasonAction.Announce> allAnnouncedFor(Season season) {
+        return Arrays.stream(SeasonAction.AnnouncementKind.values())
+                .map(kind -> new SeasonAction.Announce(season.id(), kind, season.start(),
+                        season.start().minus(kind.offset())))
+                .collect(Collectors.toSet());
+    }
+
     private static Set<SeasonAction.Announce> allAnnounced() {
         return Set.of(announce(SeasonAction.AnnouncementKind.SEVEN_DAYS),
                 announce(SeasonAction.AnnouncementKind.ONE_DAY),
@@ -274,12 +285,104 @@ class SeasonTimelineTest {
     }
 
     @Test
-    void givesNoActionWithoutAnActiveRun() {
-        var action = SeasonTimeline.nextAction(BOUNDARY, PAIR, SETTINGS, List.of(), Set.of(), Optional.empty());
+    void givesNoActionWithoutAnyConfiguredSeason() {
+        var action = SeasonTimeline.nextAction(BOUNDARY, SeasonCatalog.empty(), SETTINGS, List.of(), Set.of(),
+                Optional.empty());
 
         assertThat(action)
-                .as("with no active season run there is nothing to schedule")
+                .as("with no configured season there is nothing to schedule")
                 .isEqualTo(new SeasonAction.None());
+    }
+
+    @Test
+    void givesNoActionOnceEverySeasonHasEnded() {
+        var action = SeasonTimeline.nextAction(B.end().plus(DAY), PAIR, SETTINGS, List.of(), Set.of(),
+                Optional.empty());
+
+        assertThat(action)
+                .as("a server that starts after the last season ended schedules nothing")
+                .isEqualTo(new SeasonAction.None());
+    }
+
+    @Test
+    void announcesTheFirstSeasonFromLegacyWithoutAnActiveRun() {
+        var action = SeasonTimeline.nextAction(JAN.minus(Duration.ofDays(8)), PAIR, SETTINGS, List.of(),
+                Set.of(), Optional.empty());
+
+        assertThat(action)
+                .as("with no active run the implicit legacy season hands over to the first season, announced from its start")
+                .isEqualTo(new SeasonAction.Announce(A.id(), SeasonAction.AnnouncementKind.SEVEN_DAYS, JAN,
+                        JAN.minus(Duration.ofDays(7))));
+    }
+
+    @Test
+    void announcesOnlyTheNoticesThatAreStillAheadWhenTheServerStartsLate() {
+        var action = SeasonTimeline.nextAction(JAN.minus(Duration.ofHours(1)), PAIR, SETTINGS, List.of(),
+                Set.of(), Optional.empty());
+
+        assertThat(action)
+                .as("a server that starts an hour before the first season skips the seven day and one day notices")
+                .isEqualTo(new SeasonAction.Announce(A.id(), SeasonAction.AnnouncementKind.ONE_HOUR, JAN,
+                        JAN.minus(Duration.ofHours(1))));
+    }
+
+    @Test
+    void preparesTheFirstSeasonOneLeadBeforeItsStartFromLegacy() {
+        var action = SeasonTimeline.nextAction(JAN.minus(Duration.ofHours(1)), PAIR, SETTINGS, List.of(),
+                allAnnouncedFor(A), Optional.empty());
+
+        assertThat(action)
+                .as("the first season's world is prepared the default 15 minutes before its start")
+                .isEqualTo(new SeasonAction.Prepare(A, JAN.minus(Duration.ofMinutes(15))));
+    }
+
+    @Test
+    void preparesAPlannedFirstSeasonWhoseNoticesAreRecorded() {
+        var action = SeasonTimeline.nextAction(JAN.minus(Duration.ofHours(1)), PAIR, SETTINGS,
+                List.of(run("s01", PLANNED)), allAnnouncedFor(A), Optional.empty());
+
+        assertThat(action)
+                .as("a planned run that only holds the sent notices is still prepared")
+                .isEqualTo(new SeasonAction.Prepare(A, JAN.minus(Duration.ofMinutes(15))));
+    }
+
+    @Test
+    void switchesFromLegacyAtTheFirstSeasonStart() {
+        var action = SeasonTimeline.nextAction(JAN, PAIR, SETTINGS, List.of(run("s01", PREPARED)),
+                allAnnouncedFor(A), Optional.empty());
+
+        assertThat(action)
+                .as("a prepared first season switches from legacy at its start instant")
+                .isEqualTo(new SeasonAction.Switch(SeasonId.LEGACY, A.id(), JAN));
+    }
+
+    @Test
+    void preparesThenSwitchesAtOnceWhenTheServerStartsInsideTheFirstSeason() {
+        var now = JAN.plus(Duration.ofDays(1));
+
+        var action = SeasonTimeline.nextAction(now, PAIR, SETTINGS, List.of(), allAnnouncedFor(A), Optional.empty());
+
+        assertThat(action)
+                .as("the first season's world is due at once when the server starts after its preparation instant")
+                .isEqualTo(new SeasonAction.Prepare(A, JAN.minus(Duration.ofMinutes(15))));
+        assertThat(SeasonTimeline.isDue(action, now))
+                .as("a preparation whose instant has passed is due immediately")
+                .isTrue();
+    }
+
+    @Test
+    void switchesAtOnceWhenThePreparedFirstSeasonIsAlreadyRunning() {
+        var now = JAN.plus(Duration.ofDays(1));
+
+        var action = SeasonTimeline.nextAction(now, PAIR, SETTINGS, List.of(run("s01", PREPARED)),
+                allAnnouncedFor(A), Optional.empty());
+
+        assertThat(action)
+                .as("a prepared first season that started before the server came up switches at once")
+                .isEqualTo(new SeasonAction.Switch(SeasonId.LEGACY, A.id(), JAN));
+        assertThat(SeasonTimeline.isDue(action, now))
+                .as("the switch instant has passed, so the switch is due")
+                .isTrue();
     }
 
     @Test

@@ -51,7 +51,8 @@ public final class SeasonTimeline {
      * Decides the next action of the season lifecycle. Resumable runs come first. Otherwise the active season
      * is the one whose end is the boundary: its notices, the preparation of the next world and the switch at the
      * boundary are the candidates, and the earliest one wins. Without a next season the warning is returned,
-     * once per day from {@code lastWarning}.
+     * once per day from {@code lastWarning}. Without an active run the first season that has not ended is the
+     * next one, and the boundary is its start (see {@link #fromLegacy}).
      *
      * @param now         the instant of the decision, passed in so the method never reads the clock
      * @param catalog     the validated seasons
@@ -72,7 +73,10 @@ public final class SeasonTimeline {
             return new SeasonAction.Resume(resumable.get());
         }
         Optional<SeasonRun> active = runs.stream().filter(run -> run.phase() == SeasonPhase.ACTIVE).findFirst();
-        Optional<Season> ending = active.flatMap(run -> season(catalog, run.seasonId()));
+        if (active.isEmpty()) {
+            return fromLegacy(now, catalog, settings, runs, sent);
+        }
+        Optional<Season> ending = season(catalog, active.get().seasonId());
         if (ending.isEmpty()) {
             return new SeasonAction.None();
         }
@@ -81,22 +85,56 @@ public final class SeasonTimeline {
         if (next.isEmpty()) {
             return new SeasonAction.WarnNoNext(warningAt(boundary, lastWarning));
         }
-        Season incoming = next.get();
-        Optional<SeasonRun> incomingRun = runs.stream()
-                .filter(run -> run.seasonId().equals(incoming.id()))
-                .findFirst();
+        return soonest(now, ending.get().id(), next.get(), boundary, settings, runs, sent, false);
+    }
+
+    /**
+     * Without an active run the implicit {@link SeasonId#LEGACY} season runs. Its successor is the first season that
+     * has not ended yet, and its boundary is that season's start. A server that starts inside that season prepares
+     * and switches at once, and only the notices still ahead are returned.
+     */
+    private static SeasonAction fromLegacy(
+            Instant now,
+            SeasonCatalog catalog,
+            SeasonSettings settings,
+            List<SeasonRun> runs,
+            Set<SeasonAction.Announce> sent) {
+        Optional<Season> first = catalog.seasons().stream().filter(season -> season.end().isAfter(now)).findFirst();
+        if (first.isEmpty()) {
+            return new SeasonAction.None();
+        }
+        return soonest(now, SeasonId.LEGACY, first.get(), first.get().start(), settings, runs, sent, true);
+    }
+
+    /**
+     * The earliest candidate of the boundary {@code boundary} between {@code ending} and {@code incoming}: its unsent
+     * notices, then the preparation of the incoming world when no run or only a planned run exists, or the switch
+     * once the incoming world is prepared. Notices whose instant has already passed are skipped when {@code late}.
+     */
+    private static SeasonAction soonest(
+            Instant now,
+            SeasonId ending,
+            Season incoming,
+            Instant boundary,
+            SeasonSettings settings,
+            List<SeasonRun> runs,
+            Set<SeasonAction.Announce> sent,
+            boolean late) {
         List<SeasonAction> candidates = new ArrayList<>();
         for (SeasonAction.AnnouncementKind kind : SeasonAction.AnnouncementKind.values()) {
             SeasonAction.Announce notice =
                     new SeasonAction.Announce(incoming.id(), kind, boundary, boundary.minus(kind.offset()));
-            if (!sent.contains(notice)) {
+            if (!sent.contains(notice) && (!late || !notice.at().isBefore(now))) {
                 candidates.add(notice);
             }
         }
-        if (incomingRun.isEmpty()) {
+        Optional<SeasonRun> incomingRun = runs.stream()
+                .filter(run -> run.seasonId().equals(incoming.id()))
+                .findFirst();
+        if (incomingRun.isEmpty() || incomingRun.get().phase() == SeasonPhase.PLANNED) {
             candidates.add(new SeasonAction.Prepare(incoming, boundary.minus(settings.prepareLead())));
         } else if (incomingRun.get().phase() == SeasonPhase.PREPARED) {
-            candidates.add(new SeasonAction.Switch(ending.get().id(), incoming.id(), boundary));
+            candidates.add(new SeasonAction.Switch(ending, incoming.id(), boundary));
         }
         return candidates.stream()
                 .min(Comparator.comparing(SeasonTimeline::at))

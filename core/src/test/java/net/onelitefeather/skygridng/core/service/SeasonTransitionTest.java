@@ -1,12 +1,14 @@
 package net.onelitefeather.skygridng.core.service;
 
 import net.onelitefeather.skygridng.api.model.SeasonCatalog;
+import net.onelitefeather.skygridng.api.model.SeasonId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static net.onelitefeather.skygridng.api.model.SeasonPhase.ACTIVE;
 import static net.onelitefeather.skygridng.api.model.SeasonPhase.CLOSING;
@@ -32,6 +34,7 @@ class SeasonTransitionTest {
     private static final Instant BOUNDARY = JAN.plus(SeasonFakes.FOUR_WEEKS);
     private static final Instant BEFORE_PREPARE = BOUNDARY.minus(Duration.ofMinutes(15));
     private static final String INCOMING_KEY = "skygridng:season_s02";
+    private static final UUID PLAYER = new UUID(1L, 2L);
     private static final SeasonCatalog CATALOG = new SeasonCatalog(List.of(
             season("s01", JAN, "standard", "one_life"),
             season("s02", BOUNDARY, "classic", "no_crafting_table")));
@@ -57,6 +60,27 @@ class SeasonTransitionTest {
                 () -> 7L,
                 id -> {
                 });
+    }
+
+    @Test
+    void switchFromLegacyActivatesTheFirstSeasonAndLeavesTheMainWorldLoaded() {
+        final String firstKey = "skygridng:season_s01";
+        runs = new Runs(journal, run("s01", PREPARED));
+        worlds.loaded.add(firstKey);
+        worlds.folders.add(firstKey);
+        worlds.playersInWorld.add(PLAYER);
+
+        transition().perform(new SeasonAction.Switch(SeasonId.LEGACY, new SeasonId("s01"), JAN), JAN);
+
+        assertThat(runs.get("s01").phase())
+                .as("the first season becomes ACTIVE at its start, with no closing row for legacy")
+                .isEqualTo(ACTIVE);
+        assertThat(journal.count("unload:") + journal.count("archive:"))
+                .as("the legacy main world is neither unloaded nor archived")
+                .isZero();
+        assertThat(journal.entries())
+                .as("players move from the main world into the first season world and are reset there")
+                .contains("evacuate:minecraft:overworld->" + firstKey, "reset:" + PLAYER + ":s01");
     }
 
     @Test

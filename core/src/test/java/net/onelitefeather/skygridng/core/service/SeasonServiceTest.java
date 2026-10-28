@@ -99,6 +99,43 @@ class SeasonServiceTest {
     }
 
     @Test
+    void firstSeasonIsPreparedThenSwitchedFromLegacyAtItsStart() {
+        SeasonService service = service(Set.of());
+
+        drain(service, JAN.minus(Duration.ofMinutes(15)));
+        assertThat(runs.get("s01").phase())
+                .as("the first season's world is prepared one lead before its start, with no active run")
+                .isEqualTo(PREPARED);
+
+        drain(service, JAN);
+        assertThat(runs.get("s01").phase())
+                .as("the first season becomes ACTIVE at its start")
+                .isEqualTo(ACTIVE);
+        assertThat(journal.count("switch:legacy->s01"))
+                .as("the switch from legacy happens exactly once")
+                .isEqualTo(1);
+        assertThat(journal.count("archive:") + journal.count("unload:"))
+                .as("the legacy world is never unloaded or archived")
+                .isZero();
+    }
+
+    @Test
+    void firstSeasonNoticeIsRememberedWithoutAnActiveRun() {
+        SeasonService service = service(Set.of());
+        Instant sevenDaysBefore = JAN.minus(Duration.ofDays(7));
+
+        assertThat(service.tick(sevenDaysBefore))
+                .as("the seven day notice of the first season is due at its instant")
+                .isTrue();
+        assertThat(service.tick(sevenDaysBefore))
+                .as("a notice that was sent is recorded, so the same tick sends nothing again")
+                .isFalse();
+        assertThat(journal.count("upcoming:s01:"))
+                .as("the seven day notice is sent exactly once")
+                .isEqualTo(1);
+    }
+
+    @Test
     void secondTickDuringTransitionIsANoOp() {
         List<Boolean> nested = new ArrayList<>();
         SeasonService service = service(Set.of(), run("s01", ACTIVE));

@@ -43,6 +43,9 @@ public final class SeasonTransition {
 
     private static final String WORLD_KEY_PREFIX = "skygridng:season_";
 
+    /** The main world of the server, which the implicit legacy season runs in and which is never unloaded. */
+    static final String LEGACY_WORLD_KEY = "minecraft:overworld";
+
     private final SeasonCatalog catalog;
     private final SeasonRunRepository runs;
     private final SeasonWorlds worlds;
@@ -105,11 +108,21 @@ public final class SeasonTransition {
         step.run();
     }
 
-    /** Persists the new season's run with its seed, then creates its world. */
+    /** The namespaced key of the world of season {@code id}. */
+    static String worldKey(SeasonId id) {
+        return WORLD_KEY_PREFIX + id.value();
+    }
+
+    /**
+     * Persists the new season's run with its seed, then creates its world. A planned run that already holds the
+     * notices sent for this season keeps them.
+     */
     private void prepare(Season season) {
         long seed = season.seed() != null ? season.seed() : seeds.getAsLong();
-        SeasonRun preparing = new SeasonRun(season.id(), WORLD_KEY_PREFIX + season.id().value(), seed,
-                PREPARING, 0, null, null);
+        SeasonRun preparing = runs.find(season.id())
+                .map(planned -> new SeasonRun(season.id(), worldKey(season.id()), seed, PREPARING, 0, null, null,
+                        planned.endsAt(), planned.announced()))
+                .orElseGet(() -> new SeasonRun(season.id(), worldKey(season.id()), seed, PREPARING, 0, null, null));
         runs.save(preparing);
         stepPreparing(preparing);
     }
@@ -142,13 +155,17 @@ public final class SeasonTransition {
     /**
      * Commits the switch. The ending season's challenges are deactivated first, while the database still names it
      * as the active season, so the round boundary is credited to it. Then the incoming season's challenge set is
-     * applied, the listeners run and the season start is announced.
+     * applied, the listeners run and the season start is announced. From the legacy season there is nothing to
+     * close: the players of the main world move into the incoming season at once, and no world is unloaded.
      */
     private void switchTo(SeasonId from, SeasonId to, Instant now) {
-        Season ending = season(from).orElseThrow(() -> new IllegalStateException("unknown season " + from.value()));
+        boolean fromLegacy = from.equals(SeasonId.LEGACY);
         Season incoming = season(to).orElseThrow(() -> new IllegalStateException("unknown season " + to.value()));
-        for (String challenge : ending.challenges()) {
-            challenges.deactivate(challenge);
+        if (!fromLegacy) {
+            Season ending = season(from).orElseThrow(() -> new IllegalStateException("unknown season " + from.value()));
+            for (String challenge : ending.challenges()) {
+                challenges.deactivate(challenge);
+            }
         }
         runs.switchActive(from, to, now);
         // The incoming season keeps its effective end across a restart, even when an earlier postponement shifted it.
@@ -157,6 +174,9 @@ public final class SeasonTransition {
         activateExactly(incoming);
         listeners.onSwitched(from, to);
         announcer.started(to);
+        if (fromLegacy) {
+            moveEverybody(LEGACY_WORLD_KEY, runs.find(to).orElseThrow());
+        }
     }
 
     /** Closing step: applies the incoming set again (idempotent), moves the players out and marks the unload. */
@@ -167,7 +187,7 @@ public final class SeasonTransition {
         }
         season(incoming.get().seasonId()).ifPresent(this::activateExactly);
         if (worlds.isLoaded(ending.worldKey())) {
-            moveEverybody(ending, incoming.get());
+            moveEverybody(ending.worldKey(), incoming.get());
         }
         runs.save(withPhase(ending, UNLOADING, ending.attempts()));
     }
@@ -179,7 +199,7 @@ public final class SeasonTransition {
             if (incoming.isEmpty()) {
                 return;
             }
-            moveEverybody(ending, incoming.get());
+            moveEverybody(ending.worldKey(), incoming.get());
             if (!worlds.unload(ending.worldKey())) {
                 return;
             }
@@ -244,9 +264,9 @@ public final class SeasonTransition {
         }
     }
 
-    /** Moves every player out of the ending world and resets each one for the incoming season. */
-    private void moveEverybody(SeasonRun ending, SeasonRun incoming) {
-        List<UUID> moved = worlds.evacuate(ending.worldKey(), incoming.worldKey());
+    /** Moves every player out of {@code fromKey} and resets each one for the incoming season. */
+    private void moveEverybody(String fromKey, SeasonRun incoming) {
+        List<UUID> moved = worlds.evacuate(fromKey, incoming.worldKey());
         for (UUID player : moved) {
             resets.reset(player, incoming.seasonId());
         }

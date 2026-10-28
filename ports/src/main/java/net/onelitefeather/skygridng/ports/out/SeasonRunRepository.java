@@ -32,7 +32,9 @@ public interface SeasonRunRepository {
 
     /**
      * Moves {@code from} to {@code CLOSING} with its end instant {@code at}, then {@code to} to {@code ACTIVE}
-     * with its start instant {@code at}, in one unit of work. Either both changes commit or neither does.
+     * with its start instant {@code at}, in one unit of work. Either both changes commit or neither does. When
+     * {@code from} is {@link net.onelitefeather.skygridng.api.model.SeasonId#LEGACY}, which has no stored run, only
+     * {@code to} changes.
      *
      * @throws SeasonRunConflictException if either run is missing or the switch would break the single active rule
      */

@@ -93,13 +93,16 @@ public final class PostgresSeasonRunRepository extends AbstractJpaRepository imp
             if (from.equals(to)) {
                 throw new SeasonRunConflictException("cannot switch season " + from.value() + " to itself");
             }
-            var outgoing = entityManager.find(SeasonRunEntity.class, from.value(), LockModeType.PESSIMISTIC_WRITE);
+            var outgoing = from.equals(SeasonId.LEGACY) ? null
+                    : entityManager.find(SeasonRunEntity.class, from.value(), LockModeType.PESSIMISTIC_WRITE);
             var incoming = entityManager.find(SeasonRunEntity.class, to.value(), LockModeType.PESSIMISTIC_WRITE);
-            if (outgoing == null || incoming == null) {
+            if ((outgoing == null && !from.equals(SeasonId.LEGACY)) || incoming == null) {
                 throw new SeasonRunConflictException(
                         "cannot switch from " + from.value() + " to " + to.value() + ": both runs must exist");
             }
-            outgoing.close(at);
+            if (outgoing != null) {
+                outgoing.close(at);
+            }
             // The outgoing run leaves ACTIVE before the incoming run may take it: the unique index is checked per statement.
             entityManager.flush();
             incoming.activate(at);
