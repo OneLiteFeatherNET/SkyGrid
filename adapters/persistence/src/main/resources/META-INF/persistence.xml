@@ -41,4 +41,14 @@
             <property name="hibernate.hbm2ddl.auto" value="validate"/>
         </properties>
     </persistence-unit>
+
+    <persistence-unit name="season" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <class>net.onelitefeather.skygridng.adapters.season.SeasonRunEntity</class>
+        <class>net.onelitefeather.skygridng.adapters.persistence.SeasonIdConverter</class>
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
+        <properties>
+            <property name="hibernate.hbm2ddl.auto" value="validate"/>
+        </properties>
+    </persistence-unit>
 </persistence>
