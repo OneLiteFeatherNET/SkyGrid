@@ -11,6 +11,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -135,6 +136,29 @@ class AbstractJpaRepositoryTest {
 
         var found = repository.read(entityManager -> entityManager.find(TestItemEntity.class, id));
         assertThat(found).isNull();
+    }
+
+    /**
+     * {@link AbstractJpaRepository#warmUp()} runs the lazy bootstrap on its own, so the first real
+     * call after it does no bootstrap work: the config is resolved once, by warmUp, and never again.
+     */
+    @Test
+    void warmUpBootstrapsSoTheNextCallReusesTheBuiltFactory() {
+        var configResolutions = new AtomicInteger();
+        var warmedRepository = new TestJpaRepository(() -> {
+            configResolutions.incrementAndGet();
+            return containerConfig();
+        });
+        try {
+            warmedRepository.warmUp();
+            assertThat(configResolutions).as("warmUp must resolve the config and build the factory").hasValue(1);
+
+            warmedRepository.read(entityManager -> null);
+
+            assertThat(configResolutions).as("a call after warmUp must reuse the built factory").hasValue(1);
+        } finally {
+            warmedRepository.close();
+        }
     }
 
     /**

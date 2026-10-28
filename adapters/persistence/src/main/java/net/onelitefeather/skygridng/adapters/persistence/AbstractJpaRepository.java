@@ -167,6 +167,16 @@ public abstract class AbstractJpaRepository implements AutoCloseable {
     }
 
     /**
+     * Runs the lazy bootstrap now (config, Flyway migration, entity manager factory) instead of on the
+     * first {@link #read} or {@link #inTransaction}, so a caller can pay that cost off the main thread
+     * ahead of time. A failure is thrown to the caller and the bootstrap is retried on the next use,
+     * exactly as if this method had never been called.
+     */
+    public void warmUp() {
+        entityManagerFactory();
+    }
+
+    /**
      * Runs {@code work} against a fresh {@link EntityManager} with no transaction, for read-only
      * queries. The {@link EntityManager} is opened and closed around the call (try-with-resources);
      * any exception {@code work} throws propagates unwrapped, since Hibernate's own exceptions are

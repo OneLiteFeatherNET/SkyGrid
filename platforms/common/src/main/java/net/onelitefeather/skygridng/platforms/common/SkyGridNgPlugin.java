@@ -18,12 +18,14 @@ import net.onelitefeather.skygridng.platforms.common.spawn.SpreadSpawnListener;
 import net.onelitefeather.skygridng.platforms.olf.ChallengeModule;
 import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
 import net.onelitefeather.skygridng.platforms.olf.OlfModule;
+import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
 import net.onelitefeather.skygridng.api.SkyGridApi;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
+import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.ServicePriority;
@@ -129,9 +131,36 @@ public class SkyGridNgPlugin extends JavaPlugin {
         // Spread-spawn: first-join players are scattered onto their own platforms in our worlds.
         getServer().getPluginManager().registerEvents(injector.getInstance(SpreadSpawnListener.class), this);
 
+        warmUpDatabases();
+
         getLogger().info("SkyGrid-ng enabled. World generator: \"SkyGrid-ng\". Algorithm: " + algorithm + ".");
 
         onExtensionEnable();
+    }
+
+    /**
+     * Runs the Flyway migrations and the Hibernate bootstrap of the Postgres backed repositories on an
+     * async thread. Left to the first command or task completion, that blocking work ran on the server
+     * main thread and tripped the watchdog. A failure is logged as one warning per database and never
+     * disables the plugin: the repository keeps retrying lazily on its first real use.
+     */
+    private void warmUpDatabases() {
+        List<Object> repositories = List.of(
+                injector.getInstance(ChallengeProgressRepository.class),
+                injector.getInstance(TaskCompletionRepository.class));
+        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            for (Object repository : repositories) {
+                if (repository instanceof AbstractJpaRepository database) {
+                    try {
+                        database.warmUp();
+                    } catch (RuntimeException e) {
+                        getLogger().log(Level.WARNING, "Database warm-up failed for "
+                                + database.getClass().getSimpleName() + ", it will retry on first use: "
+                                + e.getMessage(), e);
+                    }
+                }
+            }
+        });
     }
 
     @Override
