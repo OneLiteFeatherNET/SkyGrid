@@ -180,20 +180,9 @@ phase, and `season retry` starts the step again.
 
 ### What players lose and keep
 
-At the end of a season, the reset deletes:
-
-- inventory, ender chest, experience, and the current prestige step,
-- coins, pending mailbox items, and market listings.
-
-The reset keeps:
-
-- tier and task history,
-- the archived world,
-- the highest prestige step.
-
-The coins, mailbox, market and prestige entries come with the economy and prestige changes. Until
-those ship, the reset covers inventory, ender chest, experience, health, hunger, potion effects,
-respawn point and game mode. A player is reset once per season, on the first entry into it.
+A player is reset on the first entry into a new season. The reset clears inventory, ender chest,
+experience, health, hunger, potion effects and the respawn point, and sets survival mode. It keeps the
+tier and task history and the archived world. Each player is reset once per season.
 
 Announcements go to every online player, in the player's own language, with the absolute end date
 (in UTC) and the deleted and kept lists:
