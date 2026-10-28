@@ -1,13 +1,15 @@
 package net.onelitefeather.skygridng.adapters.challengeprogress;
 
-import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import net.onelitefeather.skygridng.adapters.persistence.FreshTestDatabase;
+import net.onelitefeather.skygridng.api.model.SeasonId;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -20,52 +22,48 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Round-trips {@link PostgresChallengeProgressRepository} against a real, disposable PostgreSQL
- * instance started by Testcontainers, including the actual Flyway migration; nothing here is
- * mocked at the JDBC level.
+ * instance started by Testcontainers, including the actual Flyway migrations. Each test runs against
+ * its own fresh database.
  */
 @Testcontainers(disabledWithoutDocker = true)
 class PostgresChallengeProgressRepositoryTest {
 
+    private static final SeasonId SEASON_ONE = new SeasonId("s01");
+    private static final SeasonId SEASON_TWO = new SeasonId("s02");
+
     @Container
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
-    private static PostgresChallengeProgressRepository repository;
+    private PostgresChallengeProgressRepository repository;
 
-    @BeforeAll
-    static void startRepository() {
-        var config = new DatabaseConfig(
-                POSTGRES.getHost(),
-                POSTGRES.getMappedPort(5432),
-                POSTGRES.getDatabaseName(),
-                POSTGRES.getUsername(),
-                POSTGRES.getPassword());
+    @BeforeEach
+    void startRepository() {
+        var config = FreshTestDatabase.create(POSTGRES);
         repository = new PostgresChallengeProgressRepository(() -> config);
     }
 
-    @AfterAll
-    static void stopRepository() {
-        if (repository != null) {
-            repository.close();
-        }
+    @AfterEach
+    void stopRepository() {
+        repository.close();
     }
 
     @Test
     void tierOfReturnsZeroBeforeAnyCompletion() {
         var playerId = UUID.randomUUID();
 
-        assertThat(repository.tierOf(playerId, "one_life")).isZero();
+        assertThat(repository.tierOf(SEASON_ONE, playerId, "one_life")).isZero();
     }
 
     @Test
     void recordCompletionCreatesAtTierOneThenIncrements() {
         var playerId = UUID.randomUUID();
 
-        var firstTier = repository.recordCompletion(playerId, "one_life");
-        var secondTier = repository.recordCompletion(playerId, "one_life");
+        var firstTier = repository.recordCompletion(SEASON_ONE, playerId, "one_life");
+        var secondTier = repository.recordCompletion(SEASON_ONE, playerId, "one_life");
 
         assertThat(firstTier).isEqualTo(1);
         assertThat(secondTier).isEqualTo(2);
-        assertThat(repository.tierOf(playerId, "one_life")).isEqualTo(2);
+        assertThat(repository.tierOf(SEASON_ONE, playerId, "one_life")).isEqualTo(2);
     }
 
     @Test
@@ -73,35 +71,65 @@ class PostgresChallengeProgressRepositoryTest {
         var playerA = UUID.randomUUID();
         var playerB = UUID.randomUUID();
 
-        repository.recordCompletion(playerA, "one_life");
-        repository.recordCompletion(playerA, "one_life");
-        repository.recordCompletion(playerB, "no_crafting_table");
+        repository.recordCompletion(SEASON_ONE, playerA, "one_life");
+        repository.recordCompletion(SEASON_ONE, playerA, "one_life");
+        repository.recordCompletion(SEASON_ONE, playerB, "no_crafting_table");
 
-        assertThat(repository.tierOf(playerA, "one_life")).isEqualTo(2);
-        assertThat(repository.tierOf(playerB, "no_crafting_table")).isEqualTo(1);
-        assertThat(repository.tierOf(playerB, "one_life")).isZero();
-        assertThat(repository.tierOf(playerA, "no_crafting_table")).isZero();
+        assertThat(repository.tierOf(SEASON_ONE, playerA, "one_life")).isEqualTo(2);
+        assertThat(repository.tierOf(SEASON_ONE, playerB, "no_crafting_table")).isEqualTo(1);
+        assertThat(repository.tierOf(SEASON_ONE, playerB, "one_life")).isZero();
+        assertThat(repository.tierOf(SEASON_ONE, playerA, "no_crafting_table")).isZero();
     }
 
     @Test
-    void resetAllClearsEveryPlayerAndChallenge() {
+    void sameChallengeInTwoSeasonsKeepsSeparateTiers() {
         var playerId = UUID.randomUUID();
-        repository.recordCompletion(playerId, "one_life");
 
-        repository.resetAll();
+        repository.recordCompletion(SEASON_ONE, playerId, "one_life");
+        repository.recordCompletion(SEASON_ONE, playerId, "one_life");
+        repository.recordCompletion(SEASON_TWO, playerId, "one_life");
 
-        assertThat(repository.tierOf(playerId, "one_life")).isZero();
+        assertThat(repository.tierOf(SEASON_ONE, playerId, "one_life"))
+                .as("tier in season one must not be affected by season two")
+                .isEqualTo(2);
+        assertThat(repository.tierOf(SEASON_TWO, playerId, "one_life"))
+                .as("tier in season two starts at its own count")
+                .isEqualTo(1);
+    }
+
+    @Test
+    void resetSeasonClearsOnlyThatSeason() {
+        var playerId = UUID.randomUUID();
+        repository.recordCompletion(SEASON_ONE, playerId, "one_life");
+        repository.recordCompletion(SEASON_TWO, playerId, "one_life");
+
+        repository.resetSeason(SEASON_ONE);
+
+        assertThat(repository.tierOf(SEASON_ONE, playerId, "one_life"))
+                .as("the reset season must be cleared")
+                .isZero();
+        assertThat(repository.tierOf(SEASON_TWO, playerId, "one_life"))
+                .as("other seasons must be left unchanged")
+                .isEqualTo(1);
+    }
+
+    @Test
+    void historyReturnsOneTierPerSeason() {
+        var playerId = UUID.randomUUID();
+        repository.recordCompletion(SEASON_ONE, playerId, "one_life");
+        repository.recordCompletion(SEASON_ONE, playerId, "one_life");
+        repository.recordCompletion(SEASON_ONE, playerId, "one_life");
+        repository.recordCompletion(SEASON_TWO, playerId, "one_life");
+
+        assertThat(repository.history(playerId))
+                .isEqualTo(Map.of(SEASON_ONE, 3, SEASON_TWO, 1));
     }
 
     /**
      * Proves that the pessimistic-write lock in {@link PostgresChallengeProgressRepository#recordCompletion}
      * actually serializes two genuinely concurrent completions for the same player and challenge,
-     * instead of racing: both calls must apply, and no update may be lost. A {@link CyclicBarrier}
-     * with two parties forces both worker threads to reach {@code recordCompletion} at the same
-     * instant rather than running sequentially by accident, so whichever thread loses the race for
-     * the row lock genuinely has to wait on it, then observe the other thread's write. Each future is
-     * bounded with a timeout so a regression that deadlocks under the lock (for example a lock
-     * upgrade issue) fails this test loudly instead of hanging CI forever.
+     * instead of racing: both calls must apply, and no update may be lost. Kept as a threaded test
+     * from before the season change; it is the only test in this class that uses threads.
      */
     @Test
     void concurrentRecordCompletionsForSamePlayerChallengeBothApplyWithoutLostUpdate() throws Exception {
@@ -112,7 +140,7 @@ class PostgresChallengeProgressRepositoryTest {
         try {
             Callable<Integer> completeOnceBothThreadsAreReady = () -> {
                 startBarrier.await();
-                return repository.recordCompletion(playerId, challengeId);
+                return repository.recordCompletion(SEASON_ONE, playerId, challengeId);
             };
 
             var firstCall = executor.submit(completeOnceBothThreadsAreReady);
@@ -122,7 +150,7 @@ class PostgresChallengeProgressRepositoryTest {
             var secondTier = secondCall.get(10, TimeUnit.SECONDS);
 
             assertThat(Set.of(firstTier, secondTier)).isEqualTo(Set.of(1, 2));
-            assertThat(repository.tierOf(playerId, challengeId)).isEqualTo(2);
+            assertThat(repository.tierOf(SEASON_ONE, playerId, challengeId)).isEqualTo(2);
         } finally {
             executor.shutdownNow();
         }

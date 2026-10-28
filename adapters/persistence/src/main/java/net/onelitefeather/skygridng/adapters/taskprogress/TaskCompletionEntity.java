@@ -2,27 +2,27 @@ package net.onelitefeather.skygridng.adapters.taskprogress;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
- * JPA entity mapping of the {@code task_completion} table (schema owned by
- * {@code V1__create_task_completion.sql}, never altered by Hibernate: see {@code persistence.xml}'s
- * {@code hibernate.hbm2ddl.auto=validate}).
+ * JPA entity mapping of the {@code task_completion} table (schema owned by the Flyway migrations, never
+ * altered by Hibernate). Row existence alone is the completion fact: no status or boolean column.
  *
- * <p>Deliberately not a record, unlike every other value type in this project: Hibernate needs a
- * mutable, proxyable class for its dirty-checking and (potentially) lazy-loading machinery, which a
- * record's all-final-fields, no-arg-constructor-free shape cannot provide. This is a documented,
- * narrow exception to the project's "everything is a record" house style, confined to this one JPA
- * entity class; the composite id ({@link TaskCompletionId}) and every other type in this module stay
- * immutable records. The protected no-arg constructor exists for Hibernate only and must never be
- * called from application code, which always uses the public constructor.
- *
- * <p>No status or boolean column: row existence alone is the completion fact (see
- * {@code V1__create_task_completion.sql}'s data minimization comment), so unlike
- * {@code ChallengeTierEntity}'s {@code tier} field, there is nothing else here to store or mutate.
+ * <p>Deliberately not a record: Hibernate needs a mutable, proxyable class. The protected no-arg
+ * constructor exists for Hibernate only.
  */
 @Entity
 @Table(name = "task_completion")
+@NamedQueries({
+        @NamedQuery(
+                name = "TaskCompletionEntity.ofPlayer",
+                query = "select e from TaskCompletionEntity e where e.id.playerId = :playerId"),
+        @NamedQuery(
+                name = "TaskCompletionEntity.deleteBySeason",
+                query = "delete from TaskCompletionEntity e where e.id.seasonId = :seasonId")
+})
 public class TaskCompletionEntity {
 
     @EmbeddedId

@@ -1,6 +1,7 @@
 package net.onelitefeather.skygridng.adapters.taskprogress;
 
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.Task;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,12 +19,13 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 class TaskCompletionIdTest {
 
     private static final UUID PLAYER_ID = UUID.fromString("11111111-2222-3333-4444-555555555555");
+    private static final SeasonId SEASON = SeasonId.LEGACY;
 
     @Test
     @DisplayName("a null playerId throws")
     void nullPlayerIdThrows() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new TaskCompletionId(null, "one_life", "survive_a_day"))
+                .isThrownBy(() -> new TaskCompletionId(SEASON, null, "one_life", 0, "survive_a_day"))
                 .withMessageContaining("playerId must not be null");
     }
 
@@ -31,7 +33,7 @@ class TaskCompletionIdTest {
     @DisplayName("a blank challengeId throws")
     void blankChallengeIdThrows() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new TaskCompletionId(PLAYER_ID, " ", "survive_a_day"))
+                .isThrownBy(() -> new TaskCompletionId(SEASON, PLAYER_ID, " ", 0, "survive_a_day"))
                 .withMessageContaining("challengeId must not be blank");
     }
 
@@ -41,7 +43,7 @@ class TaskCompletionIdTest {
         String tooLong = "a".repeat(ChallengeRule.MAX_ID_LENGTH + 1);
 
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new TaskCompletionId(PLAYER_ID, tooLong, "survive_a_day"))
+                .isThrownBy(() -> new TaskCompletionId(SEASON, PLAYER_ID, tooLong, 0, "survive_a_day"))
                 .withMessageContaining("challengeId must be at most " + ChallengeRule.MAX_ID_LENGTH + " characters");
     }
 
@@ -50,7 +52,7 @@ class TaskCompletionIdTest {
     void challengeIdAtMaxLengthIsValid() {
         String id = "a".repeat(ChallengeRule.MAX_ID_LENGTH);
 
-        var taskCompletionId = new TaskCompletionId(PLAYER_ID, id, "survive_a_day");
+        var taskCompletionId = new TaskCompletionId(SEASON, PLAYER_ID, id, 0, "survive_a_day");
 
         assertThat(taskCompletionId.challengeId()).hasSize(ChallengeRule.MAX_ID_LENGTH);
     }
@@ -59,7 +61,7 @@ class TaskCompletionIdTest {
     @DisplayName("a blank taskId throws")
     void blankTaskIdThrows() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new TaskCompletionId(PLAYER_ID, "one_life", " "))
+                .isThrownBy(() -> new TaskCompletionId(SEASON, PLAYER_ID, "one_life", 0, " "))
                 .withMessageContaining("taskId must not be blank");
     }
 
@@ -69,7 +71,7 @@ class TaskCompletionIdTest {
         String tooLong = "a".repeat(Task.MAX_ID_LENGTH + 1);
 
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new TaskCompletionId(PLAYER_ID, "one_life", tooLong))
+                .isThrownBy(() -> new TaskCompletionId(SEASON, PLAYER_ID, "one_life", 0, tooLong))
                 .withMessageContaining("taskId must be at most " + Task.MAX_ID_LENGTH + " characters");
     }
 
@@ -78,8 +80,24 @@ class TaskCompletionIdTest {
     void taskIdAtMaxLengthIsValid() {
         String id = "a".repeat(Task.MAX_ID_LENGTH);
 
-        var taskCompletionId = new TaskCompletionId(PLAYER_ID, "one_life", id);
+        var taskCompletionId = new TaskCompletionId(SEASON, PLAYER_ID, "one_life", 0, id);
 
         assertThat(taskCompletionId.taskId()).hasSize(Task.MAX_ID_LENGTH);
+    }
+
+    @Test
+    @DisplayName("a null seasonId throws")
+    void nullSeasonIdThrows() {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new TaskCompletionId(null, PLAYER_ID, "one_life", 0, "survive_a_day"))
+                .withMessageContaining("seasonId must not be null");
+    }
+
+    @Test
+    @DisplayName("a prestige step above the maximum throws")
+    void prestigeStepAboveMaximumThrows() {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new TaskCompletionId(SEASON, PLAYER_ID, "one_life", 11, "survive_a_day"))
+                .withMessageContaining("prestigeStep");
     }
 }

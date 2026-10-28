@@ -1,13 +1,16 @@
 package net.onelitefeather.skygridng.adapters.taskprogress;
 
-import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import net.onelitefeather.skygridng.adapters.persistence.FreshTestDatabase;
+import net.onelitefeather.skygridng.api.model.ProgressScope;
+import net.onelitefeather.skygridng.api.model.SeasonId;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -19,106 +22,122 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Round-trips {@link PostgresTaskCompletionRepository} against a real, disposable PostgreSQL
- * instance started by Testcontainers, including the actual Flyway migration; nothing here is
- * mocked at the JDBC level.
+ * Round-trips {@link PostgresTaskCompletionRepository} against a real, disposable PostgreSQL instance
+ * started by Testcontainers, including the actual Flyway migrations. Each test runs against its own
+ * fresh database.
  */
 @Testcontainers(disabledWithoutDocker = true)
 class PostgresTaskCompletionRepositoryTest {
 
+    private static final SeasonId SEASON_ONE = new SeasonId("s01");
+    private static final SeasonId SEASON_TWO = new SeasonId("s02");
+
     @Container
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
-    private static PostgresTaskCompletionRepository repository;
+    private PostgresTaskCompletionRepository repository;
 
-    @BeforeAll
-    static void startRepository() {
-        var config = new DatabaseConfig(
-                POSTGRES.getHost(),
-                POSTGRES.getMappedPort(5432),
-                POSTGRES.getDatabaseName(),
-                POSTGRES.getUsername(),
-                POSTGRES.getPassword());
+    @BeforeEach
+    void startRepository() {
+        var config = FreshTestDatabase.create(POSTGRES);
         repository = new PostgresTaskCompletionRepository(() -> config);
     }
 
-    @AfterAll
-    static void stopRepository() {
-        if (repository != null) {
-            repository.close();
-        }
+    @AfterEach
+    void stopRepository() {
+        repository.close();
+    }
+
+    private static ProgressScope scope(SeasonId season, UUID playerId, String challengeId, int prestigeStep) {
+        return new ProgressScope(season, playerId, challengeId, prestigeStep);
     }
 
     @Test
     void isCompletedReturnsFalseBeforeAnyMarkCompletedCall() {
-        var playerId = UUID.randomUUID();
+        var scope = scope(SEASON_ONE, UUID.randomUUID(), "one_life", 0);
 
-        assertThat(repository.isCompleted(playerId, "one_life", "survive_a_day")).isFalse();
+        assertThat(repository.isCompleted(scope, "survive_a_day")).isFalse();
     }
 
     @Test
     void markCompletedReturnsTrueOnceThenFalseAndIsIdempotent() {
-        var playerId = UUID.randomUUID();
+        var scope = scope(SEASON_ONE, UUID.randomUUID(), "one_life", 0);
 
-        var first = repository.markCompleted(playerId, "one_life", "survive_a_day");
-        var second = repository.markCompleted(playerId, "one_life", "survive_a_day");
-
-        assertThat(first).isTrue();
-        assertThat(second).isFalse();
-        assertThat(repository.isCompleted(playerId, "one_life", "survive_a_day")).isTrue();
+        assertThat(repository.markCompleted(scope, "survive_a_day")).isTrue();
+        assertThat(repository.markCompleted(scope, "survive_a_day")).isFalse();
+        assertThat(repository.isCompleted(scope, "survive_a_day")).isTrue();
     }
 
     @Test
     void differentTasksForSamePlayerAreIndependentRows() {
         var playerId = UUID.randomUUID();
+        repository.markCompleted(scope(SEASON_ONE, playerId, "one_life", 0), "survive_a_day");
 
-        repository.markCompleted(playerId, "one_life", "survive_a_day");
-
-        assertThat(repository.isCompleted(playerId, "one_life", "survive_a_day")).isTrue();
-        assertThat(repository.isCompleted(playerId, "one_life", "no_death")).isFalse();
+        assertThat(repository.isCompleted(scope(SEASON_ONE, playerId, "one_life", 0), "survive_a_week")).isFalse();
     }
 
     @Test
-    void differentChallengesForSamePlayerAreIndependentRows() {
+    void sameTaskInTwoSeasonsIsIndependent() {
         var playerId = UUID.randomUUID();
+        repository.markCompleted(scope(SEASON_ONE, playerId, "one_life", 0), "survive_a_day");
 
-        repository.markCompleted(playerId, "one_life", "survive_a_day");
-
-        assertThat(repository.isCompleted(playerId, "one_life", "survive_a_day")).isTrue();
-        assertThat(repository.isCompleted(playerId, "no_crafting_table", "survive_a_day")).isFalse();
+        assertThat(repository.isCompleted(scope(SEASON_TWO, playerId, "one_life", 0), "survive_a_day"))
+                .as("a completion in season one must not count in season two")
+                .isFalse();
     }
 
     @Test
-    void resetAllClearsEveryRow() {
+    void sameTaskAtDifferentPrestigeStepsIsIndependent() {
         var playerId = UUID.randomUUID();
-        repository.markCompleted(playerId, "one_life", "survive_a_day");
+        repository.markCompleted(scope(SEASON_ONE, playerId, "one_life", 0), "survive_a_day");
 
-        repository.resetAll();
+        assertThat(repository.isCompleted(scope(SEASON_ONE, playerId, "one_life", 1), "survive_a_day"))
+                .as("the prestige step is part of the key")
+                .isFalse();
+    }
 
-        assertThat(repository.isCompleted(playerId, "one_life", "survive_a_day")).isFalse();
+    @Test
+    void resetSeasonLeavesOtherSeasonsUnchanged() {
+        var playerId = UUID.randomUUID();
+        repository.markCompleted(scope(SEASON_ONE, playerId, "one_life", 0), "survive_a_day");
+        repository.markCompleted(scope(SEASON_TWO, playerId, "one_life", 0), "survive_a_day");
+
+        repository.resetSeason(SEASON_ONE);
+
+        assertThat(repository.isCompleted(scope(SEASON_ONE, playerId, "one_life", 0), "survive_a_day"))
+                .as("the reset season must be cleared")
+                .isFalse();
+        assertThat(repository.isCompleted(scope(SEASON_TWO, playerId, "one_life", 0), "survive_a_day"))
+                .as("other seasons must be left unchanged")
+                .isTrue();
+    }
+
+    @Test
+    void completedCountBySeasonReturnsCountsPerSeason() {
+        var playerId = UUID.randomUUID();
+        repository.markCompleted(scope(SEASON_ONE, playerId, "one_life", 0), "survive_a_day");
+        repository.markCompleted(scope(SEASON_ONE, playerId, "one_life", 0), "survive_a_week");
+        repository.markCompleted(scope(SEASON_TWO, playerId, "one_life", 0), "survive_a_day");
+
+        assertThat(repository.completedCountBySeason(playerId))
+                .isEqualTo(Map.of(SEASON_ONE, 2L, SEASON_TWO, 1L));
     }
 
     /**
-     * Proves that two genuinely concurrent {@code markCompleted} calls for the exact same, brand-new
-     * (player, challenge, task) triple never both succeed and never throw unhandled: exactly one call
-     * must return {@code true} (the winner of the primary key race), the other {@code false} (the
-     * retried existence check after the loser's insert fails on the constraint). A
-     * {@link CyclicBarrier} with two parties forces both worker threads to reach
-     * {@code markCompleted} at the same instant rather than running sequentially by accident. Each
-     * future is bounded with a timeout so a regression that deadlocks or hangs fails this test loudly
-     * instead of hanging CI forever.
+     * Two genuinely concurrent first completions of the same brand new triple: exactly one must
+     * report it inserted, and the row must exist afterwards. Kept as a threaded test from before the
+     * season change; it is the only test in this class that uses threads.
      */
     @Test
     void concurrentMarkCompletedForSameBrandNewTripleExactlyOneWins() throws Exception {
-        var playerId = UUID.randomUUID();
-        var challengeId = "one_life";
+        var scope = scope(SEASON_ONE, UUID.randomUUID(), "one_life", 0);
         var taskId = "survive_a_day";
         var startBarrier = new CyclicBarrier(2);
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
             Callable<Boolean> markCompletedOnceBothThreadsAreReady = () -> {
                 startBarrier.await();
-                return repository.markCompleted(playerId, challengeId, taskId);
+                return repository.markCompleted(scope, taskId);
             };
 
             var firstCall = executor.submit(markCompletedOnceBothThreadsAreReady);
@@ -128,7 +147,7 @@ class PostgresTaskCompletionRepositoryTest {
             var secondResult = secondCall.get(10, TimeUnit.SECONDS);
 
             assertThat(Set.of(firstResult, secondResult)).isEqualTo(Set.of(true, false));
-            assertThat(repository.isCompleted(playerId, challengeId, taskId)).isTrue();
+            assertThat(repository.isCompleted(scope, taskId)).isTrue();
         } finally {
             executor.shutdownNow();
         }

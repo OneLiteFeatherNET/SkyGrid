@@ -10,9 +10,11 @@ import net.onelitefeather.skygridng.adapters.config.JacksonPresetRepository;
 import net.onelitefeather.skygridng.adapters.config.JacksonRuleRepository;
 import net.onelitefeather.skygridng.adapters.taskprogress.PostgresTaskCompletionRepository;
 import net.onelitefeather.skygridng.core.service.ChallengeProgressService;
+import net.onelitefeather.skygridng.core.service.LegacyCurrentSeason;
 import net.onelitefeather.skygridng.core.service.TaskProgressService;
 import net.onelitefeather.skygridng.core.state.ChallengeState;
 import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
+import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
 import net.onelitefeather.skygridng.ports.out.PresetRepository;
@@ -63,7 +65,7 @@ public final class RepositoryModule extends AbstractModule {
      * {@code onLoad} (server {@code STARTUP}) even when no {@code SKYGRID_DB_*} variable is set or no
      * Postgres is reachable. The blocking I/O (resolving the config, opening the pool, running the
      * migration) happens lazily, on the first actual call to {@code tierOf}, {@code recordCompletion}
-     * or {@code resetAll}.
+     * or {@code resetCurrentSeason}.
      */
     @Provides
     @Singleton
@@ -73,8 +75,15 @@ public final class RepositoryModule extends AbstractModule {
 
     @Provides
     @Singleton
-    ChallengeProgressService provideChallengeProgressService(ChallengeProgressRepository repository) {
-        return new ChallengeProgressService(repository);
+    CurrentSeason provideCurrentSeason() {
+        return new LegacyCurrentSeason();
+    }
+
+    @Provides
+    @Singleton
+    ChallengeProgressService provideChallengeProgressService(ChallengeProgressRepository repository,
+                                                            CurrentSeason currentSeason) {
+        return new ChallengeProgressService(repository, currentSeason);
     }
 
     @Provides
@@ -98,8 +107,8 @@ public final class RepositoryModule extends AbstractModule {
     @Provides
     @Singleton
     TaskProgressService provideTaskProgressService(ChallengeState challengeState, TaskCompletionRepository repository,
-                                                     RewardGrantor grantor) {
-        return new TaskProgressService(challengeState, repository, grantor);
+                                                   RewardGrantor grantor, CurrentSeason currentSeason) {
+        return new TaskProgressService(challengeState, repository, grantor, currentSeason);
     }
 
     @Provides

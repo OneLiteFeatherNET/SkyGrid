@@ -128,4 +128,23 @@ class ArchitectureTest {
                     .whereLayer("Core").mayOnlyBeAccessedByLayers("Platforms")
                     .whereLayer("Ports").mayOnlyBeAccessedByLayers("Core", "Adapters", "Platforms")
                     .whereLayer("Api").mayOnlyBeAccessedByLayers("Ports", "Core", "Adapters", "Platforms");
+
+    private static final String JAKARTA_PERSISTENCE = "jakarta.persistence..";
+    private static final String HIBERNATE = "org.hibernate..";
+    private static final String CHALLENGE_PROGRESS_ADAPTER = "net.onelitefeather.skygridng.adapters.challengeprogress..";
+    private static final String TASK_PROGRESS_ADAPTER = "net.onelitefeather.skygridng.adapters.taskprogress..";
+
+    @ArchTest
+    static final ArchRule progressAdaptersAreFrameworkFree =
+            noClasses().that().resideInAnyPackage(CHALLENGE_PROGRESS_ADAPTER, TASK_PROGRESS_ADAPTER)
+                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..", "com.google.inject..", "jakarta.inject..")
+                    .because("the progress adapters are persistence adapters: they may use Jakarta Persistence, but "
+                            + "never Bukkit, Guice, or jakarta.inject, so the composition root stays the only place that wires them");
+
+    @ArchTest
+    static final ArchRule jakartaPersistenceAndHibernateOnlyInsideAdapters =
+            noClasses().that().resideOutsideOfPackage(ADAPTERS)
+                    .should().dependOnClassesThat().resideInAnyPackage(JAKARTA_PERSISTENCE, HIBERNATE)
+                    .because("jakarta.persistence and Hibernate types stay inside the adapters; api, ports, core and "
+                            + "the platform see only domain records");
 }

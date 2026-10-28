@@ -141,16 +141,16 @@ class ChallengeCommandsTest {
     void tierResetRequiresConfirmation() {
         subject.tierReset(source);
 
-        verify(progress, never()).resetAll();
+        verify(progress, never()).resetCurrentSeason();
         assertThat(source.messages()).containsExactly(Messages.challengeTierResetConfirm());
     }
 
     @Test
-    @DisplayName("'challenge tier reset confirm' calls resetAll exactly once and responds with the confirmation message")
+    @DisplayName("'challenge tier reset confirm' calls resetCurrentSeason exactly once and responds with the confirmation message")
     void tierResetConfirmCallsResetAllOnce() {
         subject.tierResetConfirm(source);
 
-        verify(progress).resetAll();
+        verify(progress).resetCurrentSeason();
         assertThat(source.messages()).containsExactly(Messages.challengeTierReset());
     }
 }
