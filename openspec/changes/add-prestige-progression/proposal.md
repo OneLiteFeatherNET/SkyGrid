@@ -82,12 +82,12 @@ suggestions, and a public prestige leaderboard (it would need its own I5 review)
   reads completions at the player's current step.
 - `adapters/config`: optional `prestige` block in challenge files, schema regeneration, per-ladder
   failure isolation.
-- `adapters/prestige` (new module): PostgreSQL repository with its own Flyway folder
+- `adapters/persistence`, package `adapters.prestige`: PostgreSQL repository with its own Flyway folder
   `db/migration/prestige` and history table `flyway_history_prestige`.
 - `adapters/command`: `prestige` subcommands, a suggestion provider, help text.
-- `adapters/scoreboard`: step suffix and modifier summary in the challenge sidebar.
+- `platforms/common`, package `platforms.olf.scoreboard`: step suffix and modifier summary in the challenge sidebar.
 - `platforms/common`: wiring, challenge behaviours that apply modifiers, the join, quit and unlock
   feature, and English and German messages.
 - `platforms/paper`: `plugin.yml` permission `skygridng.prestige` (default true).
-- `verification`: the new adapter module is added to the ArchUnit and migration checks.
+- `verification`: the adapter package is covered by the existing ArchUnit and migration checks.
 - No change to existing player data: existing task completions are read as step 0.

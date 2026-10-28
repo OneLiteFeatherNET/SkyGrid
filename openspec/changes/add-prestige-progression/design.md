@@ -82,9 +82,10 @@ Bundled defaults (adjustable by the admin in the challenge files, not hardcoded)
 
 ### D3. Ports
 - `ports.out.PrestigeRepository`: `find(SeasonId, UUID, String)` returns `Optional<PlayerPrestige>`
-  (absent means step 0), `save(PlayerPrestige)` is an upsert returning `SaveOutcome` (`Saved` or
-  `Conflict`, see D5), `resetSeason(SeasonId)`, and `allTimeHighest(UUID, String)` returns the maximum
-  `highestStep` over all seasons. The port exposes domain records and outcomes only.
+  (absent means step 0), `save(PlayerPrestige)` is an upsert that returns void and throws
+  `PrestigeConflictException` on a lost race (see D5), `resetSeason(SeasonId)`, and `allTimeHighest(UUID, String)`
+  returns the maximum `highestStep` over all seasons. The port exposes domain records only;
+  `PrestigeConflictException` is an unchecked exception declared in `ports.out`.
 - `ports.out.TaskCompletionRepository` is consumed from `add-season-lifecycle`, where `isCompleted` and
   `markCompleted` take the `ProgressScope`. This change adds one read, `isCompletedAtAnyStep(SeasonId, UUID,
   String taskId)`, for the reward rule (D4). No schema change: it reads the same table.
@@ -106,9 +107,9 @@ construction.
 - `core.service.PrestigeService` implements `PrestigeUseCase`. Order of checks for `raise`: unknown
   challenge, no ladder, at maximum, challenge active, missing tasks at the current step. Then save and
   notify listeners. `lower` checks only unknown challenge and at minimum.
-- Concurrency (Optimistic Lock, one retry): a `Conflict` from `save` means another request changed the same
-  row first. `PrestigeService` drops the cached entry, reloads the row through the repository, and runs the
-  check order again once. A second `Conflict` returns `PrestigeChange.ConcurrentChange`, which the command
+- Concurrency (Optimistic Lock, one retry): a `PrestigeConflictException` from `save` means another request changed
+  the same row first. `PrestigeService` drops the cached entry, reloads the row through the repository, and runs the
+  check order again once. A second conflict is caught in `PrestigeService` and returns `PrestigeChange.ConcurrentChange`, which the command
   maps to one "try again" message and changes nothing. This is the existing rejection style: an explicit
   `PrestigeChange` case per outcome, not an exception reaching the player. The same rule applies to `lower`.
 - `core.service.TaskProgressService` (changed) takes `PrestigeLevels` and passes the current step into
@@ -138,7 +139,7 @@ Config (`adapters/config`):
 - The schema is generated from the DTOs through `ConfigSchemas`. Bounds go into
   `@JsonPropertyDescription`, so editors show them.
 
-Persistence (`adapters/prestige`, new module, package `adapters.prestige`):
+Persistence (package `adapters.prestige` in the existing `adapters/persistence` module, its own persistence unit and history table):
 - `PostgresPrestigeRepository extends AbstractJpaRepository` (the shared base in `adapters/persistence`) with
   `super("prestige", "classpath:db/migration/prestige", "flyway_history_prestige", configSupplier)`.
   Data Mapper: `PlayerPrestigeEntity` is the only JPA class, keyed by an `@EmbeddedId` record
@@ -162,11 +163,11 @@ CREATE TABLE player_prestige (
 - Only counters are stored: no timestamps, no history, no behavior data. Row absence means step 0.
   Season rows are archived with their season and never deleted by this change.
 - `@Version long version` on every row (Optimistic Lock). A raise or lower loads the row, changes it and
-  flushes; a stale copy fails with `OptimisticLockException`, which `save` returns as `Conflict` (D4). A duplicate
-  first insert of the same key from two requests fails on the primary key, Hibernate's
-  `ConstraintViolationException`, and is returned as `Conflict` as well.
+  flushes; a stale copy fails with `OptimisticLockException`, which `save` turns into `PrestigeConflictException` (D4). A
+  duplicate first insert of the same key from two requests fails on the primary key, Hibernate's
+  `ConstraintViolationException`, and is turned into `PrestigeConflictException` as well.
 - `resetSeason` is a named bulk update that sets `currentStep` to 0 and increments `version` in the same
-  statement, so a request that still holds the old row cannot overwrite the reset: its save fails as `Conflict`.
+  statement, so a request that still holds the old row cannot overwrite the reset: its save fails with `PrestigeConflictException`.
 - The all-time highest step is a named query that returns the maximum `highestStep` over all seasons of a
   player and challenge.
 
@@ -187,7 +188,7 @@ ladder.
 `info` is a literal subcommand, not an optional argument on `prestige` itself, to avoid a literal and
 variable sibling clash in Cloud.
 
-Scoreboard (`adapters/scoreboard`): `ChallengeSidebarListener` takes `PrestigeUseCase`. The title gets
+Scoreboard (`platforms/common`, package `platforms.olf.scoreboard`): `ChallengeSidebarListener` takes `PrestigeUseCase`. The title gets
 a ` [P<n>]` suffix and the top line shows the modifier summary when the step is above 0. It subscribes
 to `addChangeListener` and rebuilds only that player's board. Task updates keep their in-place path.
 
@@ -237,7 +238,7 @@ archived with their season.
   `supportedModifiers()` checked at feature enable.
 - [Unlock message becomes nagging] → Sent once per player, challenge and step, never on later joins,
   and disabled per challenge by `prestige.announceUnlock: false`.
-- [Concurrent raise and lower of the same row] → `@Version`; the loser gets `Conflict`, reloads once, and a
+- [Concurrent raise and lower of the same row] → `@Version`; the loser gets `PrestigeConflictException`, reloads once, and a
   second loss returns `ConcurrentChange` (D4). Nothing is written by the losing request.
 - [Migration of existing completions] → Owned by `add-season-lifecycle`; this change only consumes step 0
   for existing rows.
@@ -305,21 +306,21 @@ production code they cover.
   `higherStepCompletionGrantsNoReward`; `reRaisingToVisitedStepDoesNotRegrantReward`; `unlockFiresOnceWhenLastTaskCompletes`;
   `activeModifiersServedFromCacheAfterFirstRead` (counting fake); `forgetEvictsCache`;
   `resetSeasonClearsCacheAndRepository`; `raiseRetriesOnceAfterConflict`, `secondConflictReturnsConcurrentChange`,
-  `lowerRetriesOnceAfterConflict` (the fake returns `Conflict` on scripted calls).
+  `lowerRetriesOnceAfterConflict` (the fake throws `PrestigeConflictException` on scripted calls).
 - `adapters/config`: round trip per format (JSON, YAML, TOML) with `@TempDir`; an invalid ladder file
   loads its challenge with an empty ladder while the others are unaffected; `ConfigSchemasTest` asserts
   the `prestige` property and the modifier `type` enum appear in the challenge schema.
-- `adapters/prestige` and the task progress persistence (Testcontainers `postgres:16-alpine`, one
+- `adapters.prestige` and the task progress persistence (Testcontainers `postgres:16-alpine`, one
   container per class, fresh random `UUID`s per test): find on an empty table is absent; save and
   upsert; check constraints reject `current > highest`; `resetSeason` clears the current steps only and bumps
   `version`; a completion row migrated from before the scope key reads as completed at step 0 and not at step 1;
-  two `EntityManager`s load the same row and the second flush fails with `OptimisticLockException`, returned as
-  `Conflict` (sequential, no threads, no sleeps); a duplicate first insert of one key returns `Conflict`.
+  two `EntityManager`s load the same row and the second flush fails with `OptimisticLockException`, thrown as
+  `PrestigeConflictException` (sequential, no threads, no sleeps); a duplicate first insert of one key throws `PrestigeConflictException`.
   Extend `verification/PostgresAdapterMigrationTest` to migrate all adapters into one database.
 - `adapters/command`: `PrestigeCommandsTest` against `RecordingCommandSource` and a stub
   `PrestigeUseCase`: which `Messages` factory fired per case; console guard; `up` without `confirm` never
   calls `raise`.
-- `adapters/scoreboard` (MockBukkit): title suffix and summary line present at step above 0 and absent at
+- `platforms.olf.scoreboard` in `platforms/common` (MockBukkit): title suffix and summary line present at step above 0 and absent at
   step 0; the board is rebuilt on prestige change for that player only.
 - `platforms/common` (MockBukkit, `server.getScheduler().performTicks(n)` instead of waiting): per
   behavior, the modifier applies only to the player at that step, only in a SkyGrid world, only while the
@@ -327,8 +328,7 @@ production code they cover.
   station is tracked as a violation; `PrestigeFeature` sends the join line once; `ChallengeFeatureTest`
   disables a ladder with an unsupported modifier type, with the log asserted through a captured appender.
 - ArchUnit (`verification`): no new rule. `apiPortsAndCoreAreFrameworkFree` and
-  `adaptersDependOnPortsAndApiOnlyNotCore` cover the new types once `:adapters:prestige` is added to
-  `verification/build.gradle.kts`. Optionally assert that `api.model` types implementing
+  `adaptersDependOnPortsAndApiOnlyNotCore` cover the new types; the `adapters.prestige` package lives in `adapters/persistence`, so no build file changes. Optionally assert that `api.model` types implementing
   `DifficultyModifier` are records.
 - Documentation: `prestige` is added to the adapter list in the `hexagonal-architecture` skill in the
   same group as the code that adds it.

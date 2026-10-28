@@ -27,19 +27,19 @@ The journal described below makes the two stores agree after any crash.
 **Mailbox and sale intents in the economy adapter, migration `V2`.** The mailbox row must commit in the same
 transaction as the ledger posting, which needs one persistence unit with the ledger. The `economy` persistence
 unit covers the ledger, the mailbox and the sale intents, so one Unit of Work can post and deliver. Tables:
-`mailbox_delivery` (id, season, player, item id, amount, item data as BYTEA, source discriminator `source`,
+`mailbox_delivery` (id, season, player, item id, amount, item data as BYTEA, `source` (the `DeliverySource` name),
 `source_ref`, delivered at, created at, `version BIGINT NOT NULL DEFAULT 0`) with a partial index on pending rows,
 and `shop_sale_intent` (id, season, player, shop, item, amount, payout, state `PENDING|COMMITTED|ABORTED`,
 `version BIGINT NOT NULL DEFAULT 0`). `ItemPayload` keeps the platform bytes opaque; the item id and amount exist
 only for display and search. Alternative: a file-based mailbox (rejected: no atomicity with the ledger).
 
 **Domain model and mapping (Data Mapper, GoF State).** `Delivery` and `SaleIntent` are aggregates: immutable records
-in `api.model` and `core`. `DeliverySource` is a sealed interface that permits `ShopPurchase` (a record carrying the
-purchase reference); the market change adds its sources to the same permits list. `IntentState` is a sealed
-interface permitting `Pending`, `Committed` and `Aborted`; `commit()` and `abort()` return a new state, and an
-illegal transition is a domain rejection. The JPA `@Entity` classes (`DeliveryEntity`, `SaleIntentEntity`) live
-only in `adapters/economy`, with a Data Mapper between entity and record. `DeliverySource` is stored as the
-discriminator text in `source` plus the reference in `source_ref`; `Money` and `SeasonId` map through the shared
+in `api.model` and `core`. `DeliverySource` is an enum with `SHOP_PURCHASE` only, and `Delivery` carries a `sourceRef` field that names the
+purchase or listing. `add-player-market` adds its own constants when it ships. `IntentState` is an enum
+(`PENDING`, `COMMITTED`, `ABORTED`). The `SaleIntent` record keeps `commit()` and `abort()`, which return a new
+`SaleIntent`; an illegal transition is a domain rejection, so only `PENDING` accepts either. The JPA `@Entity` classes (`DeliveryEntity`, `SaleIntentEntity`) live
+only in `adapters/economy`, with a Data Mapper between entity and record. `DeliverySource` is mapped with
+`@Enumerated(EnumType.STRING)` into `source`, and `source_ref` holds the reference; `Money` and `SeasonId` map through the shared
 converters in `adapters/persistence`. Both aggregates carry `@Version long version`; a lost race surfaces as
 `OptimisticLockException`, which the adapter maps to the domain outcome.
 

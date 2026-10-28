@@ -41,8 +41,9 @@ economy (J1) changes build on.
   5 minutes before a transition boundary. Each one states the absolute end date, what the reset deletes
   and what it keeps, and the player's own pending mailbox count. A player who joins in the final 7 days
   also gets one chat line with the same information.
-- Add persistence: a new `adapters/season` Postgres adapter with its own migration folder and
-  history table, and season-scoped migrations for the challenge-progress and task-progress adapters.
+- Add persistence: a new `adapters.season` package in `adapters/persistence`, a Postgres adapter with its own
+  migration folder and history table, and season-scoped migrations for the challenge-progress and task-progress
+  packages of the same module.
 - Add operations documentation and a required CloudNet static service, because the season worlds,
   the archive and the plugin data folder must survive a service restart.
 - Key product decisions (fixed for this release):
@@ -79,8 +80,8 @@ economy (J1) changes build on.
 - Modules: `api` (season and `ProgressScope` model, `SkyGridApi#currentSeason()`), `ports`
   (season and run ports, season-scoped progress ports), `core` (timeline, transition state machine,
   season service, progress services), `adapters/config` (season files and schema),
-  `adapters/season` (new Postgres run repository), `adapters/challenge-progress` and
-  `adapters/task-progress` (migrations), `adapters/command` (season commands and messages),
+  `adapters/persistence` (package `adapters.season`, new Postgres run repository; season-scoped migrations for
+  `adapters.challengeprogress` and `adapters.taskprogress`), `adapters/command` (season commands and messages),
   `platforms/common` (`platforms.olf.season`), `verification` (ArchUnit rules), `docs/` (admin
   documentation).
 - Operations: the server `level-name` world changes to a void lobby; the cut-over restart archives

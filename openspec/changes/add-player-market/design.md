@@ -49,17 +49,17 @@ listing follows the item-mailbox table.
 `listing.purchase(buyer, now)`, which rejects a listing that is not `Active`, one whose `expires_at` has passed, and a
 purchase by its seller. On success post the `MarketSale` ledger operation (buyer `-price`, seller `+(price - tax)`,
 `system:market_tax` `+tax`) under the purchase's idempotency key, and persist the listing as `Sold` with `buyer_id`
-and the `MarketSold` delivery. Tax is `price * taxBasisPoints / 10000` with floor division, computed with
+and the `MARKET_SOLD` delivery. Tax is `price * taxBasisPoints / 10000` with floor division, computed with
 `multiplyExact`. A second buyer blocks on the row lock and then sees `Sold`, so the aggregate rejects it as "already
 sold" with no balance change. `@Version` is the second line of defence; a lost race there surfaces as
 `OptimisticLockException`, mapped to the same outcome.
 
 **Cancel and expiry.** Cancel loads the listing with `PESSIMISTIC_WRITE` and calls `listing.cancel(now)`, which
 accepts only an `Active` listing whose `expires_at` has not passed, then persists it as `Cancelled` with the
-`MarketCancelled` delivery. Expiry runs as an async repeating task every 60 s through `expireDue`, the one repository
+`MARKET_CANCELLED` delivery. Expiry runs as an async repeating task every 60 s through `expireDue`, the one repository
 method that uses `LockOptions.SKIP_LOCKED`: a `PESSIMISTIC_WRITE` named query with the
 `jakarta.persistence.lock.timeout` hint set to `LockOptions.SKIP_LOCKED`, a maximum of 100 rows, and each row goes
-through `listing.expire(now)`, which persists it as `Expired` with the `MarketExpired` delivery. This Hibernate-specific
+through `listing.expire(now)`, which persists it as `Expired` with the `MARKET_EXPIRED` delivery. This Hibernate-specific
 hint is the single encapsulated exception to the JSR 338 rule and stays inside that method. Because purchase and
 cancel check the expiry in the aggregate under the row lock, an expiry and a purchase on the same listing resolve to
 one winner.
@@ -67,7 +67,7 @@ one winner.
 **Season end.** Market close is a `SeasonTransitionListener` registered through the Guice `Multibinder` in
 `platforms/common`, so the season core never names economy types. After the join-style reconciliation of pending
 escrow, it loads every `Pending` and `Active` listing of the ending season and calls `closeForSeasonEnd()` on each,
-which persists it as `Cancelled` with a `MarketSeasonEnd` delivery. No new state is introduced. The deliveries then
+which persists it as `Cancelled` with a `MARKET_SEASON_END` delivery. No new state is introduced. The deliveries then
 follow the season-end policy of `add-admin-shop`.
 
 **Defaults.** The economy draft fixes the tax (500 basis points), duration (48 h), maximum listings (10) and maximum item

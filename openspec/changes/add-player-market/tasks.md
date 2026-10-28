@@ -6,7 +6,7 @@ modules' tests, for example `./gradlew :core:test :adapters:economy:test --max-w
 ## 1. Listing domain and tax (delivery slice 24, part 1)
 
 - [ ] 1.1 Write table-driven `Listing` and `ListingState` tests covering every state against every action (`activate`, `purchase`, `cancel`, `expire`, `closeForSeasonEnd`), including the seller and expiry rules of `purchase` and the PENDING to ACTIVE transition, and verify they fail
-- [ ] 1.2 Implement the sealed `ListingState` (`Pending`, `Active`, `Sold`, `Cancelled`, `Expired`), the `Listing` aggregate and the market settings record in `api.model` and `core`, and verify the 1.1 tests pass
+- [ ] 1.2 Add `MARKET_SOLD`, `MARKET_CANCELLED`, `MARKET_EXPIRED` and `MARKET_SEASON_END` to `DeliverySource`, implement the sealed `ListingState` (`Pending`, `Active`, `Sold`, `Cancelled`, `Expired`), the `Listing` aggregate and the market settings record in `api.model` and `core`, and verify the 1.1 tests pass
 - [ ] 1.3 Write tax tests: 5 percent of 40 is 2, of 1 is 0, of 100 is 5, computed with exact arithmetic and floor division, and verify they fail
 - [ ] 1.4 Implement the tax calculation in `core` and verify the 1.3 tests pass
 
@@ -29,9 +29,9 @@ modules' tests, for example `./gradlew :core:test :adapters:economy:test --max-w
 ## 4. Purchase, cancel and expiry races (delivery slice 24, part 4)
 
 - [ ] 4.1 Write the Testcontainers double-buy race test: two buyers from two threads on one listing give exactly one purchase, the loser's balance is unchanged and exactly one mailbox row exists, and verify it fails
-- [ ] 4.2 Implement the purchase Unit of Work (`PESSIMISTIC_WRITE` load, `listing.purchase(buyer, now)`, `MarketSale` ledger operation, `Sold` state, `MarketSold` delivery in one `inTransaction`) and verify the 4.1 test passes
+- [ ] 4.2 Implement the purchase Unit of Work (`PESSIMISTIC_WRITE` load, `listing.purchase(buyer, now)`, `MarketSale` ledger operation, `Sold` state, `MARKET_SOLD` delivery in one `inTransaction`) and verify the 4.1 test passes
 - [ ] 4.3 Write the cancel-versus-buy race test with a barrier: one winner and one mailbox row, and verify it fails
-- [ ] 4.4 Implement the cancel Unit of Work (`listing.cancel(now)`, `MarketCancelled` delivery) and verify the 4.3 test passes
+- [ ] 4.4 Implement the cancel Unit of Work (`listing.cancel(now)`, `MARKET_CANCELLED` delivery) and verify the 4.3 test passes
 - [ ] 4.5 Write the expiry-versus-buy test with the injected clock set to the expiry instant: one winner and one mailbox row, and verify it fails
 - [ ] 4.6 Implement `expireDue` as the one repository method with a `PESSIMISTIC_WRITE` named query, the `jakarta.persistence.lock.timeout` hint set to `LockOptions.SKIP_LOCKED` and batch 100, each row through `listing.expire(now)`, and verify the 4.5 test passes
 - [ ] 4.7 Write a test that two concurrent `expireDue` calls never expire the same listing twice, and verify it fails; then verify it passes with 4.6
@@ -42,7 +42,7 @@ modules' tests, for example `./gradlew :core:test :adapters:economy:test --max-w
 
 ## 5. Season end closure (delivery slice 24, part 5)
 
-- [ ] 5.1 Write a test that the season transition closes active and pending listings of the ending season into the mailbox with source `market_season_end`, and that closed listings leave the market, and verify it fails
+- [ ] 5.1 Write a test that the season transition closes active and pending listings of the ending season into the mailbox with source `MARKET_SEASON_END`, and that closed listings leave the market, and verify it fails
 - [ ] 5.2 Implement the season-end closure as a `SeasonTransitionListener` that reconciles pending escrow first and calls `closeForSeasonEnd()` on each listing, and verify the 5.1 test passes
 - [ ] 5.3 Write a test that a listing whose expiry falls after the season end closes at the season end with its item lost, and that a listing expiring before the season end returns its item to the seller's mailbox, and verify it fails
 - [ ] 5.4 Implement the ordering of expiry against the season end in the closure and verify the 5.3 test passes

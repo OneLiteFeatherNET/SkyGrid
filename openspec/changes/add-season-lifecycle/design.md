@@ -46,11 +46,11 @@ only from an injected `LongSupplier`.
 | `api` | `SkyGridApi#currentSeason()` (read only, `Optional<Season>`) |
 | `ports.in` | `SeasonAdminUseCase`, `CurrentSeason` |
 | `ports.out` | `SeasonRepository` (config, read only), `SeasonRunRepository`, `SeasonWorlds`, `PlayerSeasonReset`, `SeasonAnnouncer`; changed `ChallengeProgressRepository`, `TaskCompletionRepository` |
-| `core.service` | `SeasonTimeline`, `SeasonService`, `SeasonTransition`, `TransitionStep` (one implementation per phase); changed `ChallengeProgressService`, `TaskProgressService` |
+| `core.service` | `SeasonTimeline`, `SeasonService`, `SeasonTransition` (exhaustive switch over `SeasonPhase`); changed `ChallengeProgressService`, `TaskProgressService` |
 | `adapters/config` | `SeasonDtos`, `JacksonSeasonRepository`, `ConfigSchemas.Kind.SEASON` |
 | `adapters/persistence` (existing module) | `SeasonIdConverter` (new here, since seasons ship first; economy and prestige reuse it) |
-| `adapters/season` (new) | `PostgresSeasonRunRepository`, `SeasonRunEntity`, `SeasonRunMapper` |
-| `adapters/challenge-progress`, `adapters/task-progress` | `season_id` (and prestige step) migrations |
+| `adapters/persistence`, package `adapters.season` | `PostgresSeasonRunRepository`, `SeasonRunEntity`, `SeasonRunMapper` (own persistence unit, Flyway folder and history table) |
+| `adapters/persistence`, packages `adapters.challengeprogress`, `adapters.taskprogress` | `season_id` (and prestige step) migrations |
 | `adapters/command` | `SeasonCommands`, `Messages.season*` |
 | `platforms/common` | `platforms.olf.season`: `BukkitSeasonWorlds`, `BukkitPlayerSeasonReset`, `BukkitSeasonAnnouncer`, `SeasonTicker`, `SeasonJoinListener`, `SeasonFeature`, `SeasonModule` |
 
@@ -86,9 +86,10 @@ All records validate in compact constructors and are immutable.
   listener registration.
 - `ports.out.SeasonRepository`: `load()` only (config is never written by the plugin).
 - `ports.out.SeasonRunRepository`: `find(SeasonId)`, `active()`, `inFlight()` (phases other than
-  `ACTIVE` and `ARCHIVED`), `save(SeasonRun)` returning `SaveOutcome` (`Saved` or `Stale`), and
-  `switchActive(from, to, at)` returning `SwitchOutcome` (`Switched` or `Failed(reason)`) as one Unit of
-  Work. The port exposes domain records and outcomes only; the JPA mapping is in D5.
+  `ACTIVE` and `ARCHIVED`), `save(SeasonRun)` returning void and throwing `SeasonRunConflictException` on a
+  stale copy, and `switchActive(from, to, at)` returning void and throwing `SeasonRunConflictException` on a
+  failed switch, as one Unit of Work. `SeasonRunConflictException` is an unchecked exception declared in
+  `ports.out`. The port exposes domain records only; the JPA mapping is in D5.
 - `ports.out.SeasonWorlds`: `prepare(worldKey, seed, preset)`, `isLoaded`, `exists`,
   `evacuate(from, to)`, `unload(worldKey)`, `archive(worldKey, manifest)`. Main-thread contract is
   documented on the port.
@@ -115,7 +116,7 @@ published): `tierOf(SeasonId, UUID, String)`, `recordCompletion(SeasonId, UUID, 
   cached active season id refreshed on switch, the listeners, and a single-flight guard so `tick`,
   `advanceNow` and `retry` never run two transitions at once.
 
-### D5. Persistence: Postgres `adapters/season`
+### D5. Persistence: Postgres package `adapters.season` in `adapters/persistence`
 
 `PostgresSeasonRunRepository` extends the shared JPA base (`adapters/persistence`) with persistence unit
 `season`, location `classpath:db/migration/season` and history table `flyway_history_season` (the per-adapter
@@ -128,14 +129,14 @@ type. `phase` is mapped with `@Enumerated(EnumType.STRING)`, and the season id t
 (`@Converter(autoApply = true)`, `SeasonId` to `TEXT`). `SeasonIdConverter` is introduced by this change, since
 seasons ship first; the economy and prestige changes reuse it from `adapters/persistence`. Optimistic locking
 uses `@Version long version`: two saves of one run from stale copies, the second one fails with
-`OptimisticLockException`, which the adapter maps to `SaveOutcome.Stale`. The lookups `active()` and
+`OptimisticLockException`, which the adapter maps to `SeasonRunConflictException`. The lookups `active()` and
 `inFlight()` are `@NamedQuery` definitions on the entity, validated when the factory boots.
 
 `switchActive(from, to, at)` is one Unit of Work (`inTransaction`). It loads both runs with a `find` that
 takes `LockModeType.PESSIMISTIC_WRITE`, applies the domain transition (A to `CLOSING` with `endedAt`, B to
 `ACTIVE` with `startedAt`), and flushes. The adapter calls `flush()` explicitly after changing A and only then changes B, because the partial unique
 index is checked per statement and B must not become `ACTIVE` while A is still `ACTIVE`. Any failure rolls the
-whole Unit of Work back and returns `SwitchOutcome.Failed`.
+whole Unit of Work back and throws `SeasonRunConflictException`.
 
 ```sql
 -- db/migration/season/V1__create_season_run.sql
@@ -157,7 +158,7 @@ CREATE UNIQUE INDEX season_run_single_active ON season_run ((phase)) WHERE phase
 The partial unique index means a second `ACTIVE` row cannot be written, so there is never a moment
 with two active seasons. It stays in the Flyway migration as the one guarantee that lives only in the
 database: Java holds no query for it, and a violation surfaces as Hibernate's `ConstraintViolationException`,
-which `switchActive` reports as a failed switch.
+which `switchActive` reports by throwing `SeasonRunConflictException`.
 
 Progress migrations, applied in the existing adapters (archive by key, no copy):
 
@@ -178,10 +179,9 @@ adapter keeps its own persistence unit and history table, as above.
 
 ### D6. Transition state machine
 
-Each phase is one `TransitionStep` (GoF State and Strategy): one implementation per `SeasonPhase`, including
-`PLANNED`, `ACTIVE` and `ARCHIVED` as no-op steps. `SeasonTransition` holds the steps in an
-`EnumMap<SeasonPhase, TransitionStep>` built at construction, and the constructor fails if a phase has no
-step, so an added phase cannot be left unhandled. Dispatch is one map lookup, with no if-chain on the phase.
+`SeasonTransition` dispatches on the phase with one exhaustive Java `switch` over `SeasonPhase`, with no
+`default` branch. Each case calls one private step method, and `PLANNED`, `ACTIVE` and `ARCHIVED` are no-op
+cases. The compiler rejects a switch that misses a phase, so an added phase cannot be left unhandled.
 Every step still persists its target phase before and after its side effect, and resumes as described in the
 restart table below, which is the resume rule of these steps.
 
@@ -414,7 +414,7 @@ Questions).
   observable state; the restart table (D6) and idempotent steps cover each gap.
 - [Two active seasons] → one Unit of Work in `switchActive`, the A-before-B flush order and the partial unique
   index; a violation is reported as a failed switch, and both runs stay unchanged.
-- [Lost update on a season run] → `@Version`; the stale save returns `SaveOutcome.Stale`, the step fails, and the
+- [Lost update on a season run] → `@Version`; the stale save throws `SeasonRunConflictException`, the step fails, and the
   next tick retries it from the persisted phase.
 - [Players stranded in the old world] → join routing (I3c AC2), evacuation before unload, retried unload
   (I3c AC4) and a fallback high point on teleport failure.
@@ -437,8 +437,6 @@ Unit, `core` (no server, no database, milliseconds):
 
 - `SeasonTimelineTest`: next action for each phase combination at fixed instants; overlap and
   unknown-id rejection; no-next-season warning; announcements at season start, T-7d, T-24h, T-1h and T-5m exactly once each.
-- `TransitionStepMapTest`: every `SeasonPhase` resolves to exactly one `TransitionStep`, and building
-  `SeasonTransition` with a map that lacks a phase fails at construction, naming the phase.
 - `SeasonServiceTest` and `SeasonTransitionTest`: in-memory fakes for `SeasonRunRepository` and
   `SeasonWorlds` (scriptable success, failure and false unload), `PlayerSeasonReset` and
   `SeasonAnnouncer`; a fixed `Clock` per step; a constant `LongSupplier`. Example names:
@@ -457,7 +455,7 @@ Adapters:
 - `PostgresSeasonRunRepositoryTest` (Testcontainers `postgres:16-alpine`, fresh table per test):
   save and find through `SeasonRunMapper`, `switchActive` atomicity and flush order, the partial unique index
   rejects a second `ACTIVE`, and two saves of one run from stale copies (two `EntityManager`s, sequential
-  flushes, no threads) make the second fail with `OptimisticLockException`, reported as `Stale`.
+  flushes, no threads) make the second fail with `OptimisticLockException`, reported as `SeasonRunConflictException`.
 - `PostgresChallengeProgressRepositoryTest` and `PostgresTaskCompletionRepositoryTest` also assert that rows are
   keyed by the `@EmbeddedId` record (season, player, challenge, and for tasks the prestige step and task id).
 - `PostgresChallengeProgressRepositoryTest` and `PostgresTaskCompletionRepositoryTest`: season

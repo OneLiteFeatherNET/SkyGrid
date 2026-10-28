@@ -9,8 +9,8 @@ modules' tests, for example `./gradlew :core:test :adapters:economy:test --max-w
 - [ ] 1.2 Implement `ItemPayload` and `Delivery` in `api.model` and verify the 1.1 tests pass
 - [ ] 1.3 Write `MailboxService` unit tests with an in-memory `MailboxRepository` fake for queueing, the whole-stack rule and claiming a subset, and verify they fail
 - [ ] 1.4 Implement `MailboxUseCase`, `MailboxRepository` and `MailboxService` in `ports` and `core` and verify the 1.3 tests pass
-- [ ] 1.5 Write table-driven tests for `IntentState` (every state against `commit` and `abort`: only `Pending` accepts either, `Committed` and `Aborted` reject both) and for `Delivery` (`markDelivered` succeeds once, a second call is rejected), and verify they fail
-- [ ] 1.6 Implement the sealed `DeliverySource` (permits `ShopPurchase`), the sealed `IntentState` (`Pending`, `Committed`, `Aborted`) and the `SaleIntent` aggregate in `api.model` and `core`, and verify the 1.5 tests pass
+- [ ] 1.5 Write table-driven tests for `SaleIntent` (every `IntentState` value against `commit` and `abort`: only `PENDING` accepts either, `COMMITTED` and `ABORTED` reject both) and for `Delivery` (`markDelivered` succeeds once, a second call is rejected, `sourceRef` is kept), and verify they fail
+- [ ] 1.6 Implement the enums `DeliverySource` (`SHOP_PURCHASE`) and `IntentState` (`PENDING`, `COMMITTED`, `ABORTED`), the `sourceRef` field on `Delivery`, and the `SaleIntent` record with `commit()` and `abort()` in `api.model` and `core`, and verify the 1.5 tests pass
 
 ## 2. Mailbox persistence (delivery slice 22, part 2)
 
