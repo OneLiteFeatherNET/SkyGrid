@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * Testcontainers, including the Flyway migration of the {@code season} unit. Each test runs against its own
  * fresh database and a fixed {@link Clock}; no sleeps and no system clock.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class PostgresSeasonRunRepositoryTest {
 
     private static final Instant NOW = Instant.parse("2026-10-28T12:00:00Z");
