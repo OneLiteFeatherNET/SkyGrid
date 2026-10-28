@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * instance started by Testcontainers, including the actual Flyway migration; nothing here is
  * mocked at the JDBC level.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class PostgresChallengeProgressRepositoryTest {
 
     @Container

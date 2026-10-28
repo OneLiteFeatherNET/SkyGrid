@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * migration ({@code V1__create_test_item.sql}) are entirely separate, scoped to
  * {@code src/test/resources}.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class AbstractJpaRepositoryTest {
 
     @Container
