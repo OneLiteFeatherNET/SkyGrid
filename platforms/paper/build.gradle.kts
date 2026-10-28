@@ -1,4 +1,6 @@
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
+import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.process.CommandLineArgumentProvider
 import xyz.jpenilla.runpaper.task.RunServer
 
 plugins {
@@ -39,7 +41,21 @@ tasks {
         // Incendo Cloud is a popular command framework other plugins may also shade; relocate it so
         // two differently-versioned copies on the same server cannot clash on the classpath.
         relocate("org.incendo.cloud", "net.onelitefeather.skygridng.libs.cloud")
+        // Shadow drops duplicate entries before service files are merged, which kept only the first
+        // jar's META-INF/services file (Flyway would lose its core plugin). Let them through here.
+        filesMatching("META-INF/services/**") {
+            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        }
         mergeServiceFiles()
+    }
+
+    test {
+        // ShadowJarServiceFilesTest checks the merged service files of the jar the server loads.
+        dependsOn(shadowJar)
+        val shadowJarFile = shadowJar.flatMap { it.archiveFile }
+        jvmArgumentProviders.add(CommandLineArgumentProvider {
+            listOf("-Dskygrid.shadowJar=${shadowJarFile.get().asFile.absolutePath}")
+        })
     }
 
     build {
