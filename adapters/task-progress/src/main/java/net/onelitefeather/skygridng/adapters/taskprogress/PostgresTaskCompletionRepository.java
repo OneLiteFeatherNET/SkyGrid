@@ -18,7 +18,7 @@ import java.util.function.Supplier;
  * behavior specific to the {@code task_completion} table.
  *
  * <p>The schema is owned by the Flyway migration bundled at
- * {@code classpath:db/migration/V1__create_task_completion.sql}, never a hand-edited
+ * {@code classpath:db/migration/task-progress/V1__create_task_completion.sql}, never a hand-edited
  * {@code CREATE TABLE} assumed to match this class; Hibernate never creates or alters that schema
  * itself ({@code hibernate.hbm2ddl.auto=validate} in {@code persistence.xml}), it only validates the
  * {@link TaskCompletionEntity} mapping against the table Flyway already created.
@@ -35,7 +35,11 @@ public final class PostgresTaskCompletionRepository extends AbstractJpaRepositor
      *                       {@code DatabaseConfig::fromEnvironment}.
      */
     public PostgresTaskCompletionRepository(Supplier<DatabaseConfig> configSupplier) {
-        super("task-progress", "classpath:db/migration", configSupplier);
+        super(
+                "task-progress",
+                "classpath:db/migration/task-progress",
+                "flyway_history_task_progress",
+                configSupplier);
     }
 
     @Override
