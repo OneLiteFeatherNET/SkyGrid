@@ -3,13 +3,17 @@ package net.onelitefeather.skygridng.platforms.olf.season;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.onelitefeather.skygridng.api.model.Season;
+import net.onelitefeather.skygridng.api.model.SeasonCatalog;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
+import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.mockito.Mockito;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +48,7 @@ class SeasonJoinListenerTest {
     private World activeWorld;
     private Season season;
     private final List<UUID> resets = new java.util.ArrayList<>();
+    private boolean known;
 
     @BeforeEach
     void setUp() {
@@ -51,6 +56,7 @@ class SeasonJoinListenerTest {
         plugin = MockBukkit.createMockPlugin("SkyGridNg");
         activeWorld = server.createWorld(WorldCreator.ofKey(NamespacedKey.fromString(ACTIVE)));
         season = new Season(new SeasonId("s01"), "Season 1", START, Duration.ofDays(28), "standard", List.of(), null);
+        known = true;
     }
 
     @AfterEach
@@ -67,10 +73,13 @@ class SeasonJoinListenerTest {
 
             @Override
             public Optional<Season> season() {
-                return Optional.of(season);
+                return known ? Optional.of(season) : Optional.empty();
             }
         };
-        return new SeasonJoinListener(plugin, current, (player, seasonId) -> resets.add(player), Clock.fixed(now, ZoneOffset.UTC));
+        SeasonAdminUseCase seasons = Mockito.mock(SeasonAdminUseCase.class);
+        Mockito.when(seasons.list()).thenReturn(new SeasonCatalog(List.of(season)));
+        return new SeasonJoinListener(plugin, current, seasons, (player, seasonId) -> resets.add(player),
+                Clock.fixed(now, ZoneOffset.UTC));
     }
 
     @Test
@@ -97,6 +106,51 @@ class SeasonJoinListenerTest {
         assertThat(event.getSpawnLocation())
                 .as("a player already in the active season world keeps the location it was given")
                 .isEqualTo(spawn);
+    }
+
+    @Test
+    void playerJoiningBeforeTheActiveSeasonIsKnownIsRoutedOnceItIsKnown() {
+        known = false;
+        PlayerMock player = server.addPlayer();
+        World lobby = server.addSimpleWorld("lobby");
+        player.teleport(lobby.getSpawnLocation());
+        SeasonJoinListener listener = listener(START.plus(Duration.ofDays(1)));
+
+        listener.onJoin(new PlayerJoinEvent(player, Component.empty()));
+        server.getScheduler().performTicks(40);
+
+        assertThat(player.getWorld())
+                .as("while the restarted server does not know the active season yet, the player stays where the server put them")
+                .isNotEqualTo(activeWorld);
+        assertThat(resets)
+                .as("no season reset runs before the season is known")
+                .isEmpty();
+
+        known = true;
+        server.getScheduler().performTicks(10);
+
+        assertThat(player.getWorld())
+                .as("once the active season is known and loaded, the waiting player is routed into it")
+                .isEqualTo(activeWorld);
+        assertThat(resets)
+                .as("the reset runs once, on arrival in the active season")
+                .containsExactly(player.getUniqueId());
+    }
+
+    @Test
+    void playerWhoLeavesWhileWaitingForTheActiveSeasonIsNotMovedOrReset() {
+        known = false;
+        PlayerMock player = server.addPlayer();
+        SeasonJoinListener listener = listener(START.plus(Duration.ofDays(1)));
+        listener.onJoin(new PlayerJoinEvent(player, Component.empty()));
+
+        listener.onQuit(new PlayerQuitEvent(player, Component.empty(), PlayerQuitEvent.QuitReason.DISCONNECTED));
+        known = true;
+        server.getScheduler().performTicks(40);
+
+        assertThat(resets)
+                .as("a player who left is not reset or moved by the waiting routine")
+                .isEmpty();
     }
 
     @Test

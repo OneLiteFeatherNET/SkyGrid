@@ -49,7 +49,7 @@ public final class SeasonFeature implements OlfFeature, Listener {
 
     @Override
     public void enable() {
-        joins = new SeasonJoinListener(plugin, current, resets, clock);
+        joins = new SeasonJoinListener(plugin, current, seasons, resets, clock);
         ticker = new SeasonTicker(plugin, seasons, clock, gate);
         plugin.getServer().getPluginManager().registerEvents(joins, plugin);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
