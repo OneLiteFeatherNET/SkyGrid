@@ -5,6 +5,7 @@ import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import jakarta.inject.Singleton;
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.api.model.SeasonCatalog;
 import net.onelitefeather.skygridng.core.service.SeasonService;
 import net.onelitefeather.skygridng.core.service.SeasonTimeline;
 import net.onelitefeather.skygridng.platforms.common.WorldGenerators;
@@ -22,6 +23,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Set;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -44,14 +46,18 @@ public final class SeasonModule extends AbstractModule {
                                        SeasonAnnouncer announcer, PlayerSeasonReset resets,
                                        Set<SeasonTransitionListener> listeners, Presets presets,
                                        LongSupplier seeds) {
-        Set<String> presetIds = Set.copyOf(presets.names());
-        Set<String> challengeIds = challenges.list().stream()
-                .map(ChallengeRule::id)
-                .collect(Collectors.toUnmodifiableSet());
-        SeasonTimeline.Validation validation = SeasonTimeline.validate(repository.load(), presetIds, challengeIds);
-        validation.rejections().forEach(plugin.getLogger()::warning);
-        return new SeasonService(validation.accepted(), repository.settings(), runs, worlds, challenges,
-                announcer, resets, listeners, seeds);
+        // The same validation runs at startup and on every reload, so a reload cannot skip the checks.
+        Supplier<SeasonCatalog> loader = () -> {
+            Set<String> presetIds = Set.copyOf(presets.names());
+            Set<String> challengeIds = challenges.list().stream()
+                    .map(ChallengeRule::id)
+                    .collect(Collectors.toUnmodifiableSet());
+            SeasonTimeline.Validation validation = SeasonTimeline.validate(repository.load(), presetIds, challengeIds);
+            validation.rejections().forEach(plugin.getLogger()::warning);
+            return validation.accepted();
+        };
+        return new SeasonService(loader.get(), repository.settings(), runs, worlds, challenges,
+                announcer, resets, listeners, seeds, loader);
     }
 
     @Provides

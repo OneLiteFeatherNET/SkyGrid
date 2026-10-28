@@ -6,6 +6,7 @@ import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.SeasonPhase;
 import net.onelitefeather.skygridng.api.model.SeasonRun;
 import net.onelitefeather.skygridng.api.model.SeasonSettings;
+import net.onelitefeather.skygridng.api.model.SeasonStatus;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
@@ -24,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -54,6 +56,7 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
     private final PlayerSeasonReset resets;
     private final Set<SeasonTransitionListener> listeners;
     private final LongSupplier seeds;
+    private final Supplier<SeasonCatalog> loader;
     private Optional<Instant> lastWarning = Optional.empty();
     private SeasonId activeId = SeasonId.LEGACY;
     private boolean busy;
@@ -67,7 +70,8 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
             SeasonAnnouncer announcer,
             PlayerSeasonReset resets,
             Set<SeasonTransitionListener> listeners,
-            LongSupplier seeds) {
+            LongSupplier seeds,
+            Supplier<SeasonCatalog> loader) {
         this.catalog = catalog;
         this.settings = settings;
         this.runs = runs;
@@ -77,6 +81,7 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
         this.resets = resets;
         this.listeners = listeners;
         this.seeds = seeds;
+        this.loader = loader;
     }
 
     @Override
@@ -92,6 +97,34 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
     @Override
     public SeasonCatalog list() {
         return catalog;
+    }
+
+    @Override
+    public Optional<SeasonStatus> status() {
+        try {
+            SeasonPhase phase = runs.active().map(SeasonRun::phase).orElse(SeasonPhase.ACTIVE);
+            return Optional.of(new SeasonStatus(activeId, phase,
+                    catalog.next(activeId).map(Season::id).orElse(null),
+                    season(activeId).map(Season::end).orElse(null)));
+        } catch (RuntimeException failure) {
+            LOGGER.log(Level.WARNING, "season status unavailable: " + failure.getMessage(), failure);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public boolean reload() {
+        return guarded("reload", () -> {
+            if (runs.inFlight().stream().anyMatch(run -> RUNNING.contains(run.phase()))) {
+                return false;
+            }
+            Optional<Season> active = season(activeId);
+            catalog = new SeasonCatalog(loader.get().seasons().stream()
+                    .map(season -> active.filter(current -> current.id().equals(season.id())).orElse(season))
+                    .toList());
+            LOGGER.info("season definitions reloaded, the active season keeps its window");
+            return true;
+        });
     }
 
     @Override

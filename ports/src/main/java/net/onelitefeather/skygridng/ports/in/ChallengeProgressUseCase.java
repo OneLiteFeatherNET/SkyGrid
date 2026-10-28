@@ -1,5 +1,8 @@
 package net.onelitefeather.skygridng.ports.in;
 
+import net.onelitefeather.skygridng.api.model.SeasonId;
+
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -20,6 +23,9 @@ public interface ChallengeProgressUseCase {
      * at tier 1 if none existed, otherwise increments the stored tier by one. Returns the new tier value.
      */
     int recordCompletion(UUID playerId, String challengeId);
+
+    /** The player's tier per season, every season with a recorded tier. */
+    Map<SeasonId, Integer> history(UUID playerId);
 
     /** The season-reset operation: clears every player's tier for every challenge of the current season. */
     void resetCurrentSeason();

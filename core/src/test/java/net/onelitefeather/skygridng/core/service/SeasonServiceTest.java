@@ -82,13 +82,13 @@ class SeasonServiceTest {
     private SeasonService service(Set<SeasonTransitionListener> listeners, SeasonRun... initial) {
         runs = new Runs(journal, initial);
         return new SeasonService(CATALOG, SeasonSettings.defaults(), runs, worlds, challenges, announcer,
-                new Resets(journal), listeners, () -> 99L);
+                new Resets(journal), listeners, () -> 99L, () -> CATALOG);
     }
 
     /** A new service over the same fake database, as after a server restart. */
     private SeasonService restarted(Set<SeasonTransitionListener> listeners) {
         return new SeasonService(CATALOG, SeasonSettings.defaults(), runs, worlds, challenges, announcer,
-                new Resets(journal), listeners, () -> 99L);
+                new Resets(journal), listeners, () -> 99L, () -> CATALOG);
     }
 
     /** Ticks at {@code now} until no step is due, the way the scheduler does over a few seconds. */
@@ -96,6 +96,38 @@ class SeasonServiceTest {
         for (int step = 0; step < MAX_STEPS && service.tick(now); step++) {
             assertThat(step).as("the transition must settle within the step budget").isLessThan(MAX_STEPS - 1);
         }
+    }
+
+    @Test
+    void statusNamesTheActiveSeasonItsPhaseAndTheNextSeason() {
+        SeasonService service = service(Set.of(), run("s01", ACTIVE));
+        service.tick(JAN.plus(Duration.ofDays(1)));
+
+        assertThat(service.status())
+                .as("status reads the active season and its phase, and names the season that follows")
+                .hasValueSatisfying(status -> {
+                    assertThat(status.activeSeason().value()).isEqualTo("s01");
+                    assertThat(status.phase()).isEqualTo(ACTIVE);
+                    assertThat(status.nextSeason().value()).isEqualTo("s02");
+                });
+    }
+
+    @Test
+    void reloadKeepsTheActiveSeasonWindowAndTakesTheFreshDefinitionsOfTheNextOne() {
+        SeasonCatalog fresh = new SeasonCatalog(List.of(
+                season("s01", JAN, "standard", "one_life"),
+                season("s02", BOUNDARY, "desert", "one_life")));
+        runs = new Runs(journal, run("s01", ACTIVE));
+        SeasonService service = new SeasonService(CATALOG, SeasonSettings.defaults(), runs, worlds, challenges,
+                announcer, new Resets(journal), Set.of(), () -> 99L, () -> fresh);
+        service.tick(JAN.plus(Duration.ofDays(1)));
+
+        assertThat(service.reload())
+                .as("a reload while no transition runs succeeds")
+                .isTrue();
+        assertThat(service.list().seasons().get(1).preset())
+                .as("the next season takes the freshly read definition")
+                .isEqualTo("desert");
     }
 
     @Test

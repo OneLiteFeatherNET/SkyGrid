@@ -1,9 +1,11 @@
 package net.onelitefeather.skygridng.core.service;
 
+import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -31,6 +33,11 @@ public final class ChallengeProgressService implements ChallengeProgressUseCase 
     @Override
     public int recordCompletion(UUID playerId, String challengeId) {
         return repository.recordCompletion(currentSeason.id(), playerId, challengeId);
+    }
+
+    @Override
+    public Map<SeasonId, Integer> history(UUID playerId) {
+        return repository.history(playerId);
     }
 
     @Override

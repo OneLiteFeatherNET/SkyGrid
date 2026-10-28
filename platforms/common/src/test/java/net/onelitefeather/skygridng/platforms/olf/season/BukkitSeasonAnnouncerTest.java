@@ -1,0 +1,92 @@
+package net.onelitefeather.skygridng.platforms.olf.season;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.onelitefeather.skygridng.api.model.SeasonId;
+import org.bukkit.plugin.Plugin;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.ServerMock;
+import org.mockbukkit.mockbukkit.entity.PlayerMock;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Black-box tests for the season announcements. Lines are checked by their translation keys, so the tests do not depend
+ * on the English wording, and the scheduler is not involved.
+ */
+class BukkitSeasonAnnouncerTest {
+
+    private static final SeasonId SEASON = new SeasonId("s01");
+    private static final Instant BOUNDARY = Instant.parse("2027-01-29T00:00:00Z");
+    private static final String DELETED = "skygridng.command.season.reset.deleted";
+    private static final String KEPT = "skygridng.command.season.reset.kept";
+
+    private ServerMock server;
+    private BukkitSeasonAnnouncer announcer;
+    private PlayerMock player;
+
+    @BeforeEach
+    void setUp() {
+        server = MockBukkit.mock();
+        Plugin plugin = MockBukkit.createMockPlugin("SkyGridNg");
+        announcer = new BukkitSeasonAnnouncer(plugin);
+        player = server.addPlayer();
+    }
+
+    @AfterEach
+    void tearDown() {
+        MockBukkit.unmock();
+    }
+
+    /** Every translation key of every line the player received. */
+    private List<String> receivedKeys() {
+        List<String> keys = new ArrayList<>();
+        for (Component line = player.nextComponentMessage(); line != null; line = player.nextComponentMessage()) {
+            collectKeys(line, keys);
+        }
+        return keys;
+    }
+
+    private static void collectKeys(Component component, List<String> keys) {
+        if (component instanceof TranslatableComponent translatable) {
+            keys.add(translatable.key());
+        }
+        component.children().forEach(child -> collectKeys(child, keys));
+    }
+
+    @Test
+    void upcomingAnnouncementNamesTheDeletedAndTheKeptLists() {
+        announcer.upcoming(SEASON, Duration.ofDays(7), BOUNDARY);
+
+        assertThat(receivedKeys())
+                .as("a season end announcement names what is deleted and what is kept")
+                .contains(DELETED, KEPT);
+    }
+
+    @Test
+    void startAnnouncementNamesTheDeletedAndTheKeptLists() {
+        announcer.started(SEASON);
+
+        assertThat(receivedKeys())
+                .as("the season start announcement names what is deleted and what is kept")
+                .contains(DELETED, KEPT);
+    }
+
+    @Test
+    void announcementsAddNoScoreboardOrBossBarCountdown() {
+        announcer.upcoming(SEASON, Duration.ofDays(7), BOUNDARY);
+        server.getScheduler().performTicks(40);
+
+        assertThat(player.getScoreboard().getObjectives())
+                .as("no sidebar countdown is rendered during a running season")
+                .isEmpty();
+    }
+}

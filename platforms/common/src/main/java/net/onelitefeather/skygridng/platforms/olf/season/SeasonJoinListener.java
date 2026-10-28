@@ -1,7 +1,6 @@
 package net.onelitefeather.skygridng.platforms.olf.season;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.onelitefeather.skygridng.adapters.command.Messages;
 import net.onelitefeather.skygridng.api.model.Season;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
@@ -19,8 +18,6 @@ import org.spigotmc.event.player.PlayerSpawnLocationEvent;
 
 import java.time.Clock;
 import java.time.Duration;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,8 +34,6 @@ public final class SeasonJoinListener implements Listener {
 
     private static final Duration FINAL_WEEK = Duration.ofDays(7);
     private static final long WAIT_PERIOD_TICKS = 10L;
-    private static final DateTimeFormatter END_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm 'UTC'")
-            .withZone(ZoneOffset.UTC);
 
     private final Plugin plugin;
     private final CurrentSeason current;
@@ -114,19 +109,14 @@ public final class SeasonJoinListener implements Listener {
         resets.reset(player.getUniqueId(), season.get().id());
         Duration left = Duration.between(clock.instant(), season.get().end());
         if (left.isPositive() && left.compareTo(FINAL_WEEK) <= 0) {
-            player.sendMessage(finalWeekLine(season.get()));
+            Messages.seasonFinalWeekLine(season.get().id().value(),
+                    Messages.seasonDate(season.get().end(), player.locale()), 0)
+                    .forEach(player::sendMessage);
         }
         return true;
     }
 
     private World activeWorld(Season season) {
         return plugin.getServer().getWorld(NamespacedKey.fromString(SeasonWorldKeys.worldKey(season.id())));
-    }
-
-    private static Component finalWeekLine(Season season) {
-        return Component.text("Season " + season.id().value() + " ends " + END_DATE.format(season.end())
-                + ". At the next season your inventory, ender chest, experience, health, hunger, effects, respawn"
-                + " point, game mode, tiers and task progress are deleted. Your season history is kept.",
-                NamedTextColor.YELLOW);
     }
 }

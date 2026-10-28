@@ -1,9 +1,11 @@
 package net.onelitefeather.skygridng.ports.in;
 
 import net.onelitefeather.skygridng.api.model.SeasonCatalog;
+import net.onelitefeather.skygridng.api.model.SeasonStatus;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 /**
  * In port: the season lifecycle as seen by the scheduler and by admins. Every method that changes state
@@ -14,6 +16,15 @@ public interface SeasonAdminUseCase {
 
     /** The configured seasons, including any postponement applied since the last load. */
     SeasonCatalog list();
+
+    /** The active season, its phase and the season that follows. Empty when the database cannot be read. */
+    Optional<SeasonStatus> status();
+
+    /**
+     * Reloads the season definitions from {@code seasons/}. The active season keeps its current window, so only the
+     * seasons after it change. Refused while a transition step runs.
+     */
+    boolean reload();
 
     /**
      * Scheduler entry point, called every tick with the current instant. Runs at most one due step.

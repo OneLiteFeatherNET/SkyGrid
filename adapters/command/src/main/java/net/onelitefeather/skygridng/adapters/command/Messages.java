@@ -2,7 +2,13 @@ package net.onelitefeather.skygridng.adapters.command;
 
 import net.kyori.adventure.text.Component;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Builds translatable command messages. Keys resolve against the registered translation bundles,
@@ -166,5 +172,131 @@ public final class Messages {
     /** Shown instead of resetting when {@code /skygrid challenge tier reset} is missing {@code confirm}. */
     public static Component challengeTierResetConfirm() {
         return key("challenge.tier.reset.confirm");
+    }
+
+    /**
+     * An absolute date and time in the viewer's locale, in UTC. The server runs on one clock, so the zone is fixed and
+     * only the wording follows the viewer.
+     */
+    public static String seasonDate(Instant instant, Locale locale) {
+        return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale)
+                .withZone(ZoneOffset.UTC).format(instant);
+    }
+
+    /**
+     * What a season end deletes and keeps, sent as three lines: the deleted list, the kept list, and the viewer's own
+     * pending mailbox count. The mailbox count is always 0 until the economy exists.
+     */
+    public static List<Component> seasonResetLines(int pendingMailbox) {
+        return List.of(
+                keyNoPrefix("season.reset.deleted"),
+                keyNoPrefix("season.reset.kept"),
+                keyNoPrefix("season.mailbox", pendingMailbox));
+    }
+
+    public static List<Component> seasonInfo(String id, String name, String end, int pendingMailbox) {
+        List<Component> lines = new ArrayList<>();
+        lines.add(key("season.info", id, name, end));
+        lines.addAll(seasonResetLines(pendingMailbox));
+        return List.copyOf(lines);
+    }
+
+    /** The season end announcement for the viewer, with the reset lines, sent as separate lines. */
+    public static List<Component> seasonAnnouncementUpcoming(String id, String endsOn, int pendingMailbox) {
+        List<Component> lines = new ArrayList<>();
+        lines.add(key("season.announce.upcoming", id, endsOn));
+        lines.addAll(seasonResetLines(pendingMailbox));
+        return List.copyOf(lines);
+    }
+
+    /** The season start announcement for the viewer, with the reset lines, sent as separate lines. */
+    public static List<Component> seasonAnnouncementStarted(String id, int pendingMailbox) {
+        List<Component> lines = new ArrayList<>();
+        lines.add(key("season.announce.started", id));
+        lines.addAll(seasonResetLines(pendingMailbox));
+        return List.copyOf(lines);
+    }
+
+    public static Component seasonAnnouncementPostponed(String id, String endsOn) {
+        return key("season.announce.postponed", id, endsOn);
+    }
+
+    /** The chat line for a player who joins in the last seven days, with the reset lines. */
+    public static List<Component> seasonFinalWeekLine(String id, String endsOn, int pendingMailbox) {
+        List<Component> lines = new ArrayList<>();
+        lines.add(key("season.final_week.join", id, endsOn));
+        lines.addAll(seasonResetLines(pendingMailbox));
+        return List.copyOf(lines);
+    }
+
+    public static Component seasonNone() {
+        return key("season.none");
+    }
+
+    public static Component seasonListEmpty() {
+        return key("season.list.empty");
+    }
+
+    public static Component seasonListEntry(String id, String name, String start, String end) {
+        return key("season.list.entry", id, name, start, end);
+    }
+
+    /** The active season and its phase; {@code next} is {@code null} when no season follows. */
+    public static Component seasonStatus(String active, String phase, String next, String endsAt) {
+        return next == null
+                ? key("season.status.last", active, phase, endsAt)
+                : key("season.status", active, phase, next, endsAt);
+    }
+
+    public static Component seasonRefused() {
+        return key("season.refused");
+    }
+
+    public static Component seasonHistoryEntry(String id, int tier) {
+        return key("season.history.entry", id, tier);
+    }
+
+    public static Component seasonHistoryEmpty() {
+        return key("season.history.empty");
+    }
+
+    public static Component seasonRetried() {
+        return key("season.retry.done");
+    }
+
+    public static Component seasonAdvanceWarn() {
+        return key("season.advance.warn");
+    }
+
+    public static Component seasonAdvanced() {
+        return key("season.advance.done");
+    }
+
+    public static Component seasonAdvanceNowWarn() {
+        return key("season.advance.now.warn");
+    }
+
+    public static Component seasonAdvancedNow() {
+        return key("season.advance.now.done");
+    }
+
+    public static Component seasonPostponeWarn(String duration) {
+        return key("season.postpone.warn", duration, duration);
+    }
+
+    public static Component seasonPostponed(String duration) {
+        return key("season.postpone.done", duration);
+    }
+
+    public static Component seasonDurationInvalid(String raw) {
+        return key("season.duration.invalid", raw);
+    }
+
+    public static Component seasonReloadWarn() {
+        return key("season.reload.warn");
+    }
+
+    public static Component seasonReloaded() {
+        return key("season.reload.done");
     }
 }

@@ -22,6 +22,7 @@ import net.onelitefeather.skygridng.platforms.olf.season.SeasonModule;
 import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
 import net.onelitefeather.skygridng.api.SkyGridApi;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
@@ -126,6 +127,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
                     injector.getInstance(Presets.class),
                     injector.getInstance(RuleAdminUseCase.class),
                     injector.getInstance(ChallengeAdminUseCase.class),
+                    injector.getInstance(SeasonAdminUseCase.class),
                     injector.getInstance(COMMAND_HANDLERS));
         } catch (RuntimeException | LinkageError e) {
             getLogger().log(Level.WARNING, "Failed to build the Cloud command manager.", e);

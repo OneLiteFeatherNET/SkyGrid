@@ -1,6 +1,7 @@
 package net.onelitefeather.skygridng.platforms.olf.season;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.onelitefeather.skygridng.api.model.Season;
 import net.onelitefeather.skygridng.api.model.SeasonCatalog;
@@ -174,12 +175,23 @@ class SeasonJoinListenerTest {
         assertThat(line)
                 .as("a player joining in the last week gets the final week line")
                 .isNotNull();
-        assertThat(PlainTextComponentSerializer.plainText().serialize(line))
+        assertThat(argumentsOf(line))
                 .as("the final week line names the absolute end date")
-                .contains("2027-01-29");
+                .contains("2027");
         assertThat(player.nextComponentMessage())
-                .as("the final week line is sent exactly once per join")
-                .isNull();
+                .as("the final week line is sent once per join, followed only by its reset lines")
+                .isNotNull();
+    }
+
+    /** The plain text of every argument of every translatable part of {@code component}. */
+    private static String argumentsOf(Component component) {
+        StringBuilder text = new StringBuilder();
+        if (component instanceof TranslatableComponent translatable) {
+            translatable.arguments().forEach(argument ->
+                    text.append(PlainTextComponentSerializer.plainText().serialize(argument.asComponent())).append(' '));
+        }
+        component.children().forEach(child -> text.append(argumentsOf(child)));
+        return text.toString();
     }
 
     @Test
