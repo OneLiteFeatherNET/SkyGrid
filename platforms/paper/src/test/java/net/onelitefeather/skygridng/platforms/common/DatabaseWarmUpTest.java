@@ -5,6 +5,8 @@ import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
 import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
+import net.onelitefeather.skygridng.api.model.ProgressScope;
+import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.platforms.common.injection.RepositoryModule;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
 import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
@@ -19,6 +21,7 @@ import org.mockbukkit.mockbukkit.ServerMock;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -117,17 +120,22 @@ class DatabaseWarmUpTest {
         }
 
         @Override
-        public int tierOf(UUID playerId, String challengeId) {
+        public int tierOf(SeasonId season, UUID playerId, String challengeId) {
             throw new UnsupportedOperationException("probe");
         }
 
         @Override
-        public int recordCompletion(UUID playerId, String challengeId) {
+        public int recordCompletion(SeasonId season, UUID playerId, String challengeId) {
             throw new UnsupportedOperationException("probe");
         }
 
         @Override
-        public void resetAll() {
+        public void resetSeason(SeasonId season) {
+            throw new UnsupportedOperationException("probe");
+        }
+
+        @Override
+        public Map<SeasonId, Integer> history(UUID playerId) {
             throw new UnsupportedOperationException("probe");
         }
     }
@@ -139,17 +147,22 @@ class DatabaseWarmUpTest {
         }
 
         @Override
-        public boolean isCompleted(UUID playerId, String challengeId, String taskId) {
+        public boolean isCompleted(ProgressScope scope, String taskId) {
             throw new UnsupportedOperationException("probe");
         }
 
         @Override
-        public boolean markCompleted(UUID playerId, String challengeId, String taskId) {
+        public boolean markCompleted(ProgressScope scope, String taskId) {
             throw new UnsupportedOperationException("probe");
         }
 
         @Override
-        public void resetAll() {
+        public void resetSeason(SeasonId season) {
+            throw new UnsupportedOperationException("probe");
+        }
+
+        @Override
+        public Map<SeasonId, Long> completedCountBySeason(UUID playerId) {
             throw new UnsupportedOperationException("probe");
         }
     }
