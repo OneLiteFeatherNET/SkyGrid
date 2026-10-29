@@ -45,7 +45,7 @@ dependencyResolutionManagement {
             version("hikaricp", "6.3.1")         // connection pooling, owned directly by Hibernate now
             version("flyway", "11.8.2")          // versioned migrations; postgres support is a split module since Flyway 10
             version("jakartaPersistence", "3.1.0") // JSR 338 API; the version Hibernate ORM 6.6.x targets
-            version("hibernate", "6.6.54.Final") // Hibernate ORM, challenge progress adapter's JPA provider
+            version("hibernate", "6.6.55.Final") // Hibernate ORM, challenge progress adapter's JPA provider
 
             version("shadow", "9.4.3")
             version("runPaper", "3.0.2")
