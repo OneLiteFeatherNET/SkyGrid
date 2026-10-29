@@ -36,7 +36,7 @@ dependencyResolutionManagement {
             version("adventure", "4.25.0")      // platform-neutral text API; matches Paper 26.1's adventure-bom
             version("guice", "7.0.0")
             version("jakartaInject", "2.0.1")
-            version("cloudPaper", "2.0.0") // Incendo Cloud command framework, Paper module
+            version("cloudPaper", "2.0.1") // Incendo Cloud command framework, Paper module
             // cloud-core and cloud-annotations reached GA at 2.0.0 while the Paper/Bukkit/Brigadier
             // integration modules of the same release line are still beta (see cloudPaper above),
             // hence the separate version key.
