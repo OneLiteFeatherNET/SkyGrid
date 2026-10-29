@@ -47,7 +47,7 @@ dependencyResolutionManagement {
             version("jakartaPersistence", "3.1.0") // JSR 338 API; the version Hibernate ORM 6.6.x targets
             version("hibernate", "6.6.58.Final") // Hibernate ORM, challenge progress adapter's JPA provider
 
-            version("shadow", "9.5.1")
+            version("shadow", "9.6.0")
             version("runPaper", "3.0.2")
             version("pluginYml", "0.9.0")
             version("cyclonedx", "3.4.1")
