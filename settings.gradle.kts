@@ -58,7 +58,7 @@ dependencyResolutionManagement {
             version("mockito", "5.14.2")
             version("assertj", "3.27.7")
             version("archunit", "1.4.2")
-            version("testcontainers", "1.21.3") // real disposable Postgres for the challenge progress adapter test
+            version("testcontainers", "1.21.4") // real disposable Postgres for the challenge progress adapter test
 
             // ----- Libraries -----
             library("paper-api", "io.papermc.paper", "paper-api").versionRef("paper")
