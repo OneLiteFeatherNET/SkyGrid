@@ -53,7 +53,7 @@ dependencyResolutionManagement {
             version("cyclonedx", "3.5.1")
 
             // Testing
-            version("junit", "5.13.0")
+            version("junit", "5.13.1")
             version("mockbukkit", "4.115.0")
             version("mockito", "5.15.2")
             version("assertj", "3.27.7")
