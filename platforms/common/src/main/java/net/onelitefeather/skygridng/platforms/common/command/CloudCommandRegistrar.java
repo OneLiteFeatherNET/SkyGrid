@@ -4,9 +4,11 @@ import net.onelitefeather.skygridng.adapters.command.Messages;
 import net.onelitefeather.skygridng.adapters.command.handler.CloudCommandHandler;
 import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.api.model.Season;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.annotations.AnnotationParser;
@@ -48,8 +50,9 @@ public final class CloudCommandRegistrar {
                                  Presets presets,
                                  RuleAdminUseCase admin,
                                  ChallengeAdminUseCase challenges,
+                                 SeasonAdminUseCase seasons,
                                  Set<CloudCommandHandler> handlers) {
-        registerSuggestionProviders(manager, presets, admin, challenges);
+        registerSuggestionProviders(manager, presets, admin, challenges, seasons);
         registerNoPermissionHandler(manager);
 
         AnnotationParser<CommandSource> parser = new AnnotationParser<>(manager, CommandSource.class);
@@ -59,7 +62,8 @@ public final class CloudCommandRegistrar {
     private static void registerSuggestionProviders(PaperCommandManager<CommandSource> manager,
                                                       Presets presets,
                                                       RuleAdminUseCase admin,
-                                                      ChallengeAdminUseCase challenges) {
+                                                      ChallengeAdminUseCase challenges,
+                                                      SeasonAdminUseCase seasons) {
         manager.parserRegistry().registerSuggestionProvider("preset-names",
                 SuggestionProvider.blockingStrings((ctx, input) -> presets.names()));
         manager.parserRegistry().registerSuggestionProvider("algorithm-ids",
@@ -71,6 +75,11 @@ public final class CloudCommandRegistrar {
         manager.parserRegistry().registerSuggestionProvider("challenge-ids",
                 SuggestionProvider.blockingStrings((ctx, input) -> challenges.list().stream()
                         .map(ChallengeRule::id)
+                        .toList()));
+        manager.parserRegistry().registerSuggestionProvider("season-ids",
+                SuggestionProvider.blockingStrings((ctx, input) -> seasons.list().seasons().stream()
+                        .map(Season::id)
+                        .map(id -> id.value())
                         .toList()));
         manager.parserRegistry().registerSuggestionProvider("online-players",
                 SuggestionProvider.blockingStrings((ctx, input) -> Bukkit.getOnlinePlayers().stream()

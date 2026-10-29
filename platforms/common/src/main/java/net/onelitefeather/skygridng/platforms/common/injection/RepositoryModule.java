@@ -8,20 +8,26 @@ import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
 import net.onelitefeather.skygridng.adapters.config.BundledDefaults;
 import net.onelitefeather.skygridng.adapters.config.JacksonPresetRepository;
 import net.onelitefeather.skygridng.adapters.config.JacksonRuleRepository;
+import net.onelitefeather.skygridng.adapters.season.PostgresSeasonRunRepository;
 import net.onelitefeather.skygridng.adapters.taskprogress.PostgresTaskCompletionRepository;
 import net.onelitefeather.skygridng.core.service.ChallengeProgressService;
 import net.onelitefeather.skygridng.core.service.TaskProgressService;
 import net.onelitefeather.skygridng.core.state.ChallengeState;
+import net.onelitefeather.skygridng.adapters.config.JacksonSeasonRepository;
 import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
+import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
 import net.onelitefeather.skygridng.ports.out.PresetRepository;
 import net.onelitefeather.skygridng.ports.out.RewardGrantor;
 import net.onelitefeather.skygridng.ports.out.RuleRepository;
+import net.onelitefeather.skygridng.ports.out.SeasonRepository;
+import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;
 import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Path;
+import java.time.Clock;
 
 /**
  * Binds the out ports {@link PresetRepository}, {@link RuleRepository},
@@ -63,7 +69,7 @@ public final class RepositoryModule extends AbstractModule {
      * {@code onLoad} (server {@code STARTUP}) even when no {@code SKYGRID_DB_*} variable is set or no
      * Postgres is reachable. The blocking I/O (resolving the config, opening the pool, running the
      * migration) happens lazily, on the first actual call to {@code tierOf}, {@code recordCompletion}
-     * or {@code resetAll}.
+     * or {@code resetCurrentSeason}.
      */
     @Provides
     @Singleton
@@ -71,10 +77,33 @@ public final class RepositoryModule extends AbstractModule {
         return new PostgresChallengeProgressRepository(DatabaseConfig::fromEnvironment);
     }
 
+    /**
+     * The season definitions, read from {@code seasons/}. Construction reads no file; the first load happens when the
+     * season service is built during {@code onLoad}, like the preset and rule repositories.
+     */
     @Provides
     @Singleton
-    ChallengeProgressService provideChallengeProgressService(ChallengeProgressRepository repository) {
-        return new ChallengeProgressService(repository);
+    SeasonRepository provideSeasonRepository(JavaPlugin plugin, Path dataFolder) {
+        BundledDefaults defaults = plugin::getResource;
+        return new JacksonSeasonRepository(dataFolder, defaults);
+    }
+
+    /**
+     * Construction is cheap for the same reason as {@link #provideChallengeProgressRepository}: the environment,
+     * the pool and the Flyway migration of the {@code season} unit wait for the first call, which the async warm-up
+     * triggers.
+     */
+    @Provides
+    @Singleton
+    SeasonRunRepository provideSeasonRunRepository(Clock clock) {
+        return new PostgresSeasonRunRepository(DatabaseConfig::fromEnvironment, clock);
+    }
+
+    @Provides
+    @Singleton
+    ChallengeProgressService provideChallengeProgressService(ChallengeProgressRepository repository,
+                                                            CurrentSeason currentSeason) {
+        return new ChallengeProgressService(repository, currentSeason);
     }
 
     @Provides
@@ -98,8 +127,8 @@ public final class RepositoryModule extends AbstractModule {
     @Provides
     @Singleton
     TaskProgressService provideTaskProgressService(ChallengeState challengeState, TaskCompletionRepository repository,
-                                                     RewardGrantor grantor) {
-        return new TaskProgressService(challengeState, repository, grantor);
+                                                   RewardGrantor grantor, CurrentSeason currentSeason) {
+        return new TaskProgressService(challengeState, repository, grantor, currentSeason);
     }
 
     @Provides

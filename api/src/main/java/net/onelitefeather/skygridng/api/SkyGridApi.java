@@ -2,6 +2,9 @@ package net.onelitefeather.skygridng.api;
 
 import net.kyori.adventure.text.Component;
 import net.onelitefeather.skygridng.api.model.GeneratorConfig;
+import net.onelitefeather.skygridng.api.model.Season;
+
+import java.util.Optional;
 
 /**
  * The public, stable entry point other plugins and OneLiteFeather network components use to inspect
@@ -36,4 +39,12 @@ public interface SkyGridApi {
      * without rebuilding the text themselves.
      */
     Component describe();
+
+    /**
+     * The season that is running now, or empty when no season is configured. It is read only, so other
+     * plugins can key their own data by the season without the season lifecycle being exposed.
+     */
+    default Optional<Season> currentSeason() {
+        return Optional.empty();
+    }
 }

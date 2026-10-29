@@ -1,6 +1,7 @@
 package net.onelitefeather.skygridng.adapters.challengeprogress;
 
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.api.model.SeasonId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,12 +18,13 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 class ChallengeTierIdTest {
 
     private static final UUID PLAYER_ID = UUID.fromString("11111111-2222-3333-4444-555555555555");
+    private static final SeasonId SEASON = SeasonId.LEGACY;
 
     @Test
     @DisplayName("a null playerId throws")
     void nullPlayerIdThrows() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new ChallengeTierId(null, "one_life"))
+                .isThrownBy(() -> new ChallengeTierId(SEASON, null, "one_life"))
                 .withMessageContaining("playerId must not be null");
     }
 
@@ -30,7 +32,7 @@ class ChallengeTierIdTest {
     @DisplayName("a blank challengeId throws")
     void blankChallengeIdThrows() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new ChallengeTierId(PLAYER_ID, " "))
+                .isThrownBy(() -> new ChallengeTierId(SEASON, PLAYER_ID, " "))
                 .withMessageContaining("challengeId must not be blank");
     }
 
@@ -39,7 +41,7 @@ class ChallengeTierIdTest {
     void challengeIdAtMaxLengthIsValid() {
         String id = "a".repeat(ChallengeRule.MAX_ID_LENGTH);
 
-        ChallengeTierId tierId = new ChallengeTierId(PLAYER_ID, id);
+        ChallengeTierId tierId = new ChallengeTierId(SEASON, PLAYER_ID, id);
 
         assertThat(tierId.challengeId()).hasSize(ChallengeRule.MAX_ID_LENGTH);
     }
@@ -50,7 +52,15 @@ class ChallengeTierIdTest {
         String tooLong = "a".repeat(ChallengeRule.MAX_ID_LENGTH + 1);
 
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new ChallengeTierId(PLAYER_ID, tooLong))
+                .isThrownBy(() -> new ChallengeTierId(SEASON, PLAYER_ID, tooLong))
                 .withMessageContaining("challengeId must be at most " + ChallengeRule.MAX_ID_LENGTH + " characters");
+    }
+
+    @Test
+    @DisplayName("a null seasonId throws")
+    void nullSeasonIdThrows() {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new ChallengeTierId(null, PLAYER_ID, "one_life"))
+                .withMessageContaining("seasonId must not be null");
     }
 }

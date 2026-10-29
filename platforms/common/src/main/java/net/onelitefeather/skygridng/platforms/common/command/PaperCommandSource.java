@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +38,12 @@ public record PaperCommandSource(CommandSourceStack stack) implements CommandSou
         return stack.getSender() instanceof Player player
                 ? Optional.of(player.getUniqueId())
                 : Optional.empty();
+    }
+
+    /** The viewer's own client locale, so dates render the way that player reads them. The console gets English. */
+    @Override
+    public Locale locale() {
+        return stack.getSender() instanceof Player player ? player.locale() : Locale.ENGLISH;
     }
 
     @Override

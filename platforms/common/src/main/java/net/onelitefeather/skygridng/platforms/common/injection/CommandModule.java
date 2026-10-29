@@ -10,10 +10,15 @@ import net.onelitefeather.skygridng.adapters.command.handler.CloudCommandHandler
 import net.onelitefeather.skygridng.adapters.command.handler.HelpCommands;
 import net.onelitefeather.skygridng.adapters.command.handler.MaintenanceCommands;
 import net.onelitefeather.skygridng.adapters.command.handler.PresetCommands;
+import net.onelitefeather.skygridng.adapters.command.handler.SeasonCommands;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
+import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
+
+import java.time.Clock;
 
 /**
  * Binds every Cloud subcommand handler. {@code CloudCommandRegistrar} parses the whole set; a new
@@ -36,6 +41,7 @@ public final class CommandModule extends AbstractModule {
         handlers.addBinding().to(MaintenanceCommands.class);
         handlers.addBinding().to(ChallengeCommands.class);
         handlers.addBinding().to(HelpCommands.class);
+        handlers.addBinding().to(SeasonCommands.class);
         // Future subcommand groups add their binding here.
     }
 
@@ -61,5 +67,12 @@ public final class CommandModule extends AbstractModule {
     @Singleton
     ChallengeCommands provideChallengeCommands(ChallengeAdminUseCase challenges, ChallengeProgressUseCase progress) {
         return new ChallengeCommands(challenges, progress);
+    }
+
+    @Provides
+    @Singleton
+    SeasonCommands provideSeasonCommands(SeasonAdminUseCase seasons, CurrentSeason current,
+                                         ChallengeProgressUseCase progress, Clock clock) {
+        return new SeasonCommands(seasons, current, progress, clock);
     }
 }

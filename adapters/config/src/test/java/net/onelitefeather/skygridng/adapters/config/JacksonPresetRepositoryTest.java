@@ -10,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -99,5 +100,21 @@ class JacksonPresetRepositoryTest {
         assertThat(reloaded.presets().get("standard")).isEqualTo(catalog.presets().get("standard"));
         assertThat(reloaded.presets().get("nether")).isEqualTo(catalog.presets().get("nether"));
         assertThat(reloaded).isEqualTo(catalog);
+    }
+
+    @Test
+    @DisplayName("saving the presets keeps the season block of config")
+    void savingPresetsKeepsSeasonBlock(@TempDir Path dir) throws IOException {
+        PresetRepository repository = repository(dir);
+        PresetCatalog catalog = repository.load();
+        Files.writeString(dir.resolve("config.yml"), """
+                active: classic
+                season:
+                  prepareLead: PT5M
+                """);
+
+        repository.save(catalog);
+
+        assertThat(new JacksonSeasonRepository(dir).settings().prepareLead()).isEqualTo(Duration.ofMinutes(5));
     }
 }

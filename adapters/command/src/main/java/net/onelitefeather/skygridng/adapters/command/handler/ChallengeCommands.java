@@ -98,7 +98,7 @@ public final class ChallengeCommands implements CloudCommandHandler {
     @Command("skygrid challenge tier reset confirm")
     @Permission("skygridng.admin")
     public void tierResetConfirm(CommandSource source) {
-        progress.resetAll();
+        progress.resetCurrentSeason();
         source.sendMessage(Messages.challengeTierReset());
     }
 }

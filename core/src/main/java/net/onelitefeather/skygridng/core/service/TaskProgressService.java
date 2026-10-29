@@ -1,8 +1,10 @@
 package net.onelitefeather.skygridng.core.service;
 
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.api.model.ProgressScope;
 import net.onelitefeather.skygridng.api.model.Task;
 import net.onelitefeather.skygridng.core.state.ChallengeState;
+import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;
 import net.onelitefeather.skygridng.ports.out.RewardGrantor;
 import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
@@ -29,17 +31,25 @@ public final class TaskProgressService implements TaskProgressUseCase {
     private final ChallengeState challengeState;
     private final TaskCompletionRepository repository;
     private final RewardGrantor grantor;
+    private final CurrentSeason currentSeason;
     private final List<TaskCompletionListener> listeners = new CopyOnWriteArrayList<>();
 
-    public TaskProgressService(ChallengeState challengeState, TaskCompletionRepository repository, RewardGrantor grantor) {
+    public TaskProgressService(ChallengeState challengeState, TaskCompletionRepository repository,
+                               RewardGrantor grantor, CurrentSeason currentSeason) {
         this.challengeState = challengeState;
         this.repository = repository;
         this.grantor = grantor;
+        this.currentSeason = currentSeason;
+    }
+
+    /** The scope of a completion by {@code playerId}: the current season, prestige step 0 until the prestige change. */
+    private ProgressScope scopeOf(UUID playerId, String challengeId) {
+        return new ProgressScope(currentSeason.id(), playerId, challengeId, 0);
     }
 
     @Override
     public boolean isCompleted(UUID playerId, String challengeId, String taskId) {
-        return repository.isCompleted(playerId, challengeId, taskId);
+        return repository.isCompleted(scopeOf(playerId, challengeId), taskId);
     }
 
     @Override
@@ -49,7 +59,7 @@ public final class TaskProgressService implements TaskProgressUseCase {
             return List.of();
         }
         return rule.get().tasks().stream()
-            .map(task -> new TaskStatus(task, repository.isCompleted(playerId, challengeId, task.id())))
+            .map(task -> new TaskStatus(task, repository.isCompleted(scopeOf(playerId, challengeId), task.id())))
             .toList();
     }
 
@@ -68,13 +78,13 @@ public final class TaskProgressService implements TaskProgressUseCase {
 
         if (rule.sequential()) {
             for (int i = 0; i < index; i++) {
-                if (!repository.isCompleted(playerId, challengeId, tasks.get(i).id())) {
+                if (!repository.isCompleted(scopeOf(playerId, challengeId), tasks.get(i).id())) {
                     return false;
                 }
             }
         }
 
-        if (!repository.markCompleted(playerId, challengeId, taskId)) {
+        if (!repository.markCompleted(scopeOf(playerId, challengeId), taskId)) {
             return false;
         }
 

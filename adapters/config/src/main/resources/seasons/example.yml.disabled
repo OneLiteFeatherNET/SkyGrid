@@ -1,0 +1,9 @@
+# Example season. It is not loaded: rename the file to s01_overgrowth.yml (drop the .disabled suffix) to enable it.
+# Every season needs a preset from presets/ and challenges from challenges/. Seasons must not overlap.
+id: s01_overgrowth
+displayName: "<green>Season 1: Overgrowth"   # MiniMessage
+start: 2026-12-01T18:00:00Z                  # ISO-8601 instant, UTC recommended
+duration: P8W                                # ISO-8601 duration, fixed length
+preset: standard
+challenges: [one_life, no_crafting_table]    # may be empty
+# seed: 123456789                            # optional; omitted = random at prepare time

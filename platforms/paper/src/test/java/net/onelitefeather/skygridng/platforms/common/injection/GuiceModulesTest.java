@@ -11,6 +11,7 @@ import net.onelitefeather.skygridng.core.service.DefaultTerrainAlgorithms;
 import net.onelitefeather.skygridng.core.service.RuleAdminService;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import net.onelitefeather.skygridng.platforms.olf.ChallengeModule;
+import net.onelitefeather.skygridng.platforms.olf.season.SeasonModule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,7 +39,8 @@ class GuiceModulesTest {
                 new PlatformModule(plugin),
                 new RepositoryModule(),
                 new GeneratorModule(),
-                new ChallengeModule());
+                new ChallengeModule(),
+                new SeasonModule());
     }
 
     @AfterEach

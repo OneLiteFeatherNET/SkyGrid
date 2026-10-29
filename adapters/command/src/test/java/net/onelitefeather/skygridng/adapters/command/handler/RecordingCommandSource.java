@@ -4,6 +4,7 @@ import net.kyori.adventure.text.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,6 +16,7 @@ import java.util.UUID;
 final class RecordingCommandSource implements CommandSource {
 
     private final List<Component> messages = new ArrayList<>();
+    private boolean granted = true;
 
     /** Defaults to a player sender; set to {@code Optional.empty()} to simulate console. */
     private Optional<UUID> playerId = Optional.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
@@ -30,7 +32,17 @@ final class RecordingCommandSource implements CommandSource {
         // inside the handler methods; these unit tests exercise the methods directly, so this is
         // never consulted by the production code under test. Defaulting to true keeps this double
         // simple for any future handler that might read it directly.
-        return true;
+        return granted;
+    }
+
+    /** Makes every permission check fail, to simulate a sender without {@code skygridng.admin}. */
+    void withoutPermissions() {
+        this.granted = false;
+    }
+
+    @Override
+    public Locale locale() {
+        return Locale.US;
     }
 
     @Override

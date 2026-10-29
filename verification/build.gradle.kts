@@ -14,6 +14,10 @@ dependencies {
     testImplementation(libs.postgresql)
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.junit.jupiter)
+    // Flyway drives the pre-season migration state in PostgresAdapterMigrationTest (migrate to V2, then
+    // seed rows, then let the adapters apply the season migrations).
+    testImplementation(libs.flyway.core)
+    testImplementation(libs.flyway.postgresql)
 
     testImplementation(project(":api"))
     testImplementation(project(":ports"))

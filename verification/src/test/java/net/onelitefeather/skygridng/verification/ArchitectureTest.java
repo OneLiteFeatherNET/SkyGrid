@@ -5,6 +5,12 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
+import java.time.Clock;
+import java.time.Instant;
+
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
@@ -128,4 +134,61 @@ class ArchitectureTest {
                     .whereLayer("Core").mayOnlyBeAccessedByLayers("Platforms")
                     .whereLayer("Ports").mayOnlyBeAccessedByLayers("Core", "Adapters", "Platforms")
                     .whereLayer("Api").mayOnlyBeAccessedByLayers("Ports", "Core", "Adapters", "Platforms");
+
+    private static final String JAKARTA_PERSISTENCE = "jakarta.persistence..";
+    private static final String HIBERNATE = "org.hibernate..";
+    private static final String CHALLENGE_PROGRESS_ADAPTER = "net.onelitefeather.skygridng.adapters.challengeprogress..";
+    private static final String TASK_PROGRESS_ADAPTER = "net.onelitefeather.skygridng.adapters.taskprogress..";
+
+    @ArchTest
+    static final ArchRule progressAdaptersAreFrameworkFree =
+            noClasses().that().resideInAnyPackage(CHALLENGE_PROGRESS_ADAPTER, TASK_PROGRESS_ADAPTER)
+                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..", "com.google.inject..", "jakarta.inject..")
+                    .because("the progress adapters are persistence adapters: they may use Jakarta Persistence, but "
+                            + "never Bukkit, Guice, or jakarta.inject, so the composition root stays the only place that wires them");
+
+    @ArchTest
+    static final ArchRule jakartaPersistenceAndHibernateOnlyInsideAdapters =
+            noClasses().that().resideOutsideOfPackage(ADAPTERS)
+                    .should().dependOnClassesThat().resideInAnyPackage(JAKARTA_PERSISTENCE, HIBERNATE)
+                    .because("jakarta.persistence and Hibernate types stay inside the adapters; api, ports, core and "
+                            + "the platform see only domain records");
+
+    private static final String SEASON_ADAPTER = "net.onelitefeather.skygridng.adapters.season..";
+
+    @ArchTest
+    static final ArchRule seasonPersistenceAdapterIsFrameworkFree =
+            noClasses().that().resideInAPackage(SEASON_ADAPTER)
+                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..", "com.google.inject..", "jakarta.inject..")
+                    .because("adapters.season is a persistence adapter: it may use Jakarta Persistence, but never Bukkit, "
+                            + "Guice, or jakarta.inject");
+
+    @ArchTest
+    static final ArchRule entitiesOnlyInsideAdapters =
+            classes().that().areAnnotatedWith(Entity.class)
+                    .should().resideInAPackage(ADAPTERS)
+                    .because("@Entity classes are persistence mapping, which only the adapters own");
+
+    @ArchTest
+    static final ArchRule noNativeQueryWithoutResultType =
+            noClasses().should().callMethod(EntityManager.class, "createNativeQuery", String.class)
+                    .because("the persistence adapters use JPQL named queries only; no native SQL string is built at runtime");
+
+    @ArchTest
+    static final ArchRule noNativeQueryWithResultClass =
+            noClasses().should().callMethod(EntityManager.class, "createNativeQuery", String.class, Class.class)
+                    .because("the persistence adapters use JPQL named queries only; no native SQL string is built at runtime");
+
+    @ArchTest
+    static final ArchRule noNativeQueryWithResultMapping =
+            noClasses().should().callMethod(EntityManager.class, "createNativeQuery", String.class, String.class)
+                    .because("the persistence adapters use JPQL named queries only; no native SQL string is built at runtime");
+
+    @ArchTest
+    static final ArchRule coreReadsNoSystemClock =
+            noClasses().that().resideInAPackage(CORE)
+                    .should().callMethod(Clock.class, "systemUTC")
+                    .orShould().callMethod(Instant.class, "now")
+                    .orShould().callMethod(System.class, "currentTimeMillis")
+                    .because("time comes only through an injected java.time.Clock, so every scheduling decision is testable");
 }

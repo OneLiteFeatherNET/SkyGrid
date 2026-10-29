@@ -3,9 +3,13 @@ package net.onelitefeather.skygridng.core.service;
 import net.onelitefeather.skygridng.api.model.ChallengeCatalog;
 import net.onelitefeather.skygridng.api.model.ChallengeRule;
 import net.onelitefeather.skygridng.api.model.ItemId;
+import net.onelitefeather.skygridng.api.model.ProgressScope;
 import net.onelitefeather.skygridng.api.model.Reward;
+import net.onelitefeather.skygridng.api.model.Season;
+import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.Task;
 import net.onelitefeather.skygridng.core.state.ChallengeState;
+import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;
 import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase.TaskCompletionListener;
 import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase.TaskStatus;
@@ -19,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,12 +37,14 @@ import static org.mockito.Mockito.verify;
 
 /**
  * Black-box tests for {@link TaskProgressService} against a real in memory {@link ChallengeState}
- * (mirrors {@link ChallengeAdminServiceTest}'s approach) and Mockito fakes for {@link
- * TaskCompletionRepository} and {@link RewardGrantor}.
+ * (mirrors {@link ChallengeAdminServiceTest}'s approach), a Mockito fake for {@link RewardGrantor}, an
+ * in memory {@link TaskCompletionRepository} fake, and a switchable {@link CurrentSeason}.
  */
 class TaskProgressServiceTest {
 
     private static final UUID PLAYER_ID = UUID.fromString("11111111-2222-3333-4444-555555555555");
+    private static final SeasonId SEASON_ONE = new SeasonId("s01");
+    private static final SeasonId SEASON_TWO = new SeasonId("s02");
 
     private static final String SEQUENTIAL_CHALLENGE = "sequential_quest";
     private static final Task TASK_A = new Task("task_a", "Do a", new Reward.ItemGrant(ItemId.of("minecraft:diamond"), 1));
@@ -49,6 +56,7 @@ class TaskProgressServiceTest {
 
     private FakeTaskCompletionRepository repository;
     private RewardGrantor grantor;
+    private SwitchableSeason currentSeason;
     private TaskProgressUseCase progress;
 
     @BeforeEach
@@ -59,7 +67,8 @@ class TaskProgressServiceTest {
         ChallengeState state = new ChallengeState(catalog);
         repository = new FakeTaskCompletionRepository();
         grantor = mock(RewardGrantor.class);
-        progress = new TaskProgressService(state, repository, grantor);
+        currentSeason = new SwitchableSeason(SEASON_ONE);
+        progress = new TaskProgressService(state, repository, grantor, currentSeason);
     }
 
     @Test
@@ -156,29 +165,78 @@ class TaskProgressServiceTest {
         verify(grantor, never()).grant(eq(PLAYER_ID), any());
     }
 
-    /** A minimal in memory fake, tracking calls to {@code markCompleted} for assertions. */
+    @Test
+    @DisplayName("a completion is written to the current season")
+    void completionIsWrittenToCurrentSeason() {
+        progress.completeTask(PLAYER_ID, SEQUENTIAL_CHALLENGE, TASK_A.id());
+
+        assertThat(repository.markCompletedScopes)
+                .containsExactly(new ProgressScope(SEASON_ONE, PLAYER_ID, SEQUENTIAL_CHALLENGE, 0));
+    }
+
+    @Test
+    @DisplayName("a completion recorded in one season is not visible in the next season")
+    void completionIsNotVisibleInNextSeason() {
+        progress.completeTask(PLAYER_ID, INDEPENDENT_CHALLENGE, TASK_D.id());
+
+        currentSeason.switchTo(SEASON_TWO);
+
+        assertThat(progress.isCompleted(PLAYER_ID, INDEPENDENT_CHALLENGE, TASK_D.id())).isFalse();
+    }
+
+    /** A minimal in memory fake, tracking the scopes of {@code markCompleted} calls for assertions. */
     private static final class FakeTaskCompletionRepository implements TaskCompletionRepository {
         private final Set<String> completed = new HashSet<>();
         private final List<String> markCompletedCalls = new ArrayList<>();
+        private final List<ProgressScope> markCompletedScopes = new ArrayList<>();
 
         @Override
-        public boolean isCompleted(UUID playerId, String challengeId, String taskId) {
-            return completed.contains(key(playerId, challengeId, taskId));
+        public boolean isCompleted(ProgressScope scope, String taskId) {
+            return completed.contains(key(scope, taskId));
         }
 
         @Override
-        public boolean markCompleted(UUID playerId, String challengeId, String taskId) {
-            markCompletedCalls.add(key(playerId, challengeId, taskId));
-            return completed.add(key(playerId, challengeId, taskId));
+        public boolean markCompleted(ProgressScope scope, String taskId) {
+            markCompletedCalls.add(key(scope, taskId));
+            markCompletedScopes.add(scope);
+            return completed.add(key(scope, taskId));
         }
 
         @Override
-        public void resetAll() {
-            completed.clear();
+        public void resetSeason(SeasonId season) {
+            completed.removeIf(key -> key.startsWith(season.value() + "|"));
         }
 
-        private static String key(UUID playerId, String challengeId, String taskId) {
-            return playerId + "|" + challengeId + "|" + taskId;
+        @Override
+        public Map<SeasonId, Long> completedCountBySeason(UUID playerId) {
+            return Map.of();
+        }
+
+        private static String key(ProgressScope scope, String taskId) {
+            return scope.season().value() + "|" + scope.playerId() + "|" + scope.challengeId() + "|" + taskId;
+        }
+    }
+
+    /** A {@link CurrentSeason} whose season the test can change between calls. */
+    private static final class SwitchableSeason implements CurrentSeason {
+        private SeasonId id;
+
+        private SwitchableSeason(SeasonId id) {
+            this.id = id;
+        }
+
+        void switchTo(SeasonId next) {
+            this.id = next;
+        }
+
+        @Override
+        public SeasonId id() {
+            return id;
+        }
+
+        @Override
+        public Optional<Season> season() {
+            return Optional.empty();
         }
     }
 }

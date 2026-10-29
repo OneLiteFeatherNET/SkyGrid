@@ -18,13 +18,16 @@ import net.onelitefeather.skygridng.platforms.common.spawn.SpreadSpawnListener;
 import net.onelitefeather.skygridng.platforms.olf.ChallengeModule;
 import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
 import net.onelitefeather.skygridng.platforms.olf.OlfModule;
+import net.onelitefeather.skygridng.platforms.olf.season.SeasonModule;
 import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
 import net.onelitefeather.skygridng.api.SkyGridApi;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
+import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;
 import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import org.bukkit.generator.ChunkGenerator;
@@ -84,6 +87,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
         modules.add(new CommandModule());
         modules.add(new OlfModule());
         modules.add(new ChallengeModule());
+        modules.add(new SeasonModule());
         return modules;
     }
 
@@ -123,6 +127,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
                     injector.getInstance(Presets.class),
                     injector.getInstance(RuleAdminUseCase.class),
                     injector.getInstance(ChallengeAdminUseCase.class),
+                    injector.getInstance(SeasonAdminUseCase.class),
                     injector.getInstance(COMMAND_HANDLERS));
         } catch (RuntimeException | LinkageError e) {
             getLogger().log(Level.WARNING, "Failed to build the Cloud command manager.", e);
@@ -147,18 +152,25 @@ public class SkyGridNgPlugin extends JavaPlugin {
     private void warmUpDatabases() {
         List<Object> repositories = List.of(
                 injector.getInstance(ChallengeProgressRepository.class),
-                injector.getInstance(TaskCompletionRepository.class));
+                injector.getInstance(TaskCompletionRepository.class),
+                injector.getInstance(SeasonRunRepository.class));
+        DatabaseWarmUpGate gate = injector.getInstance(DatabaseWarmUpGate.class);
         getServer().getScheduler().runTaskAsynchronously(this, () -> {
-            for (Object repository : repositories) {
-                if (repository instanceof AbstractJpaRepository database) {
-                    try {
-                        database.warmUp();
-                    } catch (RuntimeException e) {
-                        getLogger().log(Level.WARNING, "Database warm-up failed for "
-                                + database.getClass().getSimpleName() + ", it will retry on first use: "
-                                + e.getMessage(), e);
+            try {
+                for (Object repository : repositories) {
+                    if (repository instanceof AbstractJpaRepository database) {
+                        try {
+                            database.warmUp();
+                        } catch (RuntimeException e) {
+                            getLogger().log(Level.WARNING, "Database warm-up failed for "
+                                    + database.getClass().getSimpleName() + ", it will retry on first use: "
+                                    + e.getMessage(), e);
+                        }
                     }
                 }
+            } finally {
+                // The season ticker waits for this gate, whether the warm-up succeeded or failed.
+                gate.markWarmedUp();
             }
         });
     }
@@ -168,18 +180,26 @@ public class SkyGridNgPlugin extends JavaPlugin {
         onExtensionDisable();
         i18n.unregister();
 
-        // ChallengeProgressRepository's Postgres adapter lazily opens a HikariCP pool on first use;
-        // whether or not it was ever used this run, ask the injector for the bound singleton (Guice
-        // memoizes it, so this never reopens or duplicates anything) and close it if it is
-        // AutoCloseable, so a reload or server stop never leaks pooled connections or Hikari's
-        // housekeeping threads.
-        if (injector.getInstance(ChallengeProgressRepository.class) instanceof AutoCloseable closeable) {
-            try {
-                closeable.close();
-            } catch (Exception e) {
-                getLogger().log(Level.WARNING, "Failed to close the challenge progress repository.", e);
+        // The Postgres adapters lazily open a HikariCP pool on first use; whether or not they were ever used
+        // this run, close the bound singletons (Guice memoizes them, so this never reopens or duplicates
+        // anything), so a reload or server stop never leaks pooled connections or Hikari's housekeeping threads.
+        for (Object repository : databaseRepositories()) {
+            if (repository instanceof AutoCloseable closeable) {
+                try {
+                    closeable.close();
+                } catch (Exception e) {
+                    getLogger().log(Level.WARNING, "Failed to close " + repository.getClass().getSimpleName() + ".", e);
+                }
             }
         }
+    }
+
+    /** The database repositories this plugin owns and closes on disable. */
+    List<Object> databaseRepositories() {
+        return List.of(
+                injector.getInstance(ChallengeProgressRepository.class),
+                injector.getInstance(TaskCompletionRepository.class),
+                injector.getInstance(SeasonRunRepository.class));
     }
 
     /**

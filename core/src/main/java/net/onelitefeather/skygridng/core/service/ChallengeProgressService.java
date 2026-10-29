@@ -1,12 +1,16 @@
 package net.onelitefeather.skygridng.core.service;
 
+import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
+import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * Implements {@link ChallengeProgressUseCase} as a thin delegate to a {@link ChallengeProgressRepository}.
+ * Implements {@link ChallengeProgressUseCase} as a thin delegate to a {@link ChallengeProgressRepository},
+ * resolving the current season per call through {@link CurrentSeason}.
  * Deliberately no caching layer, unlike {@link net.onelitefeather.skygridng.core.state.RuleState} and
  * {@link net.onelitefeather.skygridng.core.state.ChallengeState}: correctness of tier progression across
  * multiple servers and restarts matters more here than avoiding a database round trip.
@@ -14,23 +18,30 @@ import java.util.UUID;
 public final class ChallengeProgressService implements ChallengeProgressUseCase {
 
     private final ChallengeProgressRepository repository;
+    private final CurrentSeason currentSeason;
 
-    public ChallengeProgressService(ChallengeProgressRepository repository) {
+    public ChallengeProgressService(ChallengeProgressRepository repository, CurrentSeason currentSeason) {
         this.repository = repository;
+        this.currentSeason = currentSeason;
     }
 
     @Override
     public int tierOf(UUID playerId, String challengeId) {
-        return repository.tierOf(playerId, challengeId);
+        return repository.tierOf(currentSeason.id(), playerId, challengeId);
     }
 
     @Override
     public int recordCompletion(UUID playerId, String challengeId) {
-        return repository.recordCompletion(playerId, challengeId);
+        return repository.recordCompletion(currentSeason.id(), playerId, challengeId);
     }
 
     @Override
-    public void resetAll() {
-        repository.resetAll();
+    public Map<SeasonId, Integer> history(UUID playerId) {
+        return repository.history(playerId);
+    }
+
+    @Override
+    public void resetCurrentSeason() {
+        repository.resetSeason(currentSeason.id());
     }
 }

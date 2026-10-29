@@ -2,6 +2,7 @@ package net.onelitefeather.skygridng.adapters.command.handler;
 
 import net.kyori.adventure.text.Component;
 
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,4 +25,7 @@ public interface CommandSource {
      * Empty if the name is not known to have ever joined this server.
      */
     Optional<UUID> resolvePlayerId(String name);
+
+    /** The locale the sender reads, used to render absolute dates; the console reads English. */
+    Locale locale();
 }

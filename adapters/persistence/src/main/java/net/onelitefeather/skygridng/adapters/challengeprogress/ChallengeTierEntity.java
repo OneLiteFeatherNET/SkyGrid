@@ -3,23 +3,28 @@ package net.onelitefeather.skygridng.adapters.challengeprogress;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
- * JPA entity mapping of the {@code challenge_tier} table (schema owned by
- * {@code V1__create_challenge_tier.sql}, never altered by Hibernate: see {@code persistence.xml}'s
- * {@code hibernate.hbm2ddl.auto=validate}).
+ * JPA entity mapping of the {@code challenge_tier} table (schema owned by the Flyway migrations, never
+ * altered by Hibernate: see {@code persistence.xml}'s {@code hibernate.hbm2ddl.auto=validate}).
  *
- * <p>Deliberately not a record, unlike every other value type in this project: Hibernate needs a
- * mutable, proxyable class for its dirty-checking and (potentially) lazy-loading machinery, which a
- * record's all-final-fields, no-arg-constructor-free shape cannot provide. This is a documented,
- * narrow exception to the project's "everything is a record" house style, confined to this one JPA
- * entity class; the composite id ({@link ChallengeTierId}) and every other type in this module stay
- * immutable records. The protected no-arg constructor exists for Hibernate only and must never be
- * called from application code, which always uses the public constructor.
+ * <p>Deliberately not a record: Hibernate needs a mutable, proxyable class for its dirty-checking. The
+ * composite id ({@link ChallengeTierId}) stays an immutable record. The protected no-arg constructor
+ * exists for Hibernate only.
  */
 @Entity
 @Table(name = "challenge_tier")
+@NamedQueries({
+        @NamedQuery(
+                name = "ChallengeTierEntity.historyOf",
+                query = "select e from ChallengeTierEntity e where e.id.playerId = :playerId"),
+        @NamedQuery(
+                name = "ChallengeTierEntity.deleteBySeason",
+                query = "delete from ChallengeTierEntity e where e.id.seasonId = :seasonId")
+})
 public class ChallengeTierEntity {
 
     @EmbeddedId
