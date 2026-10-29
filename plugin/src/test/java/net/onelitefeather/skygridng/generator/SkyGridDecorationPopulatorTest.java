@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
  * {@link LimitedRegionWriter} wrapping the populator's {@link LimitedRegion} and the shared
  * {@link RuleResolver}, and delegate to a real {@link net.onelitefeather.skygridng.generator.DecorationEngine}
  * end to end. This does NOT re-test the engine's decoration logic (that is covered white-box, without
- * Bukkit, in {@code adapters.generator}'s own {@code DecorationEngineTest}); it only proves the Bukkit
+ * Bukkit, in {@code generator}'s own {@code DecorationEngineTest}); it only proves the Bukkit
  * shell constructs the writer and calls through correctly for one simple scenario. MockBukkit supplies
  * the Material registry and block-data factory the writer needs; the region and world are Mockito
  * mocks, same as this suite's pre-refactor version.

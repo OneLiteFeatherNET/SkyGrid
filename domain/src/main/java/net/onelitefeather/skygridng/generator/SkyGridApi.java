@@ -11,8 +11,8 @@ import java.util.Optional;
  *
  * On a Bukkit server an instance is registered with the {@code ServicesManager}, so consumers
  * obtain it with {@code getServer().getServicesManager().load(SkyGridApi.class)}. This interface and
- * the {@link net.onelitefeather.skygridng.api.model model} it returns are framework free and
- * semantically versioned. It exposes read only access, so callers cannot corrupt generator state.
+ * the model it returns is framework free and semantically versioned. It exposes read only access, so
+ * callers cannot corrupt generator state.
  */
 public interface SkyGridApi {
 

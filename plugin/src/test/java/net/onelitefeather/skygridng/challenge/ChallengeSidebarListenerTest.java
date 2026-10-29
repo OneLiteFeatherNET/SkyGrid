@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
  * {@link Player} and the whole {@code Player.getServer().getScoreboardManager()} chain (a
  * {@link Scoreboard}, its {@link Objective}, and each line's {@link Score}) are plain Mockito mocks,
  * the same "hand-mock the Bukkit interface MockBukkit does not model precisely enough" approach
- * {@code adapters.spawn.SpreadSpawnListenerTest} uses for its {@code World}: at the time of writing,
+ * {@code generator.SpreadSpawnListenerTest} uses for its {@code World}: at the time of writing,
  * the resolved MockBukkit release's {@code ScoreMock} throws {@code UnimplementedOperationException}
  * (a {@code TestAbortedException} subtype, so JUnit reports it as a silently skipped test rather than
  * a failure) from both {@code customName(Component)} and {@code numberFormat(NumberFormat)}, exactly

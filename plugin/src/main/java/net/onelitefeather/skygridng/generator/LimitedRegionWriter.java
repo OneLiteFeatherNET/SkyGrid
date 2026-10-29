@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * {@link RegionWriter} implementation wrapping a live Paper {@link LimitedRegion}: the seam that lets
- * the framework-free decoration and structure logic in {@code adapters.generator} run against a real
+ * the framework-free decoration and structure logic in {@code generator} run against a real
  * populator region without depending on Bukkit itself. Constructed fresh for each
  * {@code BlockPopulator.populate} call, alongside the {@link RuleResolver} that already resolves a
  * {@link BlockId} to native block data for a live generation call; never held as a long lived or

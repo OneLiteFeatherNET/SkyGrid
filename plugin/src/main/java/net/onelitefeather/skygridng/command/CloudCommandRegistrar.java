@@ -22,7 +22,7 @@ import java.util.Set;
  * Cloud's default text with {@link Messages#noPermission()}, and finally the annotation parsing
  * of every handler instance.
  *
- * Lives in platforms.common, not adapters.command: it is the only place the handler set is
+ * Lives in net.onelitefeather.skygridng, not command: it is the only place the handler set is
  * registered onto a real Paper-bound {@link PaperCommandManager}, and it needs Bukkit
  * (online player suggestions) directly, unlike the handler classes themselves, which stay
  * framework-free.

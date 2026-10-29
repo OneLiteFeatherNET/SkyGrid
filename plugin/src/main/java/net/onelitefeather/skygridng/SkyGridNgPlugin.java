@@ -36,13 +36,13 @@ import java.util.Set;
 import java.util.logging.Level;
 
 /**
- * Composition Root (Hexagonal): builds the Guice object graph and connects adapters to ports.
+ * Composition Root: builds the Guice object graph and connects the plugin code to the domain.
  *
- * The core knows none of these classes. Adapters and core services are wired in the injection
- * modules; the core itself carries no injection annotations and stays framework free. Swapping an
- * adapter changes a module binding, not the core.
+ * The domain knows none of these classes. Plugin classes and domain services are wired in the
+ * injection modules; the domain itself carries no injection annotations and stays framework free.
+ * Swapping an implementation changes a module binding, not the domain.
  *
- * Dependency direction: adapters -> ports -> core. Never the other way around.
+ * Dependency direction: plugin -> domain. Never the other way around.
  *
  * This is the single, always fully wired plugin class: its default wiring already includes the
  * OLF feature modules ({@link OlfModule}, {@link ChallengeModule}), so there is no separate

@@ -7,7 +7,7 @@ import java.util.OptionalInt;
 
 /**
  * A hand-written, in-memory {@link GroundReader} test double, in the same spirit as
- * {@code FakeRegionWriter} in {@code adapters.generator}: this module is framework-free by
+ * {@code FakeRegionWriter} in {@code generator}: this module is framework-free by
  * architecture rule (no Bukkit, no MockBukkit), so a plain map-backed fake is easier to reason
  * about than stubbing a mock's defaults in every test.
  *

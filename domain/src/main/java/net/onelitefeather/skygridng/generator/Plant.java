@@ -4,7 +4,7 @@ package net.onelitefeather.skygridng.generator;
  * A plant decoration that grows in a column (for example sugar cane or cactus).
  *
  * Used by the SkyGrid and noise SkyGrid decoration lookup (a self-contained plant scattered on the
- * sparse grid); see {@code ports.in.SkyGridDecorations}. Not part of the (removed) Wave Function
+ * sparse grid); see {@code generator.SkyGridDecorations}. Not part of the (removed) Wave Function
  * Collapse tile system.
  *
  * @param material               the plant block, a namespaced id resolved by the adapter

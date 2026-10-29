@@ -10,7 +10,7 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Tests for the item resolver, mirroring {@code adapters.generator.MaterialResolverTest}'s shape: it
+ * Tests for the item resolver, mirroring {@code generator.MaterialResolverTest}'s shape: it
  * lives in the same package because the resolver is package private on purpose (it is an adapter
  * internal), and MockBukkit gives us a real {@code Registry.MATERIAL} to resolve against.
  */

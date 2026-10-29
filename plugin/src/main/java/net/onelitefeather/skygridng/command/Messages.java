@@ -16,10 +16,9 @@ import java.util.Locale;
  * so the viewer sees the text in their own locale. Arguments are passed as components and fill the
  * {0}, {1}, ... placeholders in the bundle entries.
  *
- * Public (class and every factory method): stage 2's Cloud annotated subcommand handlers live in
- * the sibling {@code net.onelitefeather.skygridng.adapters.command.handler} package, a different
- * package from this one, so package-private access would not compile there. Only the visibility
- * was widened; no key, argument, or message text changed.
+ * Public (class and every factory method): the Cloud annotated subcommand handlers live in the
+ * generator, challenge and season packages, not in this one, so package-private access would not
+ * compile there. Only the visibility was widened; no key, argument, or message text changed.
  */
 public final class Messages {
 

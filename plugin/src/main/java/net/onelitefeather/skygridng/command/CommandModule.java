@@ -24,7 +24,7 @@ import java.time.Clock;
  * subcommand group is one new {@link CloudCommandHandler} class plus one binding line here, not a
  * new constructor parameter on the registrar.
  *
- * {@code adapters.command} is framework-free (no Guice, no jakarta.inject), so its handler classes
+ * {@code command} is framework-free (no Guice, no jakarta.inject), so its handler classes
  * take their dependencies through a plain public constructor with no {@code @Inject}. Guice cannot
  * JIT-bind a class without either a no-arg constructor or an {@code @Inject}-annotated one, so each
  * handler with constructor arguments gets an explicit {@link Provides} method here instead, the same

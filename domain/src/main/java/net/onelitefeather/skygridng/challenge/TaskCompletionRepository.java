@@ -10,7 +10,7 @@ import java.util.UUID;
  *
  * One row per (season, player, challenge, prestige step, task) tuple. Deliberately holds no reward logic:
  * {@link #markCompleted} is a pure idempotent persistence operation, the deciding whether to grant a
- * reward stays in {@code core.service.TaskProgressService}. Expected to be database backed (see
+ * reward stays in {@code challenge.TaskProgressService}. Expected to be database backed (see
  * {@link ChallengeProgressRepository} for the precedent), but the core does not know or care which.
  */
 public interface TaskCompletionRepository {

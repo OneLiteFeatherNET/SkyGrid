@@ -9,7 +9,7 @@ import java.util.OptionalInt;
 
 /**
  * {@link GroundReader} implementation wrapping a live Paper {@link World}: the seam that lets the
- * framework-free first-join safe-spawn search in {@code adapters.spawn} run against a real world
+ * framework-free first-join safe-spawn search in {@code generator} run against a real world
  * without depending on Bukkit itself. Constructed fresh for each first-join event; never held as a
  * long lived or injected singleton, since the specific world it wraps only exists on the platform
  * and can change from one join to the next.

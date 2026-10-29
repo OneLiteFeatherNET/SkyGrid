@@ -19,7 +19,7 @@ public record ChallengeRule(String id, String description, boolean active, List<
 
     /**
      * The single source of truth for how long a challenge id may be, referenced by
-     * {@link ChallengeTier} and by {@code adapters.challengeprogress.ChallengeTierId}'s
+     * {@link ChallengeTier} and by {@code challenge.ChallengeTierId}'s
      * {@code challenge_id} column (bounded at the database with a matching check constraint in
      * {@code V2__bound_challenge_id_length.sql}), so all three stay in lockstep by construction
      * instead of by three separately maintained literals.

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
  * every handler instance.
  *
  * This deliberately does NOT exercise {@code CloudCommandRegistrar#register} (now in
- * platforms.common.command, since it needs a real Bukkit-bound Paper manager), which only accepts a
+ * command, since it needs a real Bukkit-bound Paper manager), which only accepts a
  * real {@code PaperCommandManager}. That manager's constructor eagerly reflects into the server's
  * actual Brigadier argument type registry and throws a {@code LinkageError} outside a real Paper
  * server or under MockBukkit ({@code SkyGridNgPlugin#onEnable} guards exactly this, a known,

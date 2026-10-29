@@ -8,7 +8,7 @@ import org.incendo.cloud.paper.PaperCommandManager;
 
 /**
  * Builds the Incendo Cloud command manager, mapped to the platform-neutral {@link CommandSource}
- * so that subcommand handlers ({@code adapters.command.SkyGridCommands}) never see a Paper
+ * so that subcommand handlers ({@code command.SkyGridCommands}) never see a Paper
  * {@code CommandSourceStack} directly.
  */
 public final class CloudCommandManagerFactory {
