@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import net.onelitefeather.skygridng.api.model.SeasonId;
+import net.onelitefeather.skygridng.season.SeasonId;
 
 /**
  * White-box tests for {@link ProgressScope}: the prestige step is bounded to 0 through 10 and the

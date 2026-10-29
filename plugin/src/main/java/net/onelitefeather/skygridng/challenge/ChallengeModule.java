@@ -6,9 +6,9 @@ import com.google.inject.multibindings.Multibinder;
 import jakarta.inject.Singleton;
 import net.onelitefeather.skygridng.adapters.config.BundledDefaults;
 import net.onelitefeather.skygridng.adapters.config.JacksonChallengeRepository;
-import net.onelitefeather.skygridng.platforms.olf.season.SeasonWorldKeys;
+import net.onelitefeather.skygridng.season.SeasonWorldKeys;
 import net.onelitefeather.skygridng.generator.HexagonalChunkGenerator;
-import net.onelitefeather.skygridng.ports.in.CurrentSeason;
+import net.onelitefeather.skygridng.season.CurrentSeason;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 

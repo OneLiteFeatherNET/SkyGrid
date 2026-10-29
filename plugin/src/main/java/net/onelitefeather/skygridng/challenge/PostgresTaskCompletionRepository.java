@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.challenge;
 
 import net.onelitefeather.skygridng.adapters.persistence.Database;
-import net.onelitefeather.skygridng.api.model.SeasonId;
+import net.onelitefeather.skygridng.season.SeasonId;
 import org.hibernate.exception.ConstraintViolationException;
 
 import java.util.Map;

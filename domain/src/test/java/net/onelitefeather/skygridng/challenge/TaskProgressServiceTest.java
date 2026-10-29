@@ -1,8 +1,8 @@
 package net.onelitefeather.skygridng.challenge;
 
-import net.onelitefeather.skygridng.api.model.Season;
-import net.onelitefeather.skygridng.api.model.SeasonId;
-import net.onelitefeather.skygridng.ports.in.CurrentSeason;
+import net.onelitefeather.skygridng.season.Season;
+import net.onelitefeather.skygridng.season.SeasonId;
+import net.onelitefeather.skygridng.season.CurrentSeason;
 import net.onelitefeather.skygridng.challenge.TaskProgressUseCase.TaskCompletionListener;
 import net.onelitefeather.skygridng.challenge.TaskProgressUseCase.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;

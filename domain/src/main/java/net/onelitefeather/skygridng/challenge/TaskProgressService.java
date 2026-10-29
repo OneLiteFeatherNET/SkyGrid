@@ -1,6 +1,6 @@
 package net.onelitefeather.skygridng.challenge;
 
-import net.onelitefeather.skygridng.ports.in.CurrentSeason;
+import net.onelitefeather.skygridng.season.CurrentSeason;
 
 import java.util.List;
 import java.util.UUID;

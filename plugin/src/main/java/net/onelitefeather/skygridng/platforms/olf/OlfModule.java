@@ -2,7 +2,7 @@ package net.onelitefeather.skygridng.platforms.olf;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
-import net.onelitefeather.skygridng.platforms.olf.season.SeasonFeature;
+import net.onelitefeather.skygridng.season.SeasonFeature;
 import net.onelitefeather.skygridng.challenge.ChallengeFeature;
 import net.onelitefeather.skygridng.challenge.ChallengeSidebarFeature;
 

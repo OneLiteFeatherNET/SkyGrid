@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.challenge;
 
-import net.onelitefeather.skygridng.api.model.SeasonId;
-import net.onelitefeather.skygridng.ports.in.CurrentSeason;
+import net.onelitefeather.skygridng.season.SeasonId;
+import net.onelitefeather.skygridng.season.CurrentSeason;
 
 import java.util.Map;
 import java.util.UUID;

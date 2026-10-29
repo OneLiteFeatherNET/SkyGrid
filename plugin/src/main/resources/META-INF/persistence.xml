@@ -27,8 +27,8 @@
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <class>net.onelitefeather.skygridng.challenge.ChallengeTierEntity</class>
         <class>net.onelitefeather.skygridng.challenge.TaskCompletionEntity</class>
-        <class>net.onelitefeather.skygridng.adapters.season.SeasonRunEntity</class>
-        <class>net.onelitefeather.skygridng.adapters.persistence.SeasonIdConverter</class>
+        <class>net.onelitefeather.skygridng.season.SeasonRunEntity</class>
+        <class>net.onelitefeather.skygridng.season.SeasonIdConverter</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
         <properties>
             <property name="hibernate.hbm2ddl.auto" value="validate"/>

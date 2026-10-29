@@ -3,11 +3,11 @@ package net.onelitefeather.skygridng.adapters.config;
 import net.onelitefeather.skygridng.adapters.config.ConfigDtos.ConfigDto;
 import net.onelitefeather.skygridng.adapters.config.ConfigDtos.SeasonSettingsDto;
 import net.onelitefeather.skygridng.adapters.config.SeasonDtos.SeasonDto;
-import net.onelitefeather.skygridng.api.model.Season;
-import net.onelitefeather.skygridng.api.model.SeasonCatalog;
-import net.onelitefeather.skygridng.api.model.SeasonId;
-import net.onelitefeather.skygridng.api.model.SeasonSettings;
-import net.onelitefeather.skygridng.ports.out.SeasonRepository;
+import net.onelitefeather.skygridng.season.Season;
+import net.onelitefeather.skygridng.season.SeasonCatalog;
+import net.onelitefeather.skygridng.season.SeasonId;
+import net.onelitefeather.skygridng.season.SeasonSettings;
+import net.onelitefeather.skygridng.season.SeasonRepository;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.generator;
 
 import net.kyori.adventure.text.Component;
-import net.onelitefeather.skygridng.api.model.Season;
+import net.onelitefeather.skygridng.season.Season;
 
 import java.util.Optional;
 

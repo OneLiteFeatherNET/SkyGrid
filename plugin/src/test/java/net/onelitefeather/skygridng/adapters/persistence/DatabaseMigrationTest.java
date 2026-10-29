@@ -1,12 +1,12 @@
 package net.onelitefeather.skygridng.adapters.persistence;
 
 import net.onelitefeather.skygridng.challenge.PostgresChallengeProgressRepository;
-import net.onelitefeather.skygridng.adapters.season.PostgresSeasonRunRepository;
+import net.onelitefeather.skygridng.season.PostgresSeasonRunRepository;
 import net.onelitefeather.skygridng.challenge.PostgresTaskCompletionRepository;
 import net.onelitefeather.skygridng.challenge.ProgressScope;
-import net.onelitefeather.skygridng.api.model.SeasonId;
-import net.onelitefeather.skygridng.api.model.SeasonPhase;
-import net.onelitefeather.skygridng.api.model.SeasonRun;
+import net.onelitefeather.skygridng.season.SeasonId;
+import net.onelitefeather.skygridng.season.SeasonPhase;
+import net.onelitefeather.skygridng.season.SeasonRun;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

@@ -5,7 +5,7 @@ import net.onelitefeather.skygridng.adapters.persistence.Database;
 import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
 import net.onelitefeather.skygridng.challenge.PostgresTaskCompletionRepository;
 import net.onelitefeather.skygridng.challenge.ProgressScope;
-import net.onelitefeather.skygridng.api.model.SeasonId;
+import net.onelitefeather.skygridng.season.SeasonId;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;

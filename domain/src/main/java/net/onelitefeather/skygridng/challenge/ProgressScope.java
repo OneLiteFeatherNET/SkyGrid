@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.challenge;
 
 import java.util.UUID;
-import net.onelitefeather.skygridng.api.model.SeasonId;
+import net.onelitefeather.skygridng.season.SeasonId;
 
 /**
  * The key of one season scoped progress row: the season, the player, the challenge and the prestige step.

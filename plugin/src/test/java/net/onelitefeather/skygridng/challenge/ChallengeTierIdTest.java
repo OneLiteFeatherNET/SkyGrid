@@ -1,6 +1,6 @@
 package net.onelitefeather.skygridng.challenge;
 
-import net.onelitefeather.skygridng.api.model.SeasonId;
+import net.onelitefeather.skygridng.season.SeasonId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -4,7 +4,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.EntityManager;
 import net.onelitefeather.skygridng.challenge.ChallengeTierEntity;
 import net.onelitefeather.skygridng.challenge.ChallengeTierId;
-import net.onelitefeather.skygridng.api.model.SeasonId;
+import net.onelitefeather.skygridng.season.SeasonId;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.junit.jupiter.api.AfterAll;

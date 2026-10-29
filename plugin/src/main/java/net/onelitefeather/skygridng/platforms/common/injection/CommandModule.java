@@ -10,13 +10,13 @@ import net.onelitefeather.skygridng.adapters.command.handler.CloudCommandHandler
 import net.onelitefeather.skygridng.adapters.command.handler.HelpCommands;
 import net.onelitefeather.skygridng.generator.MaintenanceCommands;
 import net.onelitefeather.skygridng.generator.PresetCommands;
-import net.onelitefeather.skygridng.adapters.command.handler.SeasonCommands;
+import net.onelitefeather.skygridng.season.SeasonCommands;
 import net.onelitefeather.skygridng.challenge.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.challenge.ChallengeProgressUseCase;
-import net.onelitefeather.skygridng.ports.in.CurrentSeason;
+import net.onelitefeather.skygridng.season.CurrentSeason;
 import net.onelitefeather.skygridng.generator.Presets;
 import net.onelitefeather.skygridng.generator.RuleAdminUseCase;
-import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
+import net.onelitefeather.skygridng.season.SeasonAdminUseCase;
 
 import java.time.Clock;
 
