@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.0](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.1.1...v0.2.0) (2026-10-29)
+
+
+### Features
+
+* **seasons:** rotate season worlds with per-season progress ([#36](https://github.com/OneLiteFeatherNET/SkyGrid/issues/36)) ([2cf55e1](https://github.com/OneLiteFeatherNET/SkyGrid/commit/2cf55e1eac2f3f16ae4348e331401c4b30ef419a))
+
+
+### Bug Fixes
+
+* **deps:** update cloud to v2.1.0 ([#18](https://github.com/OneLiteFeatherNET/SkyGrid/issues/18)) ([2cca7aa](https://github.com/OneLiteFeatherNET/SkyGrid/commit/2cca7aa87f0db7c2e3a488244563add6434bca7e))
+* **deps:** update dependency com.zaxxer:hikaricp to v6.3.1 ([#5](https://github.com/OneLiteFeatherNET/SkyGrid/issues/5)) ([abc8c73](https://github.com/OneLiteFeatherNET/SkyGrid/commit/abc8c734df969ca2e8782186be9b134d52f7d379))
+* **deps:** update dependency net.kyori:adventure-api to v4.25.0 ([#22](https://github.com/OneLiteFeatherNET/SkyGrid/issues/22)) ([5742e7f](https://github.com/OneLiteFeatherNET/SkyGrid/commit/5742e7f85b31b25f781db99a9486f54d18d1a526))
+* **deps:** update dependency org.incendo:cloud-paper to v2.0.0 ([#6](https://github.com/OneLiteFeatherNET/SkyGrid/issues/6)) ([38bf527](https://github.com/OneLiteFeatherNET/SkyGrid/commit/38bf527dcaa9e75a219fd50e55d95f286f51bafc))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.11.4 ([#7](https://github.com/OneLiteFeatherNET/SkyGrid/issues/7)) ([7e65c69](https://github.com/OneLiteFeatherNET/SkyGrid/commit/7e65c69a721fcef0895ef9352f98aa5951aee958))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.11.4 ([#8](https://github.com/OneLiteFeatherNET/SkyGrid/issues/8)) ([1e8e49b](https://github.com/OneLiteFeatherNET/SkyGrid/commit/1e8e49b7809a88c1bb8b1178d74df26a81de0223))
+* **deps:** update hibernate to v6.6.55.final ([#11](https://github.com/OneLiteFeatherNET/SkyGrid/issues/11)) ([a494379](https://github.com/OneLiteFeatherNET/SkyGrid/commit/a494379adcfcc7c4c842fe92ec1b9212f175ba97))
+* **deps:** update jackson to v2.22.1 ([#12](https://github.com/OneLiteFeatherNET/SkyGrid/issues/12)) ([c99241c](https://github.com/OneLiteFeatherNET/SkyGrid/commit/c99241c532afbe1fc63c22c160dc64a8b0ca1b31))
+* **deps:** update testcontainers to v1.21.4 ([#13](https://github.com/OneLiteFeatherNET/SkyGrid/issues/13)) ([315cefe](https://github.com/OneLiteFeatherNET/SkyGrid/commit/315cefea3900c6ef5629fa3fe735b87cd1af905d))
+
 ## [0.1.1](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.1.0...v0.1.1) (2026-10-28)
 
 
