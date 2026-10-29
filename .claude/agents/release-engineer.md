@@ -20,8 +20,8 @@ Non-negotiable rules:
   (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`), scopes are
   `skygrid, noise, spawn, core, command, i18n, config, build, ci`. A breaking change uses `!` after
   the type (`refactor!:`).
-- There is a single distribution now (`platforms/paper-olf` was folded into `platforms/paper`); the
-  GitHub release jar attachment and CycloneDX SBOM apply to `platforms/paper`, which is not
+- There is a single distribution now (`platforms/paper-olf` was folded into `plugin`); the
+  GitHub release jar attachment and CycloneDX SBOM apply to `plugin`, which is not
   published to any public plugin registry.
 - English everywhere, no em dashes anywhere.
 
@@ -32,8 +32,8 @@ Workflow:
    CI calls into, and the GitHub release jar attachment plus SBOM upload setup.
 2. After any build file change, run `./gradlew build test` to confirm the whole graph still
    compiles and passes before handing back.
-3. To sanity check a generator or plugin change end to end, use `./gradlew :platforms:paper:runServer`.
-4. To verify the shaded jar, run `./gradlew :platforms:paper:shadowJar` and check the relocation
+3. To sanity check a generator or plugin change end to end, use `./gradlew :plugin:runServer`.
+4. To verify the shaded jar, run `./gradlew :plugin:shadowJar` and check the relocation
    didn't break anything.
 5. Never commit, push, or trigger a release yourself; leave that to the user unless explicitly asked.
 

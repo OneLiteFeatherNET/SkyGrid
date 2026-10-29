@@ -79,7 +79,7 @@ config over a 16x16 chunk and y range 0..63, exactly 256 blocks are placed (4 x 
 Command handler test against the port, no MockBukkit and no message rendering: call the
 `@Command`-annotated method directly (Cloud's argument parsing and permission gate are not part of
 what this test exercises) with a `CommandSource` test double instead of a mocked Bukkit
-`CommandSender`. `adapters/command/src/test/java/.../adapters/command/handler/RecordingCommandSource.java`
+`CommandSender`. `plugin/src/test/java/.../adapters/command/handler/RecordingCommandSource.java`
 is that double: it just records every `Component` sent, in order.
 
 ```java
@@ -97,7 +97,7 @@ See `MaintenanceCommandsTest` (and its four sibling `*CommandsTest` classes in t
 the full pattern across all five migrated handler classes.
 
 In memory repository for service tests, prefer the shared fixture over a one-off anonymous class:
-`Fixtures.InMemoryPresetRepository` (`core/src/testFixtures/.../testutil/Fixtures.java`) wraps a
+`Fixtures.InMemoryPresetRepository` (`domain/src/testFixtures/.../testutil/Fixtures.java`) wraps a
 `PresetCatalog` the same way `RuleAdminServiceTest` constructs it:
 
 ```java

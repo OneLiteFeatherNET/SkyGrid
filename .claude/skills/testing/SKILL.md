@@ -26,7 +26,7 @@ MockBukkit v4. The build already wires these. Two non obvious build facts:
   tracks the Paper MC line (`mockbukkit-v26.1.2`). Core classes: `MockBukkit` (`mock()`,
   `load(Class)`, `unmock()`), `ServerMock`, `entity.PlayerMock`.
 
-Shared fixtures live in `core/src/testFixtures/java/.../testutil/Fixtures.java`: `SEED`,
+Shared fixtures live in `domain/src/testFixtures/java/.../testutil/Fixtures.java`: `SEED`,
 `defaultAlgorithmFactories()`, `mc(String)`, `skyConfig()`, `config(algorithm)`, `presetCatalog(algorithm)`,
 `InMemoryPresetRepository`. Reuse them. (The WFC-era fixtures `tiles()`, `pairs()`, `settings()`,
 `ruleSet()` are gone along with the `wfc` algorithm; do not reference them.)
@@ -39,9 +39,9 @@ Shared fixtures live in `core/src/testFixtures/java/.../testutil/Fixtures.java`:
 - `core/service`: black-box against the in port contracts (`TerrainAlgorithms`, `RuleAdminUseCase`,
   and the preset/spawn/challenge ports). Use an in memory `RuleRepository`/`PresetRepository` where
   needed.
-- `adapters/config`: black-box round-trip against the `PresetRepository`/`RuleRepository`/
+- `plugin`: black-box round-trip against the `PresetRepository`/`RuleRepository`/
   `ChallengeRepository` contracts with `@TempDir` (`Jackson*RepositoryTest`).
-- `adapters/generator`: MockBukkit for the Material registry, Mockito for `WorldInfo` and
+- `plugin`: MockBukkit for the Material registry, Mockito for `WorldInfo` and
   `ChunkData`, then assert which blocks are placed. `MaterialResolver` is package private, so its
   test lives in the same package.
 - `adapters/command/handler`: no MockBukkit, no Mockito `CommandSender`. Call the `@Command`

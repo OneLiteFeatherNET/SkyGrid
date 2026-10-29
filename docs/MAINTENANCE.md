@@ -55,7 +55,7 @@ update.
 
 - Target the current Paper major; support the previous major for one cycle.
 - The pure core does not depend on Paper, so version updates touch only the adapter modules
-  (`adapters/generator`, `adapters/command`, ...), never `api`/`ports`/`core`.
+  (`plugin`, `plugin`, ...), never `api`/`ports`/`core`.
 - Paper's first fully deobfuscated era (26.1+) reduces breakage risk; still pin the Paper build in
   the version catalog and let Renovate propose bumps.
 

@@ -27,7 +27,7 @@ Set these as org or repo secrets (the publish job uses `secrets: inherit`):
 
 ## Outputs
 
-- Shaded jar: `platforms/paper/build/libs/skygrid-ng-<version>.jar` (the `shadowJar` task), attached
+- Shaded jar: `plugin/build/libs/skygrid-ng-<version>.jar` (the `shadowJar` task), attached
   to the GitHub release.
 - SBOM: `build/reports/cyclonedx/bom.{xml,json}` from the aggregate `cyclonedxBom` task; CI uploads
   the XML to Dependency-Track.

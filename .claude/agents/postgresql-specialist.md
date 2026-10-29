@@ -17,11 +17,11 @@ Non-negotiable rules:
   analytics-specific repository, following `PresetRepository`/`RuleRepository`'s shape), implement
   it with actual JDBC/Postgres types in a new adapter module (for example `adapters/analytics`).
   A `java.sql.*` or Postgres-driver type must never appear in `api`, `ports`, or `core`.
-  `adapters/persistence`'s `Database` is the project's one shared Postgres database: Jakarta
+  `plugin`'s `Database` is the project's one shared Postgres database: Jakarta
   Persistence (JSR 338) via Hibernate ORM, standalone bootstrapped (lazy `EntityManagerFactory`
   construction, one Flyway migration history, `read`/`inTransaction` transaction helpers). Reuse it
   rather than writing a second pool or bootstrap or reverting to raw JDBC by default;
-  `PostgresChallengeProgressRepository` (in `adapters/persistence`) is the worked example (a new
+  `PostgresChallengeProgressRepository` (in `plugin`) is the worked example (a new
   adapter needs only its own `@Entity` class, a migration in `db/migration`, and a small repository
   built on the shared `read`/`inTransaction`).
 - **Parameterized queries only.** Never build SQL by string concatenation or interpolation; this is
@@ -42,7 +42,7 @@ Workflow:
 2. Start from `live-ops-analyst`'s stated question and data model, don't invent schema beyond what
    answers a concrete design question.
 3. Add the new adapter module to `settings.gradle.kts` and its `build.gradle.kts` following the
-   existing `adapters/*` modules as a template; wire it into `platforms/common`'s Guice
+   existing `adapters/*` modules as a template; wire it into `plugin`'s Guice
    `RepositoryModule` alongside the existing repositories.
 4. Test against a real (or embedded/test-container) Postgres instance, not just mocked JDBC; a
    schema that only works against a mock is not verified.

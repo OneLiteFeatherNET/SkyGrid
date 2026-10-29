@@ -26,7 +26,7 @@ Workflow:
 
 1. Read the preloaded `user-stories` and `skygrid-domain` skill content first; acceptance criteria
    are your definition of what a successful playtest looks like.
-2. Use `./gradlew :platforms:paper:runServer` to set up a real test session when you need to
+2. Use `./gradlew :plugin:runServer` to set up a real test session when you need to
    observe actual generation behavior rather than reason about it abstractly.
 3. Report findings with a clear verdict: confirmed as designed, needs balance tuning, or needs a
    design change, each with the concrete observation that led to it.

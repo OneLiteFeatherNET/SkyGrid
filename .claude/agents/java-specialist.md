@@ -21,9 +21,9 @@ Jakarta EE dependency to a framework-free module, ArchUnit already bans `jakarta
   project's standard for a Postgres-backed adapter. The factory-bootstrap and
   transaction-lifecycle plumbing (lazy `EntityManagerFactory` construction under double-checked
   locking, Flyway migration, the `read`/`inTransaction` helpers) now lives once in the shared
-  `Database` class in `adapters/persistence` (one pool, one migration history, one persistence
+  `Database` class in `plugin` (one pool, one migration history, one persistence
   unit), not as one-off code to imitate by eye.
-  `PostgresChallengeProgressRepository` (in `adapters/persistence`) is the worked example: it takes
+  `PostgresChallengeProgressRepository` (in `plugin`) is the worked example: it takes
   the shared `Database` in its constructor and keeps only the `challenge_tier`-specific query logic (the
   pessimistic-lock-plus-one-retry `recordCompletionAttempt`, and the `CriteriaDelete` bulk reset). A
   new Postgres-backed adapter reuses the same `Database`, adding its own `@Entity` to the one

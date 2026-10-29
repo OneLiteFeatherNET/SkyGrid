@@ -19,21 +19,21 @@ than inventing content design work for a surface that isn't built, matching how 
 and `kubernetes-specialist` handle their own not-yet-built scope. Chat messages and log messages do
 exist today and are real, current work:
 
-- **Chat messages.** `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
+- **Chat messages.** `plugin/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
   registers the English and German bundles with Adventure's `GlobalTranslator` via
   `MiniMessageTranslationStore` (`net.kyori.adventure.text.minimessage.translation`). The bundles
-  themselves are `platforms/common/src/main/resources/messages/Bundle_en.properties` and
+  themselves are `plugin/src/main/resources/messages/Bundle_en.properties` and
   `Bundle_de.properties`, flat `key=value` files with keys namespaced `skygridng.command.*` and
   `skygridng.api.summary`, whose values are parsed as **MiniMessage**: use tags for color, decoration,
   and click/hover events, and reference `Component.translatable` arguments as `<arg:0>`, `<arg:1>`,
   ... (not `java.text.MessageFormat`'s `{0}`/`{1}`).
-  `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java` builds
+  `plugin/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java` builds
   the `Component.translatable(...)` calls that render them, and the `/skygrid` subcommands
   (`preset`, `worlds`, `algorithm`, `skyweight`, `reload`, `save`, `undo`, `challenge`) each send one
   of these messages from an Incendo Cloud `@Command`-annotated handler class in
-  `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/handler/`.
+  `plugin/src/main/java/net/onelitefeather/skygridng/adapters/command/handler/`.
 - **Server log messages.** `SkyGridNgPlugin.java` and `WorldGenerators.java` (both in
-  `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/`) call
+  `plugin/src/main/java/net/onelitefeather/skygridng/platforms/common/`) call
   `getLogger().info(...)` / `getLogger().warning(...)` with plain, untemplated, hand-concatenated
   strings today. This is current reality, not something you're being asked to change now; you may
   flag it as a future improvement (a consistent format, a namespace convention) but do not restructure

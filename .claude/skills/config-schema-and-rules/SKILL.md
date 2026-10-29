@@ -4,7 +4,7 @@ description: >-
   Explains the SkyGrid-ng on-disk configuration system and the per-block rule model: the split layout
   (a config selector, one file per preset under presets/, one file per block under rules/, generated
   JSON Schemas under schema/), the JSON/YAML/TOML per-file format choice, the Jackson DTO to neutral
-  record mapping in adapters/config, and the state/physics/placement rule shape. Use when editing
+  record mapping in plugin, and the state/physics/placement rule shape. Use when editing
   config.yml/json/toml, a presets/<name> or rules/<block> file, ConfigDtos, RuleDtos,
   ConfigFormats, JacksonPresetRepository or JacksonRuleRepository; when adding a config format,
   preset field or rule field; when working on block state, PhysicsMode, PlacementRule,
@@ -38,7 +38,7 @@ Cross-link those; do not restate them here.
 ## The split layout
 
 The whole config lives in the plugin data folder and is split into four parts. First run seeds each
-from the bundled defaults under `adapters/config/src/main/resources/`.
+from the bundled defaults under `plugin/src/main/resources/`.
 
 - `config.<ext>` (the selector). Only names the active preset: `active: classic`. Nothing else.
   Mapped by `ConfigDtos.ConfigDto(String active)`.
@@ -72,10 +72,10 @@ Every mapper is configured identically in `ConfigFormats.configure`:
 - `ACCEPT_SINGLE_VALUE_AS_ARRAY`, so `extends: classic` and `extends: [classic]` both parse.
 - `FAIL_ON_UNKNOWN_PROPERTIES` disabled, so a newer config key does not break an older build.
 
-### Jackson stays in adapters/config
+### Jackson stays in plugin
 
 `api`/`ports`/`core` are framework-free and carry no Jackson annotations (enforced by ArchUnit in
-`:verification`). The annotated DTOs (`ConfigDtos`, `RuleDtos`) live only in `adapters/config` and
+`:verification`). The annotated DTOs (`ConfigDtos`, `RuleDtos`) live only in `plugin` and
 mirror the on-disk shape one to one. The neutral domain records (`Preset`, `Rule`, `PlacementRule`,
 enums) live in `api.model`. The repositories translate DTO <-> record. When you add a field, add it
 as a boxed DTO field plus a neutral record field; never put a `com.fasterxml.jackson.*` annotation in
@@ -197,7 +197,7 @@ Detailed operator docs and the generated schemas:
 
 Shipped defaults to read for real examples:
 
-- `adapters/config/src/main/resources/config.yml`, `presets/*.yml`, `rules/*.yml`.
+- `plugin/src/main/resources/config.yml`, `presets/*.yml`, `rules/*.yml`.
 
 Code:
 

@@ -132,7 +132,7 @@ crafting table"), so that I can offer a harder, more focused survival experience
 code.
 - Challenge rules are defined in config (`challenges/`, one file per rule, JSON/YAML/TOML).
 - `/skygrid challenge list|toggle <id>` lists and toggles rules; toggling persists immediately.
-- Enforced by an `OlfFeature` in `platforms/common`'s `platforms.olf` package (a naming convention
+- Enforced by an `OlfFeature` in `plugin`'s `platforms.olf` package (a naming convention
   marking OneLiteFeather-server-specific mechanics, not a separate distribution).
 
 ### I2: Goal and achievement tracking within a challenge
@@ -149,7 +149,7 @@ toward beyond surviving under restrictions.
   `CommandDispatch`, `PlayerMessage`) and grants exactly once per player per task, the moment
   `ports.in.TaskProgressUseCase#completeTask` records a genuinely new completion (idempotent: a
   repeat call, or a sequential-order rejection, is a no-op, never a duplicate grant).
-- Task completion is durable per player (PostgreSQL, `adapters/persistence`,
+- Task completion is durable per player (PostgreSQL, `plugin`,
   `ports.out.TaskCompletionRepository`, Flyway-migrated `task_completion` table keyed on
   `(player_id, challenge_id, task_id)`, row existence is the only fact stored, same
   data-minimization stance as `challenge_tier`), fronted by `TaskProgressUseCase` /
@@ -178,7 +178,7 @@ toward beyond surviving under restrictions.
 As a **player**, I want my progress in a challenge to survive server restarts and be visible on
 request, so that repeated play is recognized instead of forgotten every reboot.
 - First database-backed persistence in the project: a PostgreSQL-backed
-  `ports.out.ChallengeProgressRepository` (`adapters/persistence`, HikariCP pooled,
+  `ports.out.ChallengeProgressRepository` (`plugin`, HikariCP pooled,
   parameterized JDBC only, Flyway-migrated `challenge_tier` table keyed on `(player_id,
   challenge_id)`), fronted by `ports.in.ChallengeProgressUseCase` /
   `core.service.ChallengeProgressService`.

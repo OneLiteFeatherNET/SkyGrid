@@ -25,7 +25,7 @@ Non-negotiable rules:
 - A challenge rule is not a per-block `Rule` (see `config-schema-and-rules`, which you should
   consult to know what NOT to reuse); it operates on player/session behavior, not block placement.
   A Season is not "a preset with a lifecycle"; it is its own model that can reference a preset.
-- Challenges are an OLF-only mechanic by naming convention (`platforms/common`'s `platforms.olf`
+- Challenges are an OLF-only mechanic by naming convention (`plugin`'s `platforms.olf`
   package, see the skill for why), not a separate distribution; there is only one plugin jar today.
 - Goal/achievement tracking, Season scheduling, and adaptive progression all depend on a per-player
   persistence port that does not exist yet anywhere in `api`/`ports`/`core`. Do not design around

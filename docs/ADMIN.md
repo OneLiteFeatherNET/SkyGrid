@@ -276,7 +276,7 @@ Always load test with a population tool before opening to 100 real players, and 
 ## Internationalization
 
 Messages ship for English and German, written as MiniMessage (color, click, hover) rather than plain
-text. To add a language, add `platforms/common/src/main/resources/messages/Bundle_<locale>.properties`
+text. To add a language, add `plugin/src/main/resources/messages/Bundle_<locale>.properties`
 and register the locale in `platforms.common.I18n`; the German bundle flows through Crowdin and is
 never hand-edited directly. Item display names are not translated by Paper's `GlobalTranslator` (a
 platform limitation).

@@ -38,11 +38,11 @@ All algorithms are seed based and deterministic.
 
 ```bash
 ./gradlew build                    # compile and test every module
-./gradlew :platforms:paper:runServer # start a Paper 26.1 test server
+./gradlew :plugin:runServer # start a Paper 26.1 test server
 ```
 
-The shaded plugin jar is at `platforms/paper/build/libs/skygrid-ng-<version>.jar`. SkyGrid-ng is a
-multi-module project (`api`, `ports`, `core`, `adapters/*`, `platforms/*`); see
+The shaded plugin jar is at `plugin/build/libs/skygrid-ng-<version>.jar`. SkyGrid-ng is a
+three-module project (`domain` for the framework-free api, ports and core; `plugin` for everything that talks to Paper; `verification` for the ArchUnit rules); see
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Documentation

@@ -27,7 +27,7 @@ Workflow:
    generation logic; they hold the exact recipe for adding a `TerrainAlgorithm`.
 2. After an edit, run `.claude/skills/hexagonal-architecture/scripts/compile-core.sh` for a fast
    javac-only check of api+ports+core before reaching for a full Gradle build.
-3. Run `./gradlew :core:test` (or a scoped `--tests` filter) to verify behavior.
+3. Run `./gradlew :domain:test` (or a scoped `--tests` filter) to verify behavior.
 4. If you touch `TerrainAlgorithm`, `ColumnSink`, or any port, check every adapter that implements
    or calls it still compiles conceptually; hand off actual adapter wiring to `paper-adapter`
    rather than reaching into `adapters/` yourself.
