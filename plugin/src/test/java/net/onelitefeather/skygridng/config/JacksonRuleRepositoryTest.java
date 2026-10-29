@@ -7,7 +7,6 @@ import net.onelitefeather.skygridng.generator.PlacementRule;
 import net.onelitefeather.skygridng.generator.Rule;
 import net.onelitefeather.skygridng.generator.RuleCatalog;
 import net.onelitefeather.skygridng.generator.StructurePattern;
-import net.onelitefeather.skygridng.generator.RuleRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -23,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Black-box tests for the Jackson rule adapter against the {@link RuleRepository} contract: it seeds
+ * Black-box tests for the Jackson rule adapter against the {@link JacksonRuleRepository} adapter: it seeds
  * the bundled default {@code rules/} directory (one file per block), reads a per-block rule with its
  * state, physics and optional placement, round-trips a saved catalog, and proves a rule written as
  * TOML maps to the same {@link Rule} as its YAML twin.
@@ -34,7 +33,7 @@ class JacksonRuleRepositoryTest {
         return path -> getClass().getResourceAsStream("/" + path);
     }
 
-    private RuleRepository repository(Path dir) {
+    private JacksonRuleRepository repository(Path dir) {
         return new JacksonRuleRepository(dir, bundled());
     }
 
@@ -103,7 +102,7 @@ class JacksonRuleRepositoryTest {
     @Test
     @DisplayName("a saved catalog is read back unchanged")
     void roundTrip(@TempDir Path dir) {
-        RuleRepository repository = repository(dir);
+        JacksonRuleRepository repository = repository(dir);
         RuleCatalog original = repository.load();
 
         repository.save(original);
@@ -115,7 +114,7 @@ class JacksonRuleRepositoryTest {
     @Test
     @DisplayName("a rule written as TOML maps to the same Rule as its YAML twin")
     void tomlAgreesWithYaml(@TempDir Path dir) throws IOException {
-        RuleRepository repository = repository(dir);
+        JacksonRuleRepository repository = repository(dir);
         RuleCatalog catalog = repository.load();
 
         // Force sugar_cane to TOML, then let save write it back in that format.

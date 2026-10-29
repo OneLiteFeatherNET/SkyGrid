@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The standard {@link TerrainAlgorithms}.
+ * The standard terrain algorithm catalog.
  *
  * A {@link Registry} maps each algorithm id to an {@link AlgorithmFactory} (Factory Method), so the
  * registry's key set is the single source of truth for which ids are known: lookup, {@link #isKnown}
@@ -14,7 +14,7 @@ import java.util.Set;
  * class. The active algorithm is rebuilt whenever the configuration changes (Observer on
  * {@link RuleState}); an unknown id falls back to the {@link IndependentSkyGridAlgorithm}.
  */
-public final class DefaultTerrainAlgorithms implements TerrainAlgorithms {
+public final class DefaultTerrainAlgorithms {
 
     private final RuleState state;
     private final Registry<String, AlgorithmFactory> registry;
@@ -28,17 +28,14 @@ public final class DefaultTerrainAlgorithms implements TerrainAlgorithms {
         state.addChangeListener(this::rebuild);
     }
 
-    @Override
     public TerrainAlgorithm current() {
         return current;
     }
 
-    @Override
     public boolean isKnown(String id) {
         return registry.contains(id);
     }
 
-    @Override
     public Set<String> ids() {
         return registry.keys();
     }

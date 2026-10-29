@@ -13,9 +13,9 @@ public final class RuleAdminService implements RuleAdminUseCase {
 
     private final RuleState state;
     private final PresetService presets;
-    private final TerrainAlgorithms algorithms;
+    private final DefaultTerrainAlgorithms algorithms;
 
-    public RuleAdminService(RuleState state, PresetService presets, TerrainAlgorithms algorithms) {
+    public RuleAdminService(RuleState state, PresetService presets, DefaultTerrainAlgorithms algorithms) {
         this.state = state;
         this.presets = presets;
         this.algorithms = algorithms;

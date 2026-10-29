@@ -21,7 +21,7 @@ import net.onelitefeather.skygridng.challenge.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.season.SeasonAdminUseCase;
 import net.onelitefeather.skygridng.generator.Presets;
 import net.onelitefeather.skygridng.generator.RuleAdminUseCase;
-import net.onelitefeather.skygridng.generator.TerrainAlgorithms;
+import net.onelitefeather.skygridng.generator.DefaultTerrainAlgorithms;
 import net.onelitefeather.skygridng.generator.RuleState;
 import net.onelitefeather.skygridng.generator.WorldGenerators;
 import net.onelitefeather.skygridng.persistence.DatabaseWarmUpGate;
@@ -101,7 +101,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
         getServer().getServicesManager().register(SkyGridApi.class, api, this, ServicePriority.Normal);
 
         String algorithm = injector.getInstance(RuleState.class).current().algorithm();
-        if (!injector.getInstance(TerrainAlgorithms.class).isKnown(algorithm)) {
+        if (!injector.getInstance(DefaultTerrainAlgorithms.class).isKnown(algorithm)) {
             getLogger().warning("Unknown algorithm '" + algorithm + "', falling back to skygrid.");
         }
 

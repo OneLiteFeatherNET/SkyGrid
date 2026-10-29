@@ -7,17 +7,17 @@ import org.bukkit.generator.WorldInfo;
 import java.util.List;
 
 /**
- * In adapter: bridges Paper's {@link BiomeProvider} to the core {@link Biomes} map. It asks the core
+ * In adapter: bridges Paper's {@link BiomeProvider} to the core {@link DefaultBiomes} map. It asks the core
  * which biome belongs at a coordinate and resolves the neutral id to a Bukkit {@link Biome}; the
  * palette becomes the up-front biome list Paper requires. The core owns the biome logic; this adapter
  * only translates.
  */
 public final class SkyGridBiomeProvider extends BiomeProvider {
 
-    private final Biomes biomes;
+    private final DefaultBiomes biomes;
     private final BiomeResolver resolver;
 
-    public SkyGridBiomeProvider(Biomes biomes, BiomeResolver resolver) {
+    public SkyGridBiomeProvider(DefaultBiomes biomes, BiomeResolver resolver) {
         this.biomes = biomes;
         this.resolver = resolver;
     }

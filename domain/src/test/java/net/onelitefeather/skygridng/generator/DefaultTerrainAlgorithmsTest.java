@@ -21,7 +21,7 @@ class DefaultTerrainAlgorithmsTest {
     @DisplayName("the registry selects the algorithm named by the configuration")
     void selectsByConfig() {
         RuleState state = new RuleState(Fixtures.config("skygrid"), 4);
-        TerrainAlgorithms catalog = algorithms(state);
+        DefaultTerrainAlgorithms catalog = algorithms(state);
         assertThat(catalog.current().id()).isEqualTo("skygrid");
     }
 
@@ -29,7 +29,7 @@ class DefaultTerrainAlgorithmsTest {
     @DisplayName("changing the state rebuilds the active algorithm")
     void rebuildsOnStateChange() {
         RuleState state = new RuleState(Fixtures.config("noise_skygrid"), 4);
-        TerrainAlgorithms catalog = algorithms(state);
+        DefaultTerrainAlgorithms catalog = algorithms(state);
         assertThat(catalog.current().id()).isEqualTo("noise_skygrid");
 
         state.apply(Fixtures.config("skygrid"));
@@ -40,14 +40,14 @@ class DefaultTerrainAlgorithmsTest {
     @DisplayName("an unknown algorithm id falls back to the independent SkyGrid algorithm")
     void fallsBackToSkyGridForUnknownId() {
         RuleState state = new RuleState(Fixtures.config("bogus"), 4);
-        TerrainAlgorithms catalog = algorithms(state);
+        DefaultTerrainAlgorithms catalog = algorithms(state);
         assertThat(catalog.current().id()).isEqualTo("skygrid");
     }
 
     @Test
     @DisplayName("isKnown and ids reflect exactly the two shipped algorithms")
     void knownAlgorithms() {
-        TerrainAlgorithms catalog = algorithms(new RuleState(Fixtures.config("skygrid"), 4));
+        DefaultTerrainAlgorithms catalog = algorithms(new RuleState(Fixtures.config("skygrid"), 4));
         assertThat(catalog.isKnown("skygrid")).isTrue();
         assertThat(catalog.isKnown("noise_skygrid")).isTrue();
         assertThat(catalog.isKnown("nonsense")).isFalse();

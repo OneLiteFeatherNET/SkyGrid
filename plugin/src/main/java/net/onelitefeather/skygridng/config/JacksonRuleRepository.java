@@ -11,7 +11,6 @@ import net.onelitefeather.skygridng.generator.PlacementRule;
 import net.onelitefeather.skygridng.generator.Rule;
 import net.onelitefeather.skygridng.generator.RuleCatalog;
 import net.onelitefeather.skygridng.generator.StructurePattern;
-import net.onelitefeather.skygridng.generator.RuleRepository;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,7 +32,7 @@ import java.util.stream.Stream;
  * bundled defaults. Ids stay namespaced strings, so the files are platform-neutral and the api/core
  * never see Jackson.
  */
-public final class JacksonRuleRepository implements RuleRepository {
+public final class JacksonRuleRepository {
 
     private static final String RULES_DIR = "rules";
     private static final List<String> DEFAULT_RULE_RESOURCES = List.of(
@@ -49,7 +48,6 @@ public final class JacksonRuleRepository implements RuleRepository {
         this.defaults = defaults;
     }
 
-    @Override
     public RuleCatalog load() {
         try {
             seedDefaultsIfAbsent();
@@ -67,7 +65,6 @@ public final class JacksonRuleRepository implements RuleRepository {
         }
     }
 
-    @Override
     public void save(RuleCatalog catalog) {
         try {
             Path rulesDir = dataFolder.resolve(RULES_DIR);

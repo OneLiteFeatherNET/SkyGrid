@@ -22,14 +22,14 @@ import java.util.Random;
  */
 public final class HexagonalChunkGenerator extends ChunkGenerator {
 
-    private final TerrainAlgorithms algorithms;
+    private final DefaultTerrainAlgorithms algorithms;
     private final SkyGridDecorations decorations;
-    private final Biomes biomes;
+    private final DefaultBiomes biomes;
     private final RuleResolver rules;
     private final BiomeResolver biomeResolver = new BiomeResolver(Biome.PLAINS);
 
     @Inject
-    public HexagonalChunkGenerator(TerrainAlgorithms algorithms, SkyGridDecorations decorations, Biomes biomes,
+    public HexagonalChunkGenerator(DefaultTerrainAlgorithms algorithms, SkyGridDecorations decorations, DefaultBiomes biomes,
                                    RuleCatalog ruleCatalog) {
         this.algorithms = algorithms;
         this.decorations = decorations;

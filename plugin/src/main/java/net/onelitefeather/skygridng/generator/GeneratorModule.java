@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.MapBinder;
 import jakarta.inject.Singleton;
+import net.onelitefeather.skygridng.config.JacksonRuleRepository;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -46,7 +47,7 @@ public final class GeneratorModule extends AbstractModule {
 
     @Provides
     @Singleton
-    RuleCatalog provideRuleCatalog(RuleRepository repository) {
+    RuleCatalog provideRuleCatalog(JacksonRuleRepository repository) {
         return repository.load();
     }
 
@@ -71,12 +72,6 @@ public final class GeneratorModule extends AbstractModule {
 
     @Provides
     @Singleton
-    TerrainAlgorithms provideTerrainAlgorithms(DefaultTerrainAlgorithms algorithms) {
-        return algorithms;
-    }
-
-    @Provides
-    @Singleton
     SkyGridDecorations provideSkyGridDecorations(RuleState state) {
         return new DefaultSkyGridDecorations(state);
     }
@@ -95,7 +90,7 @@ public final class GeneratorModule extends AbstractModule {
 
     @Provides
     @Singleton
-    Biomes provideBiomes(RuleState state, Set<BiomeId> palette) {
+    DefaultBiomes provideBiomes(RuleState state, Set<BiomeId> palette) {
         return new DefaultBiomes(state, palette);
     }
 
@@ -107,7 +102,8 @@ public final class GeneratorModule extends AbstractModule {
 
     @Provides
     @Singleton
-    RuleAdminService provideRuleAdminService(RuleState state, PresetService presets, TerrainAlgorithms algorithms) {
+    RuleAdminService provideRuleAdminService(RuleState state, PresetService presets,
+                                                       DefaultTerrainAlgorithms algorithms) {
         return new RuleAdminService(state, presets, algorithms);
     }
 

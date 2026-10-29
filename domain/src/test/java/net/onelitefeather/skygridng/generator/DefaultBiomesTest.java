@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class DefaultBiomesTest {
 
-    private final Biomes biomes = new DefaultBiomes(
+    private final DefaultBiomes biomes = new DefaultBiomes(
             new RuleState(Fixtures.config("skygrid"), 4), Set.copyOf(GeneratorConfig.DEFAULT_BIOMES));
 
     @Test

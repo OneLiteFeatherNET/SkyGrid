@@ -21,7 +21,7 @@ import net.onelitefeather.skygridng.challenge.TaskProgressUseCase;
 import net.onelitefeather.skygridng.challenge.ChallengeProgressRepository;
 import net.onelitefeather.skygridng.generator.PresetRepository;
 import net.onelitefeather.skygridng.challenge.RewardGrantor;
-import net.onelitefeather.skygridng.generator.RuleRepository;
+import net.onelitefeather.skygridng.config.JacksonRuleRepository;
 import net.onelitefeather.skygridng.season.SeasonRepository;
 import net.onelitefeather.skygridng.season.SeasonRunRepository;
 import net.onelitefeather.skygridng.challenge.TaskCompletionRepository;
@@ -32,7 +32,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 
 /**
- * Binds the out ports {@link PresetRepository}, {@link RuleRepository},
+ * Binds the out ports {@link PresetRepository}, {@link JacksonRuleRepository},
  * {@link ChallengeProgressRepository} and {@link TaskCompletionRepository} to their concrete
  * adapters.
  *
@@ -59,7 +59,7 @@ public final class RepositoryModule extends AbstractModule {
 
     @Provides
     @Singleton
-    RuleRepository provideRuleRepository(JavaPlugin plugin, Path dataFolder) {
+    JacksonRuleRepository provideRuleRepository(JavaPlugin plugin, Path dataFolder) {
         BundledDefaults defaults = plugin::getResource;
         return new JacksonRuleRepository(dataFolder, defaults);
     }
