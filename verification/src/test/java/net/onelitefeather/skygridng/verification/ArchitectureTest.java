@@ -1,9 +1,14 @@
 package net.onelitefeather.skygridng.verification;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption.DoNotIncludeTests;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
@@ -12,162 +17,70 @@ import java.time.Instant;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
-import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 /**
- * Enforces the hexagonal architecture of SkyGrid-ng with ArchUnit, so the rules that the module
- * graph already encodes cannot rot inside a module (for example a stray Bukkit import in the core,
- * or an adapter reaching into a core service). Runs over every production module's classes.
- *
- * The dependency direction is: platforms -> adapters -> ports -> api, and core -> ports -> api.
+ * Enforces the architecture of SkyGrid-ng with ArchUnit. The domain module (framework free) and the
+ * plugin module (Paper, Guice, Jackson, JPA) are told apart by the jar they are compiled into, so the
+ * rules do not depend on package names. Feature packages (generator, challenge, season, ...) are
+ * checked for cycles as slices.
  */
 @AnalyzeClasses(packages = "net.onelitefeather.skygridng", importOptions = DoNotIncludeTests.class)
 class ArchitectureTest {
 
-    private static final String API = "net.onelitefeather.skygridng.api..";
-    private static final String PORTS = "net.onelitefeather.skygridng.ports..";
-    private static final String CORE = "net.onelitefeather.skygridng.core..";
-    private static final String ADAPTERS = "net.onelitefeather.skygridng.adapters..";
-    private static final String PLATFORMS = "net.onelitefeather.skygridng.platforms..";
-    private static final String COMMAND_ADAPTER = "net.onelitefeather.skygridng.adapters.command..";
+    private static final String ROOT = "net.onelitefeather.skygridng";
 
     /**
-     * Packages no platform-neutral layer may ever depend on. Adventure (net.kyori.adventure) is
-     * deliberately NOT here: it is a cross-platform text API every supported platform ships, so the
-     * api, ports, and core may use it. Only its platform-specific bindings
-     * (net.kyori.adventure.platform, which wrap Bukkit/BungeeCord/etc.) stay banned.
+     * Packages no domain class may ever depend on. Adventure (net.kyori.adventure) is deliberately
+     * NOT here: it is a cross-platform text API every supported platform ships, so the domain may use
+     * it. Only its platform-specific bindings (net.kyori.adventure.platform) stay banned.
      */
-    private static final String[] PLATFORM_AND_FRAMEWORK_PACKAGES = {
+    private static final String[] DOMAIN_FORBIDDEN_PACKAGES = {
             "org.bukkit..",
             "io.papermc..",
             "net.minecraft..",
+            "com.fasterxml..",
             "com.google.gson..",
             "com.google.inject..",
             "jakarta.inject..",
+            "jakarta.persistence..",
+            "org.hibernate..",
             "net.kyori.adventure.platform..",
     };
 
-    @ArchTest
-    static final ArchRule apiPortsAndCoreAreFrameworkFree =
-            noClasses().that().resideInAnyPackage(API, PORTS, CORE)
-                    .should().dependOnClassesThat().resideInAnyPackage(PLATFORM_AND_FRAMEWORK_PACKAGES)
-                    .because("the api, ports, and core must stay platform-neutral so other platforms "
-                            + "(Fabric, Forge, Sponge) can reuse them; resolve blocks via BlockId in an "
-                            + "adapter. Adventure text is allowed (it is cross-platform), its platform "
-                            + "bindings are not");
+    /** Classes compiled from the domain module. */
+    private static final DescribedPredicate<JavaClass> IN_DOMAIN_MODULE =
+            DescribedPredicate.describe("located in the domain module", javaClass -> isFromModule(javaClass, "domain"));
 
     @ArchTest
-    static final ArchRule adaptersDependOnPortsAndApiOnlyNotCore =
-            noClasses().that().resideInAPackage(ADAPTERS)
-                    .should().dependOnClassesThat().resideInAPackage(CORE)
-                    .because("an adapter compiles against the ports and the api only, never the core");
-
-    private static final String GENERATOR_ADAPTER = "net.onelitefeather.skygridng.adapters.generator..";
-    private static final String SPAWN_ADAPTER = "net.onelitefeather.skygridng.adapters.spawn..";
-    private static final String CONFIG_ADAPTER = "net.onelitefeather.skygridng.adapters.config..";
-
-    @ArchTest
-    static final ArchRule generatorAdapterIsFrameworkFree =
-            noClasses().that().resideInAPackage(GENERATOR_ADAPTER)
-                    .should().dependOnClassesThat().resideInAnyPackage(PLATFORM_AND_FRAMEWORK_PACKAGES)
-                    .because("adapters.generator is framework-free like core: it resolves everything "
-                            + "through ports.algorithm.RegionWriter instead of a native Bukkit type, so "
-                            + "the Bukkit implementation of that port can live in platforms.common "
-                            + "without pulling Bukkit, Guice, or jakarta.inject back into this adapter");
+    static final ArchRule domainIsFrameworkFree =
+            noClasses().that(IN_DOMAIN_MODULE)
+                    .should().dependOnClassesThat().resideInAnyPackage(DOMAIN_FORBIDDEN_PACKAGES)
+                    .because("the domain must stay platform-neutral so other platforms (Fabric, Forge, Sponge) "
+                            + "can reuse it; resolve blocks via BlockId in the plugin module. Adventure text is "
+                            + "allowed (it is cross-platform), its platform bindings are not. Jakarta Persistence "
+                            + "and Hibernate types belong to the plugin module too");
 
     @ArchTest
-    static final ArchRule spawnAdapterIsFrameworkFree =
-            noClasses().that().resideInAPackage(SPAWN_ADAPTER)
-                    .should().dependOnClassesThat().resideInAnyPackage(PLATFORM_AND_FRAMEWORK_PACKAGES)
-                    .because("adapters.spawn is framework-free like core: it resolves everything "
-                            + "through ports.algorithm.GroundReader instead of a native Bukkit type, so "
-                            + "the Bukkit implementation of that port can live in platforms.common "
-                            + "without pulling Bukkit, Guice, or jakarta.inject back into this adapter");
+    static final ArchRule domainReadsNoSystemClock =
+            noClasses().that(IN_DOMAIN_MODULE)
+                    .should().callMethod(Clock.class, "systemUTC")
+                    .orShould().callMethod(Instant.class, "now")
+                    .orShould().callMethod(System.class, "currentTimeMillis")
+                    .because("time comes only through an injected java.time.Clock, so every scheduling decision is testable");
 
     @ArchTest
-    static final ArchRule configAdapterIsFrameworkFree =
-            noClasses().that().resideInAPackage(CONFIG_ADAPTER)
-                    .should().dependOnClassesThat().resideInAnyPackage(PLATFORM_AND_FRAMEWORK_PACKAGES)
-                    .because("adapters.config is framework-free with respect to the Minecraft platform: "
-                            + "it resolves nothing through Bukkit, Guice, or jakarta.inject; Jackson and "
-                            + "victools are cross-platform serialization/schema libraries, not platform "
-                            + "bindings, and stay allowed here the same way Adventure text stays allowed "
-                            + "in api/ports/core");
-
-    /**
-     * Packages the whole command adapter (the neutral CommandSource seam, the Cloud-annotated
-     * SkyGridCommands subcommand methods, and the SkyGridArgumentParsers suggestion providers, all
-     * introduced across the stage 1 and stage 2 Incendo Cloud migration) must never depend on. Only
-     * the Paper and Brigadier bindings of Incendo Cloud are banned here; plain cloud core and
-     * annotation packages (AnnotationParser, @Command, @Argument, @Parser, @Suggestions,
-     * ExceptionHandler, and the like, which SkyGridCommands and SkyGridArgumentParsers actually use)
-     * stay allowed, so the negative matcher targets org.incendo.cloud.paper.. and
-     * org.incendo.cloud.brigadier.. specifically rather than all of org.incendo.cloud...
-     */
-    private static final String[] COMMAND_ADAPTER_FORBIDDEN_PACKAGES = {
-            "org.bukkit..",
-            "io.papermc..",
-            "org.incendo.cloud.paper..",
-            "org.incendo.cloud.brigadier..",
-    };
-
-    @ArchTest
-    static final ArchRule commandAdapterIsFrameworkFree =
-            noClasses().that().resideInAPackage(COMMAND_ADAPTER)
-                    .should().dependOnClassesThat().resideInAnyPackage(COMMAND_ADAPTER_FORBIDDEN_PACKAGES)
-                    .because("adapters.command must stay Bukkit and cloud-platform free like core so "
-                            + "its Cloud-annotated subcommand and suggestion-provider logic can compile "
-                            + "without pulling in Paper or Brigadier directly; plain cloud core and "
-                            + "annotation packages, ports, api, and Adventure text (excluding its "
-                            + "platform bindings) remain allowed");
-
-    @ArchTest
-    static final ArchRule layeredArchitectureIsRespected =
-            layeredArchitecture().consideringOnlyDependenciesInLayers()
-                    .layer("Api").definedBy(API)
-                    .layer("Ports").definedBy(PORTS)
-                    .layer("Core").definedBy(CORE)
-                    .layer("Adapters").definedBy(ADAPTERS)
-                    .layer("Platforms").definedBy(PLATFORMS)
-                    .whereLayer("Platforms").mayNotBeAccessedByAnyLayer()
-                    .whereLayer("Adapters").mayOnlyBeAccessedByLayers("Platforms")
-                    .whereLayer("Core").mayOnlyBeAccessedByLayers("Platforms")
-                    .whereLayer("Ports").mayOnlyBeAccessedByLayers("Core", "Adapters", "Platforms")
-                    .whereLayer("Api").mayOnlyBeAccessedByLayers("Ports", "Core", "Adapters", "Platforms");
-
-    private static final String JAKARTA_PERSISTENCE = "jakarta.persistence..";
-    private static final String HIBERNATE = "org.hibernate..";
-    private static final String CHALLENGE_PROGRESS_ADAPTER = "net.onelitefeather.skygridng.adapters.challengeprogress..";
-    private static final String TASK_PROGRESS_ADAPTER = "net.onelitefeather.skygridng.adapters.taskprogress..";
-
-    @ArchTest
-    static final ArchRule progressAdaptersAreFrameworkFree =
-            noClasses().that().resideInAnyPackage(CHALLENGE_PROGRESS_ADAPTER, TASK_PROGRESS_ADAPTER)
-                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..", "com.google.inject..", "jakarta.inject..")
-                    .because("the progress adapters are persistence adapters: they may use Jakarta Persistence, but "
-                            + "never Bukkit, Guice, or jakarta.inject, so the composition root stays the only place that wires them");
-
-    @ArchTest
-    static final ArchRule jakartaPersistenceAndHibernateOnlyInsideAdapters =
-            noClasses().that().resideOutsideOfPackage(ADAPTERS)
-                    .should().dependOnClassesThat().resideInAnyPackage(JAKARTA_PERSISTENCE, HIBERNATE)
-                    .because("jakarta.persistence and Hibernate types stay inside the adapters; api, ports, core and "
-                            + "the platform see only domain records");
-
-    private static final String SEASON_ADAPTER = "net.onelitefeather.skygridng.adapters.season..";
-
-    @ArchTest
-    static final ArchRule seasonPersistenceAdapterIsFrameworkFree =
-            noClasses().that().resideInAPackage(SEASON_ADAPTER)
-                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..", "com.google.inject..", "jakarta.inject..")
-                    .because("adapters.season is a persistence adapter: it may use Jakarta Persistence, but never Bukkit, "
-                            + "Guice, or jakarta.inject");
-
-    @ArchTest
-    static final ArchRule entitiesOnlyInsideAdapters =
+    static final ArchRule entitiesLiveInPluginModule =
             classes().that().areAnnotatedWith(Entity.class)
-                    .should().resideInAPackage(ADAPTERS)
-                    .because("@Entity classes are persistence mapping, which only the adapters own");
+                    .should(new ArchCondition<JavaClass>("reside in the plugin module") {
+                        @Override
+                        public void check(JavaClass item, ConditionEvents events) {
+                            boolean inPlugin = isFromModule(item, "plugin");
+                            events.add(new SimpleConditionEvent(item, inPlugin,
+                                    item.getName() + (inPlugin ? " is in the plugin module" : " is not in the plugin module")));
+                        }
+                    })
+                    .because("@Entity classes are persistence mapping, which only the plugin module owns");
 
     private static final String JAVA_SQL_DRIVER_MANAGER = "java.sql.DriverManager";
 
@@ -195,10 +108,19 @@ class ArchitectureTest {
                     .because("the persistence adapters use JPQL named queries only; no native SQL string is built at runtime");
 
     @ArchTest
-    static final ArchRule coreReadsNoSystemClock =
-            noClasses().that().resideInAPackage(CORE)
-                    .should().callMethod(Clock.class, "systemUTC")
-                    .orShould().callMethod(Instant.class, "now")
-                    .orShould().callMethod(System.class, "currentTimeMillis")
-                    .because("time comes only through an injected java.time.Clock, so every scheduling decision is testable");
+    static final ArchRule featureSlicesAreFreeOfCycles =
+            slices().matching(ROOT + ".(*)..").should().beFreeOfCycles()
+                    .because("feature packages depend on each other in one direction only; a cycle means two "
+                            + "features cannot be understood, changed or tested apart");
+
+    /**
+     * Each module is consumed as its jar on the verification classpath, so the jar name identifies the
+     * module. ArchUnit reports jar sources as opaque {@code jar:} URIs, hence the string match.
+     */
+    private static boolean isFromModule(JavaClass javaClass, String module) {
+        return javaClass.getSource()
+                .map(source -> source.getUri().toString())
+                .map(uri -> uri.contains("/" + module + "/build/libs/") || uri.contains("/" + module + "/build/classes/"))
+                .orElse(false);
+    }
 }
