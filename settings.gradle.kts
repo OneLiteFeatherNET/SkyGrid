@@ -41,7 +41,7 @@ dependencyResolutionManagement {
             // integration modules of the same release line are still beta (see cloudPaper above),
             // hence the separate version key.
             version("cloud", "2.1.0")
-            version("postgresql", "42.7.13")     // PostgreSQL JDBC driver, challenge progress adapter
+            version("postgresql", "42.7.14")     // PostgreSQL JDBC driver, challenge progress adapter
             version("hikaricp", "6.3.1")         // connection pooling, owned directly by Hibernate now
             version("flyway", "11.9.2")          // versioned migrations; postgres support is a split module since Flyway 10
             version("jakartaPersistence", "3.1.0") // JSR 338 API; the version Hibernate ORM 6.6.x targets
