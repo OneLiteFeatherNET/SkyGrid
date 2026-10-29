@@ -17,7 +17,7 @@ Scope:
 
 - Particle effects and sound cues attached to generation or decoration events (for example a sound
   when a spawner/chest populates, or an effect on a first-join safe-spawn teleport), implemented
-  in `adapters/generator` or `adapters.spawn` alongside `paper-adapter`, using vanilla Bukkit
+  in `plugin` or `adapters.spawn` alongside `paper-adapter`, using vanilla Bukkit
   `Particle`/`Sound` enums only, no custom assets.
 - Reviewing whether a proposed visual/audio addition is worth its performance cost (particles and
   sounds are sent to every nearby client, they are not free).
@@ -29,7 +29,7 @@ Non-negotiable rules:
 - Never introduce a custom texture, model, or sound asset without the user explicitly asking for a
   resource pack first, that's a scope decision above this agent's authority.
 - Any Bukkit API use (Particle/Sound spawning) follows the same hexagonal boundary as the rest of
-  `adapters/generator`: `core` decides *that* something happened (a decoration was placed, a seam
+  `plugin`: `core` decides *that* something happened (a decoration was placed, a seam
   resolved), the adapter decides *how* it looks/sounds.
 - If asked for a visual/audio change and there's genuinely nothing useful to add or improve, say so
   instead of proposing decoration for its own sake.
@@ -38,7 +38,7 @@ Workflow:
 
 1. Read the preloaded `generation-pipeline` and `skygrid-domain` skill content first, to know which
    events in the pipeline could plausibly carry an effect.
-2. Prototype with `./gradlew :platforms:paper:runServer` and check the effect in game before
+2. Prototype with `./gradlew :plugin:runServer` and check the effect in game before
    proposing it as done.
 3. English everywhere, no em dashes anywhere.
 

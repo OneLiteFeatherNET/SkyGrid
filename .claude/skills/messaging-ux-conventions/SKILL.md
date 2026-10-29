@@ -55,9 +55,9 @@ Chat messages are the one real, shipping surface:
   `skygridng.command.weight.set`, `skygridng.command.algorithm.unknown`) and one exception,
   `skygridng.api.summary`, used by `SkyGridApi.describe()`.
 - Bundles: flat `key=value` `.properties` files,
-  `platforms/common/src/main/resources/messages/Bundle_en.properties` (source of truth) and
+  `plugin/src/main/resources/messages/Bundle_en.properties` (source of truth) and
   `Bundle_de.properties` (translated, flows through Crowdin, never hand-edited directly).
-- Registration: `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
+- Registration: `plugin/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
   registers both locales with Adventure's `GlobalTranslator` via
   `MiniMessageTranslationStore` (`net.kyori.adventure.text.minimessage.translation`), so a
   `Component.translatable(key, args...)` renders in each viewer's own client locale server side.
@@ -67,9 +67,9 @@ Chat messages are the one real, shipping surface:
   MiniMessage's default instance is lenient, an unrecognized tag (for example a literal `<name>`
   placeholder in a usage string like `/skygrid preset <name>`) renders as plain text instead of
   throwing, so existing `<placeholder>`/`[optional]` usage syntax stays safe without escaping.
-- Construction: `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java`
+- Construction: `plugin/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java`
   builds every `Component.translatable(...)` call; the callers today are the five
-  `@Command`-annotated handler classes in `adapters/command/src/main/java/.../adapters/command/handler/`
+  `@Command`-annotated handler classes in `plugin/src/main/java/.../adapters/command/handler/`
   (`PresetCommands`, `AlgorithmCommands`, `MaintenanceCommands`, `ChallengeCommands`, `HelpCommands`),
   run through Incendo Cloud rather than a hand-rolled `CommandExecutor`.
 
@@ -97,7 +97,7 @@ string. Sending discrete messages:
 - keeps each MiniMessage pattern simple, which matters once a line has its own `<arg:0>`/`<arg:1>` args.
 
 Concrete precedent: `Messages.help()` in
-`adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java` returns
+`plugin/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java` returns
 a `List<Component>` (`skygridng.command.help.header`, `.subcommands`, `.algorithm_skyweight`,
 `.reload_save_undo_challenge`, `.footer`), and `HelpCommands` (in `adapters/command/handler`) sends
 each with its own `source.sendMessage(...)` call. Use this shape, not a single newline-joined
@@ -106,7 +106,7 @@ each with its own `source.sendMessage(...)` call. Use this shape, not a single n
 ## Current log message reality
 
 `SkyGridNgPlugin.java` and `WorldGenerators.java` (both in
-`platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/`) call
+`plugin/src/main/java/net/onelitefeather/skygridng/platforms/common/`) call
 `getLogger().info(...)` and `getLogger().warning(...)` with plain, hand-concatenated strings, for
 example `"Unknown algorithm '" + algorithm + "', falling back to WFC."`. These are not localized and
 follow no shared template today. State this as the current state, not a defect this skill mandates
@@ -133,10 +133,10 @@ to change opportunistically inside an unrelated task.
 
 Code to read for real examples:
 
-- `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
-- `platforms/common/src/main/resources/messages/Bundle_en.properties`, `Bundle_de.properties`
-- `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java`
-- `adapters/command/src/main/java/net/onelitefeather/skygridng/adapters/command/handler/` (the
+- `plugin/src/main/java/net/onelitefeather/skygridng/platforms/common/I18n.java`
+- `plugin/src/main/resources/messages/Bundle_en.properties`, `Bundle_de.properties`
+- `plugin/src/main/java/net/onelitefeather/skygridng/adapters/command/Messages.java`
+- `plugin/src/main/java/net/onelitefeather/skygridng/adapters/command/handler/` (the
   `@Command`-annotated handler classes that call `Messages`)
-- `platforms/common/src/main/java/net/onelitefeather/skygridng/platforms/common/SkyGridNgPlugin.java`,
+- `plugin/src/main/java/net/onelitefeather/skygridng/platforms/common/SkyGridNgPlugin.java`,
   `WorldGenerators.java`

@@ -37,7 +37,7 @@ route anything else in that layer to them too. See `CLAUDE.md` for the module la
 | Agent | Owns |
 |---|---|
 | `core-architect` | General purpose developer for `api/`, `ports/`, `core/`: algorithms, solver, use case services, `RuleState` |
-| `paper-adapter` | General purpose developer for `adapters/*`, `platforms/common`: Bukkit/Guice wiring, the `/skygrid` command, plugin lifecycle |
+| `paper-adapter` | General purpose developer for `adapters/*`, `plugin`: Bukkit/Guice wiring, the `/skygrid` command, plugin lifecycle |
 | `test-engineer` | JUnit 5 + AssertJ + Mockito + MockBukkit tests across every module |
 | `release-engineer` | Gradle build, version catalog, CI workflows, CycloneDX publishing |
 | `architecture-reviewer` | Read only. Hexagonal dependency rule, ArchUnit, CONTRIBUTING conventions |
@@ -80,7 +80,7 @@ the exception, it has real work today against the existing CycloneDX pipeline.
 |---|---|
 | `devops-specialist` | Operating infrastructure beyond build/publish (test-environment automation, observability). No deployed service exists yet |
 | `devsecops-specialist` | Automates security into CI (SBOM gates, dependency-review bots, secret scanning). Real work today via CycloneDX/Dependency-Track |
-| `cloudnet-specialist` | Future CloudNet integration for the OLF-only mechanics in `platforms/common`'s `platforms.olf` package. No CloudNet code exists in this repo yet |
+| `cloudnet-specialist` | Future CloudNet integration for the OLF-only mechanics in `plugin`'s `platforms.olf` package. No CloudNet code exists in this repo yet |
 | `kubernetes-specialist` | Future container/Kubernetes deployment artifacts (Agones/Shulker style). No Docker/Kubernetes surface exists in this repo yet |
 
 ### Community

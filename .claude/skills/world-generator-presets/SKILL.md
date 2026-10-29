@@ -104,11 +104,11 @@ active: classic
 
 - Fast type check of api/ports/core: run
   `.claude/skills/hexagonal-architecture/scripts/compile-core.sh`.
-- Resolution logic: `./gradlew :core:test --tests "*PresetResolverTest"`.
-- Config parsing (YAML + HOCON parity): `./gradlew :adapters:config:test`.
+- Resolution logic: `./gradlew :domain:test --tests "*PresetResolverTest"`.
+- Config parsing (YAML + HOCON parity): `./gradlew :plugin:test`.
 - A per-world generator assignment cannot be proven by MockBukkit (it does not
   drive `getDefaultWorldGenerator` with an id); smoke-test on real Paper with
-  `./gradlew :platforms:paper:runServer` and a world configured as
+  `./gradlew :plugin:runServer` and a world configured as
   `SkyGrid-ng:<preset>`, then confirm that world generates that preset.
 
 ## Hard rules (do not break)

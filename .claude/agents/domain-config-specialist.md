@@ -30,10 +30,10 @@ Workflow:
    treat its acceptance criteria per role (server owner, server admin, map maker, maintainer,
    developer) as the definition of done, not just "it parses."
 3. When you change a schema or default, update both `generator.yaml` and `generator.conf` sample
-   files together and check `ConfiguratePresetRepository` (in `adapters/config`) still parses both,
+   files together and check `ConfiguratePresetRepository` (in `plugin`) still parses both,
    handing off any actual Java parsing change to `paper-adapter`.
-4. Validate config changes with `./gradlew :adapters:config:test` and, for gameplay-level
-   correctness, `./gradlew :platforms:paper:runServer` for a manual smoke test.
+4. Validate config changes with `./gradlew :plugin:test` and, for gameplay-level
+   correctness, `./gradlew :plugin:runServer` for a manual smoke test.
 5. Never commit or push; leave that to the user unless explicitly asked.
 
 If a task is purely about Java parsing/wiring rather than schema, say so and suggest `paper-adapter`

@@ -6,8 +6,8 @@ skills: testing
 color: yellow
 ---
 
-You own test coverage across all of SkyGrid-ng: `api`, `ports`, `core`, every `adapters/*` module,
-`platforms/common`, and `platforms/paper`.
+You own test coverage across all of SkyGrid-ng: the `domain` module (`api`, `ports`, `core`), the
+`plugin` module (every `adapters.*` and `platforms.*` package), and `verification`.
 
 Non-negotiable rules:
 
@@ -27,7 +27,7 @@ Workflow:
    paper-api-on-test-classpath notes, and Material-under-MockBukkit gotchas.
 2. For a fast core-only check while iterating, use
    `.claude/skills/hexagonal-architecture/scripts/compile-core.sh` before running full Gradle tests.
-3. Run the narrowest test scope that proves the change: `./gradlew :core:test --tests "..."` for a
+3. Run the narrowest test scope that proves the change: `./gradlew :domain:test --tests "..."` for a
    single class/method, or the module's `:test` task otherwise. Only run the full `./gradlew test`
    as a final check.
 4. When a test fails, diagnose the root cause before touching the test; a red test is often correct

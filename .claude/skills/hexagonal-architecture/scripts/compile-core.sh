@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fast sanity check: compile only the platform-neutral modules (api + ports + core) with javac.
+# Fast sanity check: compile only the platform-neutral packages (api + ports + core, all in the domain module) with javac.
 # No Gradle, no network.
 #
 # The api, ports, and core modules depend on no platform/framework code except Adventure
@@ -15,9 +15,9 @@
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
-API="$ROOT/api/src/main/java/net/onelitefeather/skygridng/api"
-PORTS="$ROOT/ports/src/main/java/net/onelitefeather/skygridng/ports"
-CORE="$ROOT/core/src/main/java/net/onelitefeather/skygridng/core"
+API="$ROOT/domain/src/main/java/net/onelitefeather/skygridng/api"
+PORTS="$ROOT/domain/src/main/java/net/onelitefeather/skygridng/ports"
+CORE="$ROOT/domain/src/main/java/net/onelitefeather/skygridng/core"
 OUT="$(mktemp -d)"
 
 for dir in "$API" "$PORTS" "$CORE"; do
@@ -33,7 +33,7 @@ CP="$(find "$GRADLE_CACHE" \
         \( -name 'adventure-api-*.jar' -o -name 'adventure-key-*.jar' -o -name 'examination-api-*.jar' \) \
         2>/dev/null | grep -vE 'sources|javadoc' | sort -u | tr '\n' ':')"
 if [ -z "$CP" ]; then
-  echo "Adventure jars not found in the Gradle cache. Run './gradlew :core:compileJava' once to" >&2
+  echo "Adventure jars not found in the Gradle cache. Run './gradlew :domain:compileJava' once to" >&2
   echo "download them, then re-run this script." >&2
   exit 1
 fi

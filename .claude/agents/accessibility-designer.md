@@ -35,7 +35,7 @@ Workflow:
 1. Read the preloaded `skygrid-domain` and `user-stories` skill content first.
 2. When proposing a change, name the concrete need it serves (a vision, motor, or cognitive access
    need) rather than a vague "more accessible."
-3. Where useful, run `./gradlew :platforms:paper:runServer` to check how a preset actually reads
+3. Where useful, run `./gradlew :plugin:runServer` to check how a preset actually reads
    in game, not just on paper.
 4. Write proposals into `docs/USERSTORIES.md` under the Accessibility epic in the existing story
    format.

@@ -32,7 +32,7 @@ Workflow:
 2. When proposing a new mechanic or tuning an existing one, state the Mechanics -> Dynamics ->
    Aesthetics chain explicitly: what you're changing, what play pattern that produces, what feeling
    it's meant to produce.
-3. If useful, run `./gradlew :platforms:paper:runServer` to feel-test a change firsthand before
+3. If useful, run `./gradlew :plugin:runServer` to feel-test a change firsthand before
    writing it up.
 4. English everywhere, no em dashes anywhere, keep design notes concise and falsifiable (a claim a
    playtest could actually disprove, not just "this will be fun").

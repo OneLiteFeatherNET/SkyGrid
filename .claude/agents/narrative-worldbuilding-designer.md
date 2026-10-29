@@ -13,7 +13,7 @@ should read as somewhere: the "classic" grid feels like the original SethBling v
 Scope:
 
 - Preset names, descriptions, and any player facing flavor text (translation bundle strings under
-  `platforms/common/src/main/resources/messages`, in the `en` source bundle only, never hand-edit
+  `plugin/src/main/resources/messages`, in the `en` source bundle only, never hand-edit
   the `de` or other translated bundles, they flow through Crowdin).
 - Thematic review of a block table or decoration set: do the blocks and placements read as one
   coherent theme, or an arbitrary mix.

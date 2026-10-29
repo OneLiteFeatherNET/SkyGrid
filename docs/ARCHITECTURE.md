@@ -20,27 +20,28 @@ depends on the core, or if the layered direction is broken.
 
 ## Module structure
 
-The build is grouped under category folders; the module graph enforces the rule mechanically (an
-adapter module has no `core` on its classpath):
+The build has three Gradle modules. The `domain` module holds the framework-free packages; the
+`plugin` module holds everything that talks to Paper and is the single distribution; `verification`
+holds the ArchUnit rules. Packages keep their names, so the hexagonal boundaries are still enforced
+package by package (ArchUnit), and the module split only decides what may use which framework.
 
 | Module | Packages | May use frameworks | Artifact |
 |--------|----------|--------------------|----------|
-| `api` | `api.model`, `api.SkyGridApi`, `api.util` | no | published library |
-| `ports` | `ports.in`, `ports.out`, `ports.algorithm` | no | library (depends on api) |
-| `core` | `core.*` | no | library (depends on ports, api) |
-| `adapters/generator` | `adapters.generator`, `adapters.spawn` | yes (Bukkit) | library (depends on ports, api) |
-| `adapters/command` | `adapters.command`, `adapters.command.handler` | yes (Bukkit, Adventure, Incendo Cloud) | library (depends on ports, api) |
-| `adapters/config` | `adapters.config` | yes (Jackson) | library (depends on ports, api) |
-| `platforms/common` | `platforms.common`, `platforms.olf` | yes (Bukkit, Guice) | library (composition root) |
-| `platforms/paper` | (none) | yes | `skygrid-ng-<version>.jar` |
+| `domain` | `api.model`, `api.SkyGridApi`, `api.util` | no | published library |
+| `domain` | `ports.in`, `ports.out`, `ports.algorithm` | no | part of the domain module |
+| `domain` | `core.*` | no | part of the domain module |
+| `plugin` | `adapters.generator`, `adapters.spawn` | no (Adventure only) | part of the plugin module |
+| `plugin` | `adapters.command`, `adapters.command.handler` | yes (Bukkit, Adventure, Incendo Cloud) | part of the plugin module |
+| `plugin` | `adapters.config` | yes (Jackson) | part of the plugin module |
+| `plugin` | `platforms.common`, `platforms.olf` | yes (Bukkit, Guice) | composition root |
+| `plugin` | (none) | yes | `skygrid-ng-<version>.jar` |
+| `verification` | ArchUnit tests | n/a | none |
 
-`platforms/common` is the shared Bukkit composition root and the single distribution's home;
-`platforms/paper` is the thin plugin.yml/shadow/publishing wrapper around it. `platforms.olf` inside
-`platforms/common` is a naming convention, not a separate module: it groups mechanics specific to
+`platforms.common` is the shared Bukkit composition root; the plugin module's build file adds the
+plugin.yml, shadow, publishing and run-paper wiring around it. `platforms.olf` inside
+`plugin` is a naming convention, not a separate module: it groups mechanics specific to
 this OneLiteFeather (OLF) server (challenges) through the `OlfFeature` seam (see below), always
-wired and enabled, since there is only one distribution. Adding another platform (Fabric, Sponge) is
-a new sibling under `platforms/` that depends on the adapters and the core; api, ports, core, and the
-existing adapters never change. The rings below describe the packages.
+wired and enabled, since there is only one distribution. The rings below describe the packages.
 
 ### Extensible composition root and OLF-only mechanics
 
@@ -128,7 +129,7 @@ the wiring is Guice managed. Adapters (`HexagonalChunkGenerator`, the `adapters.
 classes) use constructor `@Inject`; the Cloud handler set is a Guice `Multibinder` (`CommandModule`),
 parsed as a whole by `CloudCommandRegistrar` (see `hexagonal-architecture`'s "Add a command
 subcommand" recipe). `platforms.common` `I18n` registers the MiniMessage translation store.
-`platforms/paper` builds on this shared root. Swapping an adapter changes a module binding, not the
+`plugin` builds on this shared root. Swapping an adapter changes a module binding, not the
 core.
 
 ## Switchable algorithms

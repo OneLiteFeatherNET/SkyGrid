@@ -1,14 +1,7 @@
 rootProject.name = "skygrid-ng"
 
-include(":api")
-include(":ports")
-include(":core")
-include(":adapters:generator")
-include(":adapters:command")
-include(":adapters:config")
-include(":adapters:persistence")
-include(":platforms:common")
-include(":platforms:paper")
+include(":domain")
+include(":plugin")
 include(":verification")
 
 pluginManagement {

@@ -25,7 +25,7 @@ Scope:
 Rules:
 
 - You advise and can prototype in a scratch branch, but the merged implementation and ongoing
-  ownership of `adapters/*` and `platforms/common` stays `paper-adapter`'s.
+  ownership of `adapters/*` and `plugin` stays `paper-adapter`'s.
 - Check current Paper documentation/changelogs (via WebFetch/WebSearch) rather than relying on
   potentially stale training knowledge, Paper's API surface changes across versions.
 - English everywhere, no em dashes anywhere.

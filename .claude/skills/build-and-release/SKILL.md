@@ -22,17 +22,17 @@ The build is grouped under category folders (see the `hexagonal-architecture` sk
 responsibilities and the dependency arrows):
 
 - `api`, `ports`, `core`: framework-free `java-library` modules, no platform plugins.
-- `adapters/generator` (including `adapters.spawn`), `adapters/command`, `adapters/config`: the
+- `plugin` (including `adapters.spawn`), `plugin`, `plugin`: the
   Bukkit/Jackson adapter libraries.
-- `adapters/persistence`: shared Jakarta Persistence (Hibernate ORM) infrastructure, no Bukkit, and
+- `plugin`: shared Jakarta Persistence (Hibernate ORM) infrastructure, no Bukkit, and
   the challenge and task progress repositories.
-- `platforms/common`: the shared Bukkit composition root, a library (no platform plugins).
-- `platforms/paper`: the single Paper distribution. Applies shadow, plugin-yml, run-paper, and
+- `plugin`: the shared Bukkit composition root, a library (no platform plugins).
+- `plugin`: the single Paper distribution. Applies shadow, plugin-yml, run-paper, and
   CycloneDX SBOM generation. Produces `skygrid-ng-<version>.jar`.
 - `verification`: ArchUnit architecture tests only (no production code). Depends on every production
   module and enforces the hexagonal rules at build time. See the `hexagonal-architecture` skill.
 
-`platforms/paper` depends on `platforms/common`, which also holds the `platforms.olf` package
+`plugin` depends on `plugin`, which also holds the `platforms.olf` package
 (OneLiteFeather-specific mechanics like challenges, a naming convention now rather than a separate
 distribution; see the `hexagonal-architecture` skill).
 
@@ -55,15 +55,15 @@ versions current using the OLF presets in `renovate.json`.
 
 ## Shadow and relocation
 
-Shadow is applied in the distribution module only (`platforms/paper`). The shaded jar relocates
+Shadow is applied in the distribution module only (`plugin`). The shaded jar relocates
 every bundled library that could clash with the server or another plugin, under
 `net.onelitefeather.skygridng.libs.*`: Jackson (databind, plus the SnakeYAML its YAML backend pulls
 in), victools (JSON Schema generation) and its classmate dependency, and `org.incendo.cloud` (the
 Cloud command framework, a popular library other plugins may also shade). Keep any newly bundled
-library relocated the same way. `platforms/paper` depends on `platforms/common`, which exposes the
+library relocated the same way. `plugin` depends on `plugin`, which exposes the
 whole object graph (adapters, core, ports, api, Guice, Jackson, Cloud) with the `api` configuration,
 so shadow bundles everything transitively into a self-contained jar. The GitHub release attachment
-step uses `platforms/paper`'s `tasks.shadowJar`.
+step uses `plugin`'s `tasks.shadowJar`.
 
 ## plugin-yml
 
@@ -86,7 +86,7 @@ public plugin registry; the project is OneLiteFeather-internal.
 
 ## Publishing
 
-Configured in `platforms/paper/build.gradle.kts`, run by the reusable org workflow in CI:
+Configured in `plugin/build.gradle.kts`, run by the reusable org workflow in CI:
 
 - CycloneDX SBOM via `org.cyclonedx.bom` 3.x: the SBOM is uploaded to Dependency-Track. The 3.x API
   differs from older versions, see the warning below.
@@ -129,17 +129,17 @@ before the first publish, and the Dependency-Track path.
 
 The reusable org workflows (`gradle-build-pr.yml`, `gradle-plugin-publish.yml`) were written for a
 single-module build and the reference copy attaches `build/libs/*.jar` from the repository root. The
-shaded jar now lives in `platforms/paper/build/libs/`, so the root `build/libs/` is empty. Before
+shaded jar now lives in `plugin/build/libs/`, so the root `build/libs/` is empty. Before
 the first real release, confirm the reusable workflow globs `**/build/libs/*.jar` (or pin a workflow
 version that does), or adjust the release artifact path, otherwise the GitHub release attachment
 step finds no jar.
 
 ## Local testing
 
-Run a test server with `./gradlew :platforms:paper:runServer` (runPaper). run-paper is applied only in
-`platforms/paper`, because the run-task build service cannot be registered by two modules at once. It
+Run a test server with `./gradlew :plugin:runServer` (runPaper). run-paper is applied only in
+`plugin`, because the run-task build service cannot be registered by two modules at once. It
 creates a `run/` directory which is gitignored, so never commit it. A full build across all modules is
-`./gradlew build`; tests are `./gradlew test`. Run one module's tests with `./gradlew :core:test`
-and a single test with `./gradlew :core:test --tests "...ClassName"`. The framework-free
+`./gradlew build`; tests are `./gradlew test`. Run one module's tests with `./gradlew :domain:test`
+and a single test with `./gradlew :domain:test --tests "...ClassName"`. The framework-free
 modules (api + core) also compile standalone, see the `hexagonal-architecture` skill `compile-core.sh`
 for a fast check without resolving plugins.

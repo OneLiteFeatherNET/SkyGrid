@@ -27,9 +27,9 @@ agent first; it is the standard entry point for the specialist team, not a fallb
 - English everywhere in the repository: code, identifiers, comments, docs, and commit messages.
 - Never use em dashes anywhere (not in code, docs, or commits). Use a comma, colon, parentheses,
   or a period instead.
-- The dependency direction is one way: `platforms -> adapters -> ports -> api`, and `core -> ports
-  -> api`. The `api`, `ports`, and `core` modules must never import Bukkit, Jackson, Guice, or
-  jakarta.inject; the adapters must never import `core`. Adventure (`net.kyori.adventure`) is allowed
+- The dependency direction is one way: `plugin` (adapters and platforms) -> `ports` -> `api`, and
+  `core` -> `ports` -> `api`. The `api`, `ports`, and `core` packages (module `domain`) must never
+  import Bukkit, Jackson, Guice, or jakarta.inject; the adapters must never import `core`. Adventure (`net.kyori.adventure`) is allowed
   in `api`/`ports`/`core` as a platform-neutral text API (it is `compileOnly`; the platform provides
   it at runtime), but its platform-specific bindings (`net.kyori.adventure.platform`) are not. If an
   edit would break either, the design is wrong. See the `hexagonal-architecture` skill.
@@ -41,28 +41,31 @@ agent first; it is the standard entry point for the specialist team, not a fallb
 
 ## Architecture map
 
-Multi-module Gradle build grouped under category folders (CloudNet-style). Packages all share the
-root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
+Three Gradle modules: `domain/` (framework free: packages `api.*`, `ports.*`, `core.*`), `plugin/`
+(everything that talks to Paper: packages `adapters.*` and `platforms.*`), and `verification/`
+(ArchUnit). The module split is coarse on purpose; the packages under the root
+`net.onelitefeather.skygridng` keep the hexagonal boundaries, and ArchUnit enforces them. Packages
+and the one-way dependency arrows:
 
-- `api/` (`api.*`, framework free): the public contract. `api.model` (immutable records),
+- `domain/` `api.*` (framework free): the public contract. `api.model` (immutable records),
   `api.SkyGridApi` (read-only facade), `api.util.Seeds` (deterministic seed derivation). No deps.
-- `ports/` (`ports.*`, framework free): the interfaces adapters compile against. `ports.in`
+- `domain/` `ports.*` (framework free): the interfaces adapters compile against. `ports.in`
   (`RuleAdminUseCase`, `TerrainAlgorithms`, `Presets`, `Biomes`, `SkyGridDecorations`, `SpawnPoints`,
   `ChallengeAdminUseCase`), `ports.out` (`PresetRepository`, `RuleRepository`,
   `ChallengeRepository`), `ports.algorithm` (`TerrainAlgorithm`, `ColumnSink`). Depends on `api`.
-- `core/` (`core.*`, framework free): the domain. `algorithm` (the two terrain algorithm impls),
+- `domain/` `core.*` (framework free): the domain logic. `algorithm` (the two terrain algorithm impls),
   `service` (use case impls, incl. `SkyGridApiService`, `PresetService`, `ChallengeAdminService`),
   `state` (`RuleState`), `util` (`ValueNoise`, `WeightedTable`). Implements the ports; depends on
   `ports` + `api`.
-- `adapters/generator` (`adapters.generator`): framework-free, like `core`, depending on `ports` +
+- `plugin` (`adapters.generator`): framework-free, like `core`, depending on `ports` +
   `api` only. Holds `DecorationEngine` (the per-block decoration/chest/spawner pass), `StructurePlacer`,
   and `StillWater`, all driven through the new `ports.algorithm.RegionWriter` port instead of a native
   Bukkit type, so this module never imports Bukkit, Guice, or jakarta.inject.
-- `adapters.spawn` (in `adapters/generator`): framework-free, like `core`, depending on `ports` + `api`
+- `adapters.spawn` (in `plugin`): framework-free, like `core`, depending on `ports` + `api`
   only. Holds `SafeLocationFinder` (the first-join safe-spawn search), driven through the new
   `ports.algorithm.GroundReader` port instead of a native Bukkit type, so this module never imports
   Bukkit, Guice, or jakarta.inject.
-- `adapters/command` (`adapters.command`): framework-free, like `core`/`adapters/generator`/
+- `plugin` (`adapters.command`): framework-free, like `core`/`plugin`/
   `adapters.spawn`, depending on `ports` + `api` only. Holds `Messages` (Adventure) and
   `adapters.command.handler`'s `@Command`-annotated, Bukkit-free subcommand handlers (`PresetCommands`,
   `AlgorithmCommands`, `MaintenanceCommands`, `ChallengeCommands`, `HelpCommands`, each a
@@ -70,17 +73,17 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
   Cloud's core/annotations API and the neutral `CommandSource` instead of a native Bukkit sender, so
   this module never imports Bukkit, Cloud's Paper/Brigadier bindings, Guice, or jakarta.inject; the
   Paper/Cloud-paper binding of the command manager (`PaperCommandSource`, `CloudCommandManagerFactory`,
-  `CloudCommandRegistrar`) lives in `platforms/common` instead.
-- `adapters/config` (`adapters.config`): now the one remaining adapter with a framework dependency,
+  `CloudCommandRegistrar`) lives in `plugin` instead.
+- `plugin` (`adapters.config`): now the one remaining adapter with a framework dependency,
   and it is Jackson (a cross-platform serialization library), never Bukkit, so it resolves to
   nothing Paper-specific, unlike the Bukkit-facing code the sibling adapters above held before
   framework-free cleanup. Depends on `ports` + `api` only, never on `core`. Holds
   `PresetRepository` + `RuleRepository` + `ChallengeRepository`: the split `config` selector, one
   file per preset under `presets/`, one per block under `rules/`, one per challenge under
   `challenges/`, in JSON/YAML/TOML, plus the victools-generated editor `schema/`.
-- `ChallengeBehavior` (`platforms.olf.challenge`, in `platforms/common`): a plain marker interface;
+- `ChallengeBehavior` (`platforms.olf.challenge`, in `plugin`): a plain marker interface;
   its four concrete implementations live in the same package.
-- `platforms/common` (`platforms.common.*`): the shared Bukkit composition root. `SkyGridNgPlugin`,
+- `plugin` (`platforms.common.*`): the shared Bukkit composition root. `SkyGridNgPlugin`,
   `I18n`, the Guice modules (`PlatformModule`, `RepositoryModule`, `GeneratorModule`, `CommandModule`),
   the message bundles, `platforms.common.generator` (the Bukkit implementation of the generator:
   `HexagonalChunkGenerator`, `RuleResolver`, `MaterialResolver`, `BukkitIds`, `BiomeResolver`,
@@ -101,7 +104,7 @@ root `net.onelitefeather.skygridng`. Modules and the one-way dependency arrows:
   is no distribution without them. Exposes the whole graph; the only place that may use Bukkit,
   Guice, and jakarta.inject (Adventure text is allowed in every layer). A library (no
   shadow/plugin-yml).
-- `platforms/paper` (no package, thin): the single Paper distribution. plugin.yml + shadow +
+- `plugin` (no package, thin): the single Paper distribution. plugin.yml + shadow +
   run-paper + publishing. Produces `skygrid-ng-<version>.jar`. Holds the bootstrap integration tests.
 
 - `verification/`: ArchUnit tests (no production code) that enforce the dependency rule and the
@@ -139,12 +142,12 @@ and is switchable at runtime via `/skygrid algorithm <id>`.
 ## Common commands
 
 - Build (all modules): `./gradlew build`
-- Test: `./gradlew test` (JUnit 5 + AssertJ + Mockito + MockBukkit v4); one module: `./gradlew :core:test`
-- Single test: `./gradlew :core:test --tests "net.onelitefeather.skygridng.core.algorithm.SkyGridAlgorithmsTest"`
+- Test: `./gradlew test` (JUnit 5 + AssertJ + Mockito + MockBukkit v4); one module: `./gradlew :domain:test`
+- Single test: `./gradlew :domain:test --tests "net.onelitefeather.skygridng.core.algorithm.SkyGridAlgorithmsTest"`
   (append `.methodName` to run one method)
-- Run a test server: `./gradlew :platforms:paper:runServer` (creates `run/`, which is gitignored)
-- Build the shaded jar: `./gradlew :platforms:paper:shadowJar` (output
-  `platforms/paper/build/libs/skygrid-ng-<version>.jar`)
+- Run a test server: `./gradlew :plugin:runServer` (creates `run/`, which is gitignored)
+- Build the shaded jar: `./gradlew :plugin:shadowJar` (output
+  `plugin/build/libs/skygrid-ng-<version>.jar`)
 - Fast core check: `.claude/skills/hexagonal-architecture/scripts/compile-core.sh` (javac on api + ports + core)
 
 ## Commits and versioning

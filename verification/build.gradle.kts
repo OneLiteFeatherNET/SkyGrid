@@ -19,14 +19,8 @@ dependencies {
     testImplementation(libs.flyway.core)
     testImplementation(libs.flyway.postgresql)
 
-    testImplementation(project(":api"))
-    testImplementation(project(":ports"))
-    testImplementation(project(":core"))
-    testImplementation(project(":adapters:generator"))
-    testImplementation(project(":adapters:command"))
-    testImplementation(project(":adapters:config"))
-    testImplementation(project(":adapters:persistence"))
-    testImplementation(project(":platforms:common"))
+    testImplementation(project(":domain"))
+    testImplementation(project(":plugin"))
 
     testImplementation(libs.paper.api)
 }

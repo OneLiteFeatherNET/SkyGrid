@@ -50,13 +50,13 @@ Commands run on Incendo Cloud (`adapters.command`), annotation driven
    add `@Argument(value = "...", suggestions = "some-name")` and register
    `"some-name"` on `manager.parserRegistry()` in `CloudCommandRegistrar`.
 6. Tests: a unit test against the new/changed handler class using a fake `CommandSource` (see
-   `RecordingCommandSource` in `adapters/command/src/test`), no MockBukkit needed since handler
+   `RecordingCommandSource` in `plugin/src/test`), no MockBukkit needed since handler
    classes never import Bukkit. If the port grew, also extend the matching `core.service` test.
 
 ## Add an out adapter (for example a database repository)
 
 1. Implement one of the existing `ports.out` interfaces (`PresetRepository`, `RuleRepository`,
-   `ChallengeRepository`) in a new package under `adapters/config` (or a new adapter module). The
+   `ChallengeRepository`) in a new package under `plugin` (or a new adapter module). The
    core does not change.
 2. Bind it in `RepositoryModule` instead of the matching `Jackson*Repository`. Nothing else moves.
 3. Tests: a black-box round-trip test against the port's contract, like
@@ -67,8 +67,8 @@ Commands run on Incendo Cloud (`adapters.command`), annotation driven
 1. Add the component to the relevant record (`SkyGridConfig`, `Preset`, `Rule`, `PlacementRule`, ...,
    see `config-schema-and-rules` for the full model) and validate it in the compact constructor.
 2. Mirror it in the matching Jackson DTO (`ConfigDtos`, `RuleDtos`, or `ChallengeDtos` in
-   `adapters/config`) and update the bundled defaults under
-   `adapters/config/src/main/resources/` (`presets/`, `rules/`, or `challenges/`).
+   `plugin`) and update the bundled defaults under
+   `plugin/src/main/resources/` (`presets/`, `rules/`, or `challenges/`).
 3. Update the relevant operator doc (`docs/configuration.md`, `docs/presets.md`, or `docs/rules.md`)
    so server operators know about it.
 4. Tests: a guard test in `RecordValidationTest` and a round-trip assertion in the matching
