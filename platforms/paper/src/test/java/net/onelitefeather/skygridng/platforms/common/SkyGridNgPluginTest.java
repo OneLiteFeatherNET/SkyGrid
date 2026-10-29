@@ -8,7 +8,7 @@ import net.onelitefeather.skygridng.platforms.olf.challenge.OneLifeListener;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
-import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;
+import net.onelitefeather.skygridng.adapters.persistence.Database;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
@@ -164,13 +164,13 @@ class SkyGridNgPluginTest {
     }
 
     @Test
-    @DisplayName("disable closes the season run repository together with the other database repositories")
-    void disableClosesTheSeasonRunRepository() {
+    @DisplayName("the one database is a singleton, so disable closes the single pool every repository uses")
+    void theDatabaseIsOneSingletonSharedByEveryRepository() {
         SkyGridNgPlugin plugin = MockBukkit.load(SkyGridNgPlugin.class);
 
-        assertThat(plugin.databaseRepositories())
-                .as("the season run repository is one of the repositories closed on disable")
-                .contains(plugin.injector().getInstance(SeasonRunRepository.class));
+        assertThat(plugin.injector().getInstance(Database.class))
+                .as("every request for the database must yield the same instance, so disable closes that one pool")
+                .isSameAs(plugin.injector().getInstance(Database.class));
     }
 
     @Test

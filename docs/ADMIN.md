@@ -71,10 +71,18 @@ variables only, never from a config file:
 - `SKYGRID_DB_USER`: the database user. Required, no default.
 - `SKYGRID_DB_PASSWORD`: the database password. Required, no default.
 
-The connection is opened lazily, on the first use of a store, not when the server starts. On that
-first connection Flyway migrates the schema automatically, so the database user needs `CREATE`
-rights on the `public` schema of that database. Hibernate only validates the schema and never
-changes it.
+The plugin uses one connection pool of at most 6 connections, shared by challenge tiers, task
+progress and season runs. The pool is opened lazily, shortly after the server starts, and closed when
+the plugin disables. On the first connection Flyway migrates the schema automatically, so the database
+user needs `CREATE` rights on the `public` schema of that database. Hibernate only validates the schema
+and never changes it.
+
+All migrations live in one history table, `flyway_schema_history`. An existing database from an earlier
+release is handled once, on the first start with this release: the server checks that the old per-feature
+history tables are complete, records the old migrations as applied (baseline version 7), and drops the old
+history tables. If an old history table is incomplete, the server refuses to migrate and logs a warning
+naming the table. In that case, start the previous release until its migrations are complete, then start
+this one. Nothing else needs to be done by the operator.
 
 Season progress uses the same database. Before you enable seasons on an existing server, take a
 backup first; see [Before the cut-over](#before-the-cut-over).

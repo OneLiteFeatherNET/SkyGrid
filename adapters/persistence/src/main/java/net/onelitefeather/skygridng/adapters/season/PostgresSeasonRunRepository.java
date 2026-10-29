@@ -3,8 +3,7 @@ package net.onelitefeather.skygridng.adapters.season;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.OptimisticLockException;
-import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
-import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
+import net.onelitefeather.skygridng.adapters.persistence.Database;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.SeasonPhase;
 import net.onelitefeather.skygridng.api.model.SeasonRun;
@@ -17,12 +16,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * PostgreSQL-backed {@link SeasonRunRepository}, persisted through Jakarta Persistence (JSR 338) via Hibernate
- * ORM. Own persistence unit {@code season}, Flyway location {@code classpath:db/migration/season} and history
- * table {@code flyway_history_season}, so it never shares a migration history with the progress adapters.
+ * ORM on the shared {@link Database}. Schema ownership: the shared migrations in {@code classpath:db/migration}
+ * (V6 and V7 for this table).
  *
  * <p>{@code switchActive} is one unit of work: it locks both rows, flushes the outgoing run to {@code CLOSING}
  * before the incoming run becomes {@code ACTIVE}, and so the partial unique index (the database's single-active
@@ -31,29 +29,29 @@ import java.util.function.Supplier;
  *
  * <p>Time comes only from the injected {@link Clock} (for {@code updated_at} on a plain save).
  */
-public final class PostgresSeasonRunRepository extends AbstractJpaRepository implements SeasonRunRepository {
+public final class PostgresSeasonRunRepository implements SeasonRunRepository {
 
+    private final Database database;
     private final Clock clock;
 
     /**
-     * @param configSupplier supplies the connection settings on first use, normally
-     *                       {@code DatabaseConfig::fromEnvironment}.
-     * @param clock          the time source for {@code updated_at}; the platform binds the system UTC clock.
+     * @param database the shared database this repository queries.
+     * @param clock    the time source for {@code updated_at}; the platform binds the system UTC clock.
      */
-    public PostgresSeasonRunRepository(Supplier<DatabaseConfig> configSupplier, Clock clock) {
-        super("season", "classpath:db/migration/season", "flyway_history_season", configSupplier);
+    public PostgresSeasonRunRepository(Database database, Clock clock) {
+        this.database = database;
         this.clock = clock;
     }
 
     @Override
     public Optional<SeasonRun> find(SeasonId seasonId) {
-        return read(entityManager -> Optional.ofNullable(entityManager.find(SeasonRunEntity.class, seasonId.value()))
+        return database.read(entityManager -> Optional.ofNullable(entityManager.find(SeasonRunEntity.class, seasonId.value()))
                 .map(SeasonRunMapper::toRecord));
     }
 
     @Override
     public Optional<SeasonRun> active() {
-        return read(entityManager -> entityManager
+        return database.read(entityManager -> entityManager
                 .createNamedQuery("SeasonRunEntity.active", SeasonRunEntity.class)
                 .setParameter("phase", SeasonPhase.ACTIVE)
                 .getResultList()
@@ -64,7 +62,7 @@ public final class PostgresSeasonRunRepository extends AbstractJpaRepository imp
 
     @Override
     public List<SeasonRun> inFlight() {
-        return read(entityManager -> entityManager
+        return database.read(entityManager -> entityManager
                 .createNamedQuery("SeasonRunEntity.inFlight", SeasonRunEntity.class)
                 .setParameter("excluded", List.of(SeasonPhase.ACTIVE, SeasonPhase.ARCHIVED))
                 .getResultList()
@@ -113,7 +111,7 @@ public final class PostgresSeasonRunRepository extends AbstractJpaRepository imp
     /** Runs one write in its own transaction, reporting an optimistic lock or constraint conflict as a {@link SeasonRunConflictException}. */
     private void write(Consumer<EntityManager> work) {
         try {
-            inTransaction(entityManager -> {
+            database.inTransaction(entityManager -> {
                 work.accept(entityManager);
                 return null;
             });

@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import jakarta.inject.Singleton;
 import net.onelitefeather.skygridng.adapters.challengeprogress.PostgresChallengeProgressRepository;
+import net.onelitefeather.skygridng.adapters.persistence.Database;
 import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
 import net.onelitefeather.skygridng.adapters.config.BundledDefaults;
 import net.onelitefeather.skygridng.adapters.config.JacksonPresetRepository;
@@ -63,18 +64,22 @@ public final class RepositoryModule extends AbstractModule {
     }
 
     /**
-     * Construction is cheap: the {@code DatabaseConfig::fromEnvironment} supplier is stored but not
-     * invoked here, so no environment variable is read, no HikariCP pool is opened and no Flyway
-     * migration runs at provision time. Guice can therefore build this singleton eagerly during
-     * {@code onLoad} (server {@code STARTUP}) even when no {@code SKYGRID_DB_*} variable is set or no
-     * Postgres is reachable. The blocking I/O (resolving the config, opening the pool, running the
-     * migration) happens lazily, on the first actual call to {@code tierOf}, {@code recordCompletion}
-     * or {@code resetCurrentSeason}.
+     * The one Postgres database of the plugin: one HikariCP pool and one Flyway history, shared by all
+     * three repositories. Construction is cheap: the {@code DatabaseConfig::fromEnvironment} supplier is
+     * stored but not invoked here, so no environment variable is read, no pool is opened and no migration
+     * runs at provision time. Guice can build it eagerly during {@code onLoad} even when no
+     * {@code SKYGRID_DB_*} variable is set. The blocking I/O happens on the async warm-up or the first call.
      */
     @Provides
     @Singleton
-    ChallengeProgressRepository provideChallengeProgressRepository() {
-        return new PostgresChallengeProgressRepository(DatabaseConfig::fromEnvironment);
+    Database provideDatabase() {
+        return new Database(DatabaseConfig::fromEnvironment);
+    }
+
+    @Provides
+    @Singleton
+    ChallengeProgressRepository provideChallengeProgressRepository(Database database) {
+        return new PostgresChallengeProgressRepository(database);
     }
 
     /**
@@ -88,15 +93,10 @@ public final class RepositoryModule extends AbstractModule {
         return new JacksonSeasonRepository(dataFolder, defaults);
     }
 
-    /**
-     * Construction is cheap for the same reason as {@link #provideChallengeProgressRepository}: the environment,
-     * the pool and the Flyway migration of the {@code season} unit wait for the first call, which the async warm-up
-     * triggers.
-     */
     @Provides
     @Singleton
-    SeasonRunRepository provideSeasonRunRepository(Clock clock) {
-        return new PostgresSeasonRunRepository(DatabaseConfig::fromEnvironment, clock);
+    SeasonRunRepository provideSeasonRunRepository(Database database, Clock clock) {
+        return new PostgresSeasonRunRepository(database, clock);
     }
 
     @Provides
@@ -112,16 +112,10 @@ public final class RepositoryModule extends AbstractModule {
         return service;
     }
 
-    /**
-     * Construction is cheap for the same reason as {@link #provideChallengeProgressRepository}:
-     * {@code PostgresTaskCompletionRepository} extends the same {@code AbstractJpaRepository} base,
-     * so the environment lookup, the HikariCP pool and the Flyway migration are all deferred to the
-     * first real call.
-     */
     @Provides
     @Singleton
-    TaskCompletionRepository provideTaskCompletionRepository() {
-        return new PostgresTaskCompletionRepository(DatabaseConfig::fromEnvironment);
+    TaskCompletionRepository provideTaskCompletionRepository(Database database) {
+        return new PostgresTaskCompletionRepository(database);
     }
 
     @Provides

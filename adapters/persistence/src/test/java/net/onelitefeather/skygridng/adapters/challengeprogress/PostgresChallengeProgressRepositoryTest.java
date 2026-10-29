@@ -1,5 +1,6 @@
 package net.onelitefeather.skygridng.adapters.challengeprogress;
 
+import net.onelitefeather.skygridng.adapters.persistence.Database;
 import net.onelitefeather.skygridng.adapters.persistence.FreshTestDatabase;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import org.junit.jupiter.api.AfterEach;
@@ -34,17 +35,19 @@ class PostgresChallengeProgressRepositoryTest {
     @Container
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
+    private Database database;
     private PostgresChallengeProgressRepository repository;
 
     @BeforeEach
     void startRepository() {
         var config = FreshTestDatabase.create(POSTGRES);
-        repository = new PostgresChallengeProgressRepository(() -> config);
+        database = new Database(() -> config);
+        repository = new PostgresChallengeProgressRepository(database);
     }
 
     @AfterEach
     void stopRepository() {
-        repository.close();
+        database.close();
     }
 
     @Test

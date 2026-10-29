@@ -103,12 +103,13 @@ ArchUnit in `:verification`:
   `ChallengeProgressRepository` implementation (`PostgresChallengeProgressRepository`), built on that
   module's JPA bootstrap (`challenge-season-system` skill).
 - `adapters/persistence` (`adapters.persistence.*`): shared, reusable Jakarta Persistence (JSR 338)
-  via Hibernate ORM infrastructure (`DatabaseConfig`, `AbstractJpaRepository`: the lazy
-  `EntityManagerFactory` bootstrap, Flyway migration, and `read`/`inTransaction` helpers), depends on
-  `ports` + `api` only. Every Postgres-backed adapter (for example `PostgresChallengeProgressRepository` in
-  `adapters.challengeprogress`) extends `AbstractJpaRepository` instead of writing a new
-  factory-bootstrap/transaction-lifecycle from scratch; a new one only needs its own `@Entity`,
-  migration, and a small repository built on `read`/`inTransaction`.
+  via Hibernate ORM infrastructure (`DatabaseConfig`, `Database`: the one shared database with the lazy
+  `EntityManagerFactory` bootstrap, one Flyway migration history, one pool, and `read`/`inTransaction`
+  helpers), depends on `ports` + `api` only. Every Postgres-backed repository (for example
+  `PostgresChallengeProgressRepository` in `adapters.challengeprogress`) takes the shared `Database` in
+  its constructor instead of writing a new factory-bootstrap/transaction-lifecycle; a new one only needs
+  its own `@Entity` (added to the one persistence unit), a migration in `db/migration`, and a small
+  repository built on `read`/`inTransaction`.
 - `platforms/common` (`platforms.common.*`, `platforms.olf.*`): the shared Bukkit composition root
   and the single distribution's home. `SkyGridNgPlugin`, `I18n`, the Guice modules, the message
   bundles. `platforms.olf` (`OlfModule`, `OlfFeature`, `ChallengeModule`, `ChallengeFeature`) is a
