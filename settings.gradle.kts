@@ -40,7 +40,7 @@ dependencyResolutionManagement {
             // cloud-core and cloud-annotations reached GA at 2.0.0 while the Paper/Bukkit/Brigadier
             // integration modules of the same release line are still beta (see cloudPaper above),
             // hence the separate version key.
-            version("cloud", "2.0.0")
+            version("cloud", "2.1.0")
             version("postgresql", "42.7.7")     // PostgreSQL JDBC driver, challenge progress adapter
             version("hikaricp", "6.3.0")         // connection pooling, owned directly by Hibernate now
             version("flyway", "11.8.2")          // versioned migrations; postgres support is a split module since Flyway 10
