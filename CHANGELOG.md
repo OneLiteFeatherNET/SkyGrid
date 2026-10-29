@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.2.1](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.2.0...v0.2.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.tngtech.archunit:archunit-junit5 to v1.5.0 ([#19](https://github.com/OneLiteFeatherNET/SkyGrid/issues/19)) ([ea21125](https://github.com/OneLiteFeatherNET/SkyGrid/commit/ea21125aa646497f21ac151a9b5f9397c693ccc1))
+* **deps:** update dependency com.tngtech.archunit:archunit-junit5 to v1.5.1 ([#55](https://github.com/OneLiteFeatherNET/SkyGrid/issues/55)) ([2dcba08](https://github.com/OneLiteFeatherNET/SkyGrid/commit/2dcba08d0c64f064a05f2aebf7315f6181b33d3e))
+* **deps:** update dependency net.kyori:adventure-api to v4.26.1 ([#45](https://github.com/OneLiteFeatherNET/SkyGrid/issues/45)) ([f670d3c](https://github.com/OneLiteFeatherNET/SkyGrid/commit/f670d3c69645510b564e8e8775d381387c239dc5))
+* **deps:** update dependency org.incendo:cloud-paper to v2.0.1 ([#40](https://github.com/OneLiteFeatherNET/SkyGrid/issues/40)) ([f99386a](https://github.com/OneLiteFeatherNET/SkyGrid/commit/f99386a43f18299ef5c60fc9a2a491c7f8c3d6e2))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.12.0 ([#46](https://github.com/OneLiteFeatherNET/SkyGrid/issues/46)) ([3ac6e65](https://github.com/OneLiteFeatherNET/SkyGrid/commit/3ac6e65da361442089550ab0c707e520369fa317))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.12.1 ([#56](https://github.com/OneLiteFeatherNET/SkyGrid/issues/56)) ([632ee12](https://github.com/OneLiteFeatherNET/SkyGrid/commit/632ee120c119fc1878972121d777a04f29a60046))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.12.2 ([#66](https://github.com/OneLiteFeatherNET/SkyGrid/issues/66)) ([9b0ff80](https://github.com/OneLiteFeatherNET/SkyGrid/commit/9b0ff8017295ce7efe8cf833bed9ebcca78af986))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.12.0 ([#47](https://github.com/OneLiteFeatherNET/SkyGrid/issues/47)) ([aff087b](https://github.com/OneLiteFeatherNET/SkyGrid/commit/aff087b9775239632286d7525dc032dbd33b483b))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.12.1 ([#57](https://github.com/OneLiteFeatherNET/SkyGrid/issues/57)) ([49fb832](https://github.com/OneLiteFeatherNET/SkyGrid/commit/49fb832f7a04dc88d1d745bd4d0698becb432dc0))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.12.2 ([#67](https://github.com/OneLiteFeatherNET/SkyGrid/issues/67)) ([7a99cca](https://github.com/OneLiteFeatherNET/SkyGrid/commit/7a99cca86d4ff35e826fe280eb852d8051a0d699))
+* **deps:** update dependency org.mockito:mockito-core to v5.15.2 ([#23](https://github.com/OneLiteFeatherNET/SkyGrid/issues/23)) ([e253dae](https://github.com/OneLiteFeatherNET/SkyGrid/commit/e253daee9fde8271c9d041b2df0d2ca018756e58))
+* **deps:** update dependency org.postgresql:postgresql to v42.7.10 ([#61](https://github.com/OneLiteFeatherNET/SkyGrid/issues/61)) ([124f451](https://github.com/OneLiteFeatherNET/SkyGrid/commit/124f451335fa72a562e7dd670e9c7728bbe6bed8))
+* **deps:** update dependency org.postgresql:postgresql to v42.7.8 ([#10](https://github.com/OneLiteFeatherNET/SkyGrid/issues/10)) ([559780b](https://github.com/OneLiteFeatherNET/SkyGrid/commit/559780be7e8010effc1618824d2ccfb6c709cbe1))
+* **deps:** update dependency org.postgresql:postgresql to v42.7.9 ([#52](https://github.com/OneLiteFeatherNET/SkyGrid/issues/52)) ([f4ffa83](https://github.com/OneLiteFeatherNET/SkyGrid/commit/f4ffa8383a23d0c4bd5eb2759f8527e003fb26a7))
+* **deps:** update flyway to v11.9.0 ([#24](https://github.com/OneLiteFeatherNET/SkyGrid/issues/24)) ([5d2204c](https://github.com/OneLiteFeatherNET/SkyGrid/commit/5d2204c7d5d997322edf654ef5c392702e95600f))
+* **deps:** update flyway to v11.9.1 ([#59](https://github.com/OneLiteFeatherNET/SkyGrid/issues/59)) ([d0cbf03](https://github.com/OneLiteFeatherNET/SkyGrid/commit/d0cbf03021f2da6c660daa44d8278251136f78d4))
+* **deps:** update hibernate to v6.6.56.final ([#41](https://github.com/OneLiteFeatherNET/SkyGrid/issues/41)) ([87d707e](https://github.com/OneLiteFeatherNET/SkyGrid/commit/87d707e5902a3da2bdfa727723115191990032a2))
+* **deps:** update hibernate to v6.6.57.final ([#53](https://github.com/OneLiteFeatherNET/SkyGrid/issues/53)) ([e6e3d08](https://github.com/OneLiteFeatherNET/SkyGrid/commit/e6e3d08fef08d0bb85c3a939de3f3ecedb977536))
+* **deps:** update jackson to v2.22.2 ([#42](https://github.com/OneLiteFeatherNET/SkyGrid/issues/42)) ([39fe48c](https://github.com/OneLiteFeatherNET/SkyGrid/commit/39fe48c29e2ba3fdae8ddb6e13d6e077cc495b8e))
+* **deps:** update jackson to v2.22.3 ([#50](https://github.com/OneLiteFeatherNET/SkyGrid/issues/50)) ([d89431d](https://github.com/OneLiteFeatherNET/SkyGrid/commit/d89431d8df1a356b7a73a9d938103bcbd9d6c379))
+* **deps:** update jackson to v2.22.4 ([#63](https://github.com/OneLiteFeatherNET/SkyGrid/issues/63)) ([08f7e38](https://github.com/OneLiteFeatherNET/SkyGrid/commit/08f7e387cc1503a37510ccc7c8f712aeb265c9b0))
+* **seasons:** show the upcoming season before the first season starts ([#48](https://github.com/OneLiteFeatherNET/SkyGrid/issues/48)) ([1e23186](https://github.com/OneLiteFeatherNET/SkyGrid/commit/1e2318652635fe42f2e82d279014af8d327dc4e1))
+
 ## [0.2.0](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.1.1...v0.2.0) (2026-10-29)
 
 
