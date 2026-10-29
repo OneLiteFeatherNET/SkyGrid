@@ -128,6 +128,20 @@ class SeasonCommandsTest {
     }
 
     @Test
+    @DisplayName("'season info' parses the display name of the configured season as MiniMessage")
+    void infoRendersDisplayNameAsMiniMessage() {
+        Season gold = new Season(new SeasonId("s01"), "<gold>Season 1: Herbst</gold>", START,
+                Duration.ofDays(28), "standard", List.of(), null);
+        when(current.season()).thenReturn(Optional.of(gold));
+
+        subject.info(source);
+
+        assertThat(argumentsOf(source.messages().get(0)))
+                .as("the configured name is passed as the parsed MiniMessage component, not as raw tags")
+                .contains(MiniMessage.miniMessage().deserialize("<gold>Season 1: Herbst</gold>"));
+    }
+
+    @Test
     @DisplayName("'season status' while legacy runs names the upcoming season and its start")
     void statusWithUpcomingSeasonNamesIt() {
         Instant start = Instant.parse("2027-02-01T00:00:00Z");

@@ -199,7 +199,8 @@ public final class Messages {
 
     public static List<Component> seasonInfo(String id, String name, String end, int pendingMailbox) {
         List<Component> lines = new ArrayList<>();
-        lines.add(key("season.info", id, name, end));
+        lines.add(prefix().append(Component.space()).append(Component.translatable("skygridng.command.season.info",
+                Component.text(id), MINI_MESSAGE.deserialize(name), Component.text(end))));
         lines.addAll(seasonResetLines(pendingMailbox));
         return List.copyOf(lines);
     }
@@ -259,7 +260,6 @@ public final class Messages {
                 ? key("season.status.last", active, phase, endsAt)
                 : key("season.status", active, phase, next, endsAt);
     }
-
     public static Component seasonRefused() {
         return key("season.refused");
     }
