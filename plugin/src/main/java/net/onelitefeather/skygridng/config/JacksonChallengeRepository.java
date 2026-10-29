@@ -1,8 +1,8 @@
-package net.onelitefeather.skygridng.adapters.config;
+package net.onelitefeather.skygridng.config;
 
-import net.onelitefeather.skygridng.adapters.config.ChallengeDtos.ChallengeDto;
-import net.onelitefeather.skygridng.adapters.config.ChallengeDtos.RewardDto;
-import net.onelitefeather.skygridng.adapters.config.ChallengeDtos.TaskDto;
+import net.onelitefeather.skygridng.config.ChallengeDtos.ChallengeDto;
+import net.onelitefeather.skygridng.config.ChallengeDtos.RewardDto;
+import net.onelitefeather.skygridng.config.ChallengeDtos.TaskDto;
 import net.onelitefeather.skygridng.challenge.ChallengeCatalog;
 import net.onelitefeather.skygridng.challenge.ChallengeRule;
 import net.onelitefeather.skygridng.challenge.ItemId;

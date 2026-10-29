@@ -1,10 +1,10 @@
-package net.onelitefeather.skygridng.adapters.config;
+package net.onelitefeather.skygridng.config;
 
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.BlockWeightDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.ConfigDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.PresetDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.SeasonSettingsDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.SpawnDto;
+import net.onelitefeather.skygridng.config.ConfigDtos.BlockWeightDto;
+import net.onelitefeather.skygridng.config.ConfigDtos.ConfigDto;
+import net.onelitefeather.skygridng.config.ConfigDtos.PresetDto;
+import net.onelitefeather.skygridng.config.ConfigDtos.SeasonSettingsDto;
+import net.onelitefeather.skygridng.config.ConfigDtos.SpawnDto;
 import net.onelitefeather.skygridng.generator.BiomeId;
 import net.onelitefeather.skygridng.generator.BlockId;
 import net.onelitefeather.skygridng.generator.BlockWeight;

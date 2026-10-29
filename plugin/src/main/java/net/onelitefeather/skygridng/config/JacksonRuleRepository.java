@@ -1,9 +1,9 @@
-package net.onelitefeather.skygridng.adapters.config;
+package net.onelitefeather.skygridng.config;
 
-import net.onelitefeather.skygridng.adapters.config.RuleDtos.LegendEntryDto;
-import net.onelitefeather.skygridng.adapters.config.RuleDtos.PlacementDto;
-import net.onelitefeather.skygridng.adapters.config.RuleDtos.RuleDto;
-import net.onelitefeather.skygridng.adapters.config.RuleDtos.StructureDto;
+import net.onelitefeather.skygridng.config.RuleDtos.LegendEntryDto;
+import net.onelitefeather.skygridng.config.RuleDtos.PlacementDto;
+import net.onelitefeather.skygridng.config.RuleDtos.RuleDto;
+import net.onelitefeather.skygridng.config.RuleDtos.StructureDto;
 import net.onelitefeather.skygridng.generator.BlockId;
 import net.onelitefeather.skygridng.generator.LegendEntry;
 import net.onelitefeather.skygridng.generator.PhysicsMode;

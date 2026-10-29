@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.config;
+package net.onelitefeather.skygridng.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;

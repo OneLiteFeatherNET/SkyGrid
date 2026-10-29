@@ -1,8 +1,8 @@
-package net.onelitefeather.skygridng.adapters.config;
+package net.onelitefeather.skygridng.config;
 
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.ConfigDto;
-import net.onelitefeather.skygridng.adapters.config.ConfigDtos.SeasonSettingsDto;
-import net.onelitefeather.skygridng.adapters.config.SeasonDtos.SeasonDto;
+import net.onelitefeather.skygridng.config.ConfigDtos.ConfigDto;
+import net.onelitefeather.skygridng.config.ConfigDtos.SeasonSettingsDto;
+import net.onelitefeather.skygridng.config.SeasonDtos.SeasonDto;
 import net.onelitefeather.skygridng.season.Season;
 import net.onelitefeather.skygridng.season.SeasonCatalog;
 import net.onelitefeather.skygridng.season.SeasonId;

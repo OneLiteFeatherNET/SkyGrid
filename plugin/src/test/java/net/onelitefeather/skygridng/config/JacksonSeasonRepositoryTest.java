@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.config;
+package net.onelitefeather.skygridng.config;
 
 import net.onelitefeather.skygridng.season.Season;
 import net.onelitefeather.skygridng.season.SeasonCatalog;
