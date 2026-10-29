@@ -31,7 +31,7 @@ dependencyResolutionManagement {
             // ----- Versions (verify before the first build) -----
             version("paper", "26.1.2.build.74-stable")  // keep the build segment
             version("java", "25")               // Paper 26.1 requires Java 25
-            version("jackson", "2.22.3")        // config databinding: JSON/YAML/TOML (relocated in the shaded jar)
+            version("jackson", "2.22.4")        // config databinding: JSON/YAML/TOML (relocated in the shaded jar)
             version("jsonSchemaGen", "4.38.0")  // victools; generates the editor schema (Jackson 2.x line)
             version("adventure", "4.26.1")      // platform-neutral text API; matches Paper 26.1's adventure-bom
             version("guice", "7.0.0")
