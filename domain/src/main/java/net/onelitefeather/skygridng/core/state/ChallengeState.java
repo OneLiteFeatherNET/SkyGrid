@@ -1,6 +1,7 @@
 package net.onelitefeather.skygridng.core.state;
 
 import net.onelitefeather.skygridng.api.model.ChallengeCatalog;
+import net.onelitefeather.skygridng.generator.RuleState;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

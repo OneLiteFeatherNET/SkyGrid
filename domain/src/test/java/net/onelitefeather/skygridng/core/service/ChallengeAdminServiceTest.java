@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Black-box tests for the admin use case, against a fake in memory {@link ChallengeRepository}
- * (mirrors {@link RuleAdminServiceTest}'s in memory repository approach for its own out port,
+ * (mirrors {@code RuleAdminServiceTest}'s in memory repository approach for its own out port,
  * adapted here since {@link ChallengeAdminService} saves immediately instead of deferring to a
  * separate save step).
  */

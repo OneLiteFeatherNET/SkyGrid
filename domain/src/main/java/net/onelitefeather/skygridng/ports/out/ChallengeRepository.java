@@ -6,7 +6,7 @@ import net.onelitefeather.skygridng.api.model.ChallengeCatalog;
  * Out port: where the core loads the challenge catalog from and saves it to.
  *
  * The catalog holds the toggleable challenges (player/session facing restrictions, distinct from
- * the per-block {@link net.onelitefeather.skygridng.api.model.RuleCatalog}). The adapter
+ * the per-block {@link net.onelitefeather.skygridng.generator.RuleCatalog}). The adapter
  * implementation is just storage; another backend can be added without touching the core.
  */
 public interface ChallengeRepository {

@@ -1,13 +1,13 @@
 package net.onelitefeather.skygridng.adapters.config;
 
-import net.onelitefeather.skygridng.api.model.BlockId;
-import net.onelitefeather.skygridng.api.model.LegendEntry;
-import net.onelitefeather.skygridng.api.model.PhysicsMode;
-import net.onelitefeather.skygridng.api.model.PlacementRule;
-import net.onelitefeather.skygridng.api.model.Rule;
-import net.onelitefeather.skygridng.api.model.RuleCatalog;
-import net.onelitefeather.skygridng.api.model.StructurePattern;
-import net.onelitefeather.skygridng.ports.out.RuleRepository;
+import net.onelitefeather.skygridng.generator.BlockId;
+import net.onelitefeather.skygridng.generator.LegendEntry;
+import net.onelitefeather.skygridng.generator.PhysicsMode;
+import net.onelitefeather.skygridng.generator.PlacementRule;
+import net.onelitefeather.skygridng.generator.Rule;
+import net.onelitefeather.skygridng.generator.RuleCatalog;
+import net.onelitefeather.skygridng.generator.StructurePattern;
+import net.onelitefeather.skygridng.generator.RuleRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

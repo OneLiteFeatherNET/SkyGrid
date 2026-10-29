@@ -11,7 +11,7 @@ import java.util.UUID;
 /**
  * Implements {@link ChallengeProgressUseCase} as a thin delegate to a {@link ChallengeProgressRepository},
  * resolving the current season per call through {@link CurrentSeason}.
- * Deliberately no caching layer, unlike {@link net.onelitefeather.skygridng.core.state.RuleState} and
+ * Deliberately no caching layer, unlike {@link net.onelitefeather.skygridng.generator.RuleState} and
  * {@link net.onelitefeather.skygridng.core.state.ChallengeState}: correctness of tier progression across
  * multiple servers and restarts matters more here than avoiding a database round trip.
  */

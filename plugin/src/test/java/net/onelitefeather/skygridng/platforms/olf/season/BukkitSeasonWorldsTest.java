@@ -3,7 +3,7 @@ package net.onelitefeather.skygridng.platforms.olf.season;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.SeasonPhase;
 import net.onelitefeather.skygridng.api.model.SeasonRun;
-import net.onelitefeather.skygridng.platforms.common.WorldGenerators;
+import net.onelitefeather.skygridng.generator.WorldGenerators;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;

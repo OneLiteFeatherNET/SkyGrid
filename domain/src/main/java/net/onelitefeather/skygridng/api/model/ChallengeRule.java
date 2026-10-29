@@ -1,6 +1,7 @@
 package net.onelitefeather.skygridng.api.model;
 
 import java.util.List;
+import net.onelitefeather.skygridng.generator.Rule;
 
 /**
  * A single toggleable challenge: a player/session facing rule that restricts allowed actions

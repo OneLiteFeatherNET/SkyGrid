@@ -5,6 +5,7 @@ import net.onelitefeather.skygridng.api.model.ChallengeRule;
 import net.onelitefeather.skygridng.core.state.ChallengeState;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.out.ChallengeRepository;
+import net.onelitefeather.skygridng.generator.RuleAdminService;
 
 import java.util.List;
 

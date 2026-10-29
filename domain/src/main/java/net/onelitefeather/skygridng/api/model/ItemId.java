@@ -5,6 +5,7 @@ import java.util.Objects;
 import net.kyori.adventure.key.InvalidKeyException;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.key.Keyed;
+import net.onelitefeather.skygridng.generator.BlockId;
 
 /**
  * A platform-neutral item identifier: a namespaced Minecraft id such as {@code minecraft:diamond}.

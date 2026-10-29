@@ -19,12 +19,13 @@ import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.TaskProgressUseCase;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
-import net.onelitefeather.skygridng.ports.out.PresetRepository;
+import net.onelitefeather.skygridng.generator.PresetRepository;
 import net.onelitefeather.skygridng.ports.out.RewardGrantor;
-import net.onelitefeather.skygridng.ports.out.RuleRepository;
+import net.onelitefeather.skygridng.generator.RuleRepository;
 import net.onelitefeather.skygridng.ports.out.SeasonRepository;
 import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;
 import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
+import net.onelitefeather.skygridng.generator.GeneratorModule;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Path;

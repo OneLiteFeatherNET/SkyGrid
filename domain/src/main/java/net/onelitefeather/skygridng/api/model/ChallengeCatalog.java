@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import net.onelitefeather.skygridng.generator.RuleCatalog;
 
 /**
  * All challenge rules, keyed by their id. A challenge rule is a player/session facing switch

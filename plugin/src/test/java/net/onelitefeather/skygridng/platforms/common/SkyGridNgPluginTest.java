@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.platforms.common;
 
-import net.onelitefeather.skygridng.api.SkyGridApi;
-import net.onelitefeather.skygridng.platforms.common.generator.HexagonalChunkGenerator;
+import net.onelitefeather.skygridng.generator.SkyGridApi;
+import net.onelitefeather.skygridng.generator.HexagonalChunkGenerator;
 import net.onelitefeather.skygridng.platforms.olf.challenge.NoCraftingTableListener;
 import net.onelitefeather.skygridng.platforms.olf.challenge.NoNaturalRegenerationListener;
 import net.onelitefeather.skygridng.platforms.olf.challenge.OneLifeListener;

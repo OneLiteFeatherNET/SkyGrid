@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * White-box tests for the challenge state holder: Observer (change listeners) only, deliberately no
- * Memento/undo (see {@link RuleStateTest} for the richer holder that does have one).
+ * Memento/undo (see {@code RuleStateTest} for the richer holder that does have one).
  */
 class ChallengeStateTest {
 

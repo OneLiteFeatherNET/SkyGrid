@@ -13,7 +13,7 @@ import java.util.UUID;
  * mocking a Bukkit {@code CommandSender}. All five migrated handler classes only ever depend on
  * this neutral interface, never on Bukkit, so no MockBukkit is needed for these unit tests.
  */
-final class RecordingCommandSource implements CommandSource {
+public final class RecordingCommandSource implements CommandSource {
 
     private final List<Component> messages = new ArrayList<>();
     private boolean granted = true;
@@ -36,7 +36,7 @@ final class RecordingCommandSource implements CommandSource {
     }
 
     /** Makes every permission check fail, to simulate a sender without {@code skygridng.admin}. */
-    void withoutPermissions() {
+    public void withoutPermissions() {
         this.granted = false;
     }
 
@@ -57,15 +57,15 @@ final class RecordingCommandSource implements CommandSource {
         return Optional.of(UUID.nameUUIDFromBytes(name.getBytes()));
     }
 
-    void asConsole() {
+    public void asConsole() {
         this.playerId = Optional.empty();
     }
 
-    UUID selfId() {
+    public UUID selfId() {
         return playerId.orElseThrow();
     }
 
-    List<Component> messages() {
+    public List<Component> messages() {
         return messages;
     }
 }

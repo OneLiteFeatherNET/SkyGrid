@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  * and {@code rules/}. The id inside the file is authoritative; the file name is only there for humans.
  * The format is chosen per file from its extension (JSON, YAML or TOML). A fresh {@code challenges/}
  * directory is seeded from the bundled defaults. A challenge is a player/session facing switch, a
- * different axis from the per-block {@link net.onelitefeather.skygridng.api.model.RuleCatalog}, so
+ * different axis from the per-block {@link net.onelitefeather.skygridng.generator.RuleCatalog}, so
  * the api/core never see Jackson here either.
  */
 public final class JacksonChallengeRepository implements ChallengeRepository {

@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.platforms.olf;
 
 import jakarta.inject.Inject;
-import net.onelitefeather.skygridng.api.SkyGridApi;
+import net.onelitefeather.skygridng.generator.SkyGridApi;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**

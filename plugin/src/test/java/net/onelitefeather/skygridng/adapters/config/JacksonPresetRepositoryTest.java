@@ -1,8 +1,8 @@
 package net.onelitefeather.skygridng.adapters.config;
 
-import net.onelitefeather.skygridng.api.model.Preset;
-import net.onelitefeather.skygridng.api.model.PresetCatalog;
-import net.onelitefeather.skygridng.ports.out.PresetRepository;
+import net.onelitefeather.skygridng.generator.Preset;
+import net.onelitefeather.skygridng.generator.PresetCatalog;
+import net.onelitefeather.skygridng.generator.PresetRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

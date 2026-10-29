@@ -10,7 +10,7 @@ import net.onelitefeather.skygridng.adapters.config.JacksonChallengeRepository;
 import net.onelitefeather.skygridng.core.service.ChallengeAdminService;
 import net.onelitefeather.skygridng.core.state.ChallengeState;
 import net.onelitefeather.skygridng.platforms.olf.season.SeasonWorldKeys;
-import net.onelitefeather.skygridng.platforms.common.generator.HexagonalChunkGenerator;
+import net.onelitefeather.skygridng.generator.HexagonalChunkGenerator;
 import net.onelitefeather.skygridng.platforms.olf.challenge.LevelBorderWarningTask;
 import net.onelitefeather.skygridng.platforms.olf.challenge.NoCraftingTableListener;
 import net.onelitefeather.skygridng.platforms.olf.challenge.NoNaturalRegenerationListener;

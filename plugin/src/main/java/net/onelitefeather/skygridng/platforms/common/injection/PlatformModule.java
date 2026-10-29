@@ -4,9 +4,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import jakarta.inject.Singleton;
 import net.onelitefeather.skygridng.platforms.common.DatabaseWarmUpGate;
-import net.onelitefeather.skygridng.platforms.common.generator.HexagonalChunkGenerator;
-import net.onelitefeather.skygridng.platforms.common.spawn.SpreadSpawnListener;
-import net.onelitefeather.skygridng.ports.in.SpawnPoints;
+import net.onelitefeather.skygridng.generator.HexagonalChunkGenerator;
+import net.onelitefeather.skygridng.generator.SpreadSpawnListener;
+import net.onelitefeather.skygridng.generator.SpawnPoints;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Path;

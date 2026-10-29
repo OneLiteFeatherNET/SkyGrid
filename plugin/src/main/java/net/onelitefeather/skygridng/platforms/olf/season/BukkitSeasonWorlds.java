@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.platforms.olf.season;
 
 import net.onelitefeather.skygridng.api.model.SeasonRun;
-import net.onelitefeather.skygridng.platforms.common.WorldGenerators;
+import net.onelitefeather.skygridng.generator.WorldGenerators;
 import net.onelitefeather.skygridng.ports.out.SeasonWorlds;
 import io.papermc.paper.math.Position;
 import org.bukkit.Bukkit;
