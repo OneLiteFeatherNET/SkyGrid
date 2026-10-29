@@ -49,7 +49,7 @@ dependencyResolutionManagement {
 
             version("shadow", "9.4.3")
             version("runPaper", "3.0.2")
-            version("pluginYml", "0.8.0")
+            version("pluginYml", "0.9.0")
             version("cyclonedx", "3.2.4")
 
             // Testing
