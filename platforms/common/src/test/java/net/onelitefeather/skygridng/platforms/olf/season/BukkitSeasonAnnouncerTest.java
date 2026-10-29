@@ -118,6 +118,23 @@ class BukkitSeasonAnnouncerTest {
     }
 
     @Test
+    void upcomingAnnouncementForAnIncomingSeasonNamesTheIncomingSeason() {
+        SeasonId incoming = new SeasonId("s02");
+        catalog = new SeasonCatalog(List.of(
+                new Season(SEASON, "<gold>Season 1</gold>", BOUNDARY.minus(Duration.ofDays(28)),
+                        Duration.ofDays(28), "standard", List.of(), null),
+                new Season(incoming, "<gold>Season 2</gold>", BOUNDARY, Duration.ofDays(28), "standard", List.of(),
+                        null)));
+
+        announcer.upcoming(incoming, Duration.ofDays(7), BOUNDARY);
+
+        assertThat(receivedArguments())
+                .as("the notice for the incoming season names the incoming season, not the one ending")
+                .contains(MiniMessage.miniMessage().deserialize("<gold>Season 2</gold>"))
+                .doesNotContain(MiniMessage.miniMessage().deserialize("<gold>Season 1</gold>"));
+    }
+
+    @Test
     void startAnnouncementNamesTheSeasonByItsDisplayName() {
         catalogNaming("<gold>Season 1</gold>");
 

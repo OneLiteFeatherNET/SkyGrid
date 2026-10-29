@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -49,6 +50,36 @@ class SeasonMessageBundleTest {
                 .collect(Collectors.toSet()))
                 .as("no season key in Bundle_de is blank")
                 .isEmpty();
+    }
+
+    @Test
+    void theUpcomingNoticeSaysTheIncomingSeasonStartsOnTheDate() throws IOException {
+        Properties english = load("messages/Bundle_en.properties");
+        Properties german = load("messages/Bundle_de.properties");
+
+        assertThat(english.getProperty(PREFIX + "announce.upcoming"))
+                .as("the English upcoming notice is about the incoming season's start, not its end")
+                .contains("starts on")
+                .doesNotContain("ends");
+        assertThat(german.getProperty(PREFIX + "announce.upcoming"))
+                .as("the German upcoming notice is about the incoming season's start, not its end")
+                .contains("beginnt am")
+                .doesNotContain("endet");
+    }
+
+    @Test
+    void theNoticesDoNotRepeatTheWordSeasonBeforeTheDisplayName() throws IOException {
+        Properties english = load("messages/Bundle_en.properties");
+        Properties german = load("messages/Bundle_de.properties");
+
+        for (String key : List.of("announce.upcoming", "announce.started", "announce.postponed", "final_week.join")) {
+            assertThat(english.getProperty(PREFIX + key))
+                    .as("the English " + key + " notice leaves the display name, which holds the word, unrepeated")
+                    .doesNotContain("Season <arg:0>");
+            assertThat(german.getProperty(PREFIX + key))
+                    .as("the German " + key + " notice leaves the display name, which holds the word, unrepeated")
+                    .doesNotContain("Saison <arg:0>");
+        }
     }
 
     private static Set<String> seasonKeys(String resource) throws IOException {

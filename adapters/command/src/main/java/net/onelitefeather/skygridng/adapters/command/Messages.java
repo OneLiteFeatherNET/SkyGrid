@@ -218,10 +218,13 @@ public final class Messages {
         return List.copyOf(lines);
     }
 
-    /** The season end announcement for the viewer, with the reset lines, sent as separate lines. */
-    public static List<Component> seasonAnnouncementUpcoming(String name, String endsOn, int pendingMailbox) {
+    /**
+     * The upcoming notice for the incoming season: {@code name} starts on {@code startsOn}, the season's start instant
+     * (the boundary), with the reset lines, sent as separate lines.
+     */
+    public static List<Component> seasonAnnouncementUpcoming(String name, String startsOn, int pendingMailbox) {
         List<Component> lines = new ArrayList<>();
-        lines.add(namedKey("season.announce.upcoming", name, endsOn));
+        lines.add(namedKey("season.announce.upcoming", name, startsOn));
         lines.addAll(seasonResetLines(pendingMailbox));
         return List.copyOf(lines);
     }
