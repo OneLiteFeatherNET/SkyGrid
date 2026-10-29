@@ -43,7 +43,7 @@ dependencyResolutionManagement {
             version("cloud", "2.1.0")
             version("postgresql", "42.7.14")     // PostgreSQL JDBC driver, challenge progress adapter
             version("hikaricp", "6.3.1")         // connection pooling, owned directly by Hibernate now
-            version("flyway", "11.9.2")          // versioned migrations; postgres support is a split module since Flyway 10
+            version("flyway", "11.10.0")          // versioned migrations; postgres support is a split module since Flyway 10
             version("jakartaPersistence", "3.2.0") // JSR 338 API; the version Hibernate ORM 6.6.x targets
             version("hibernate", "6.6.59.Final") // Hibernate ORM, challenge progress adapter's JPA provider
 
