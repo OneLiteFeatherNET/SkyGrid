@@ -55,7 +55,7 @@ dependencyResolutionManagement {
             // Testing
             version("junit", "5.13.1")
             version("mockbukkit", "4.115.0")
-            version("mockito", "5.15.2")
+            version("mockito", "5.16.0")
             version("assertj", "3.27.7")
             version("archunit", "1.5.1")
             version("testcontainers", "1.21.4") // real disposable Postgres for the challenge progress adapter test
