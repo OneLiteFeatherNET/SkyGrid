@@ -83,7 +83,7 @@ as a boxed DTO field plus a neutral record field; never put a `com.fasterxml.jac
 
 ## The per-block rule model
 
-A rule is one entry under `rules/`, exactly one per block, modeled by `api.model.Rule`:
+A rule is one entry under `rules/`, exactly one per block, modeled by `generator.Rule`:
 
 ```yaml
 block: minecraft:oak_leaves   # namespaced BlockId, authoritative (RuleDto.block -> BlockId.of)
@@ -122,7 +122,7 @@ those in stored order.
 
 ## The structure pattern: a 3D footprint per decoration
 
-`structure` (`api.model.StructurePattern` + `LegendEntry`) replaces the old single-block
+`structure` (`generator.StructurePattern` + `LegendEntry`) replaces the old single-block
 `requiresGround`/`requiresLiquidNeighbor`/`water` fields with a small, recipe-like 3D pattern: a list
 of `layers` stacked bottom-to-top, each layer a list of row-strings, each character a symbol. A
 `legend` maps each symbol to a `{ block, state, anchor }` entry; exactly one entry must be
@@ -157,12 +157,12 @@ Adding a **new format**: only touch `ConfigFormats` (a new `MapperBuilder` branc
 list). The DTOs and records are format-agnostic already.
 
 Adding a **preset field**: add a boxed field to `ConfigDtos.PresetDto` (boxed so an omitted key
-round-trips as `null` = inherit), add the neutral field to `api.model.Preset`, and map both directions
+round-trips as `null` = inherit), add the neutral field to `generator.Preset`, and map both directions
 in `JacksonPresetRepository` (`toPreset` and `toDto`). Inheritance merging happens in the core, not
 the adapter (see `world-generator-presets`).
 
 Adding a **rule field**: add a boxed field to `RuleDtos.RuleDto` or `RuleDtos.PlacementDto`, add it to
-`api.model.Rule`/`PlacementRule` (validate in the compact constructor), and map both directions in
+`generator.Rule`/`PlacementRule` (validate in the compact constructor), and map both directions in
 `JacksonRuleRepository` (`toRule`/`placement` and `toDto`/`placementToDto`). Then consume it where the
 block is realized: `RuleResolver` (state/physics) or `SkyGridDecorationPopulator` (placement).
 

@@ -4,7 +4,7 @@ description: >-
   Explains SkyGrid-ng's Challenge and Season system (Epic I in docs/USERSTORIES.md): the domain
   shape (ChallengeRule/ChallengeCatalog today; ChallengeRuleSet/Season/player-progress as
   documented future extensions), why it is an OLF-only mechanic living in the
-  platforms.olf package inside plugin, and the reusable engagement-research
+  net.onelitefeather.skygridng package inside plugin, and the reusable engagement-research
   methodology (an 8-point dark-pattern
   checklist, a structural-precedent checklist, and a fixed source list) that must be re-applied
   before designing any new challenge, season, or progression mechanic. Use when adding or reviewing
@@ -28,7 +28,7 @@ See `config-schema-and-rules` for the existing `Rule` model: it resolves `BlockI
 physics/placement`, one rule per block. A challenge rule is a different axis entirely:
 `player/session -> allowed actions`, nothing to do with block placement. Forcing a challenge into
 `RuleRepository`/`RuleDtos` would violate that model's whole premise. Challenges get their own
-`api.model` types, `ports.out.ChallengeRepository`, and a `challenges/` config directory, sibling
+`api.model` types, `challenge.ChallengeRepository`, and a `challenges/` config directory, sibling
 to (not part of) `presets/`/`rules/`.
 
 Season is likewise not "a preset with a lifecycle": a preset answers "what does the world look
@@ -39,7 +39,7 @@ today and none should be bolted on; a Season is its own model that can reference
 ## Domain shape
 
 **Built today**: `ChallengeRule(id, description, active)` and `ChallengeCatalog` (a map of these),
-loaded/saved via `ports.out.ChallengeRepository`, admin-toggled via `ports.in.ChallengeAdminUseCase`
+loaded/saved via `challenge.ChallengeRepository`, admin-toggled via `challenge.ChallengeAdminUseCase`
 (`list`, `isActive`, `activate`, `deactivate`). Deliberately minimal, no season window or per-world
 scope yet.
 
@@ -60,14 +60,14 @@ persistence port/adapter, since none exists anywhere in `api`/`ports`/`core` tod
 There is a single Paper distribution today (`platforms/paper-olf` was folded into `plugin`
 once the project narrowed to running only on OneLiteFeather's own server); "OLF-only" is now a
 naming convention, not a module boundary. `plugin`'s own code (`OlfFeature`, `OlfModule`,
-`NetworkStartupReportFeature`, all in its `platforms.olf` package) and the `hexagonal-architecture`
+`NetworkStartupReportFeature`, all in its `net.onelitefeather.skygridng` package) and the `hexagonal-architecture`
 skill name "challenges" as the reference example of this convention. `ChallengeBehavior` is still
-the domain seam: a plain marker interface in `platforms.olf.challenge` with no framework import,
-mirroring the single-seam shape of `adapters.spawn`. The four concrete
+the domain seam: a plain marker interface in `challenge` with no framework import,
+mirroring the single-seam shape of `generator`. The four concrete
 Bukkit-facing implementations of `ChallengeBehavior` (`OneLifeListener`,
 `NoNaturalRegenerationListener`, `NoCraftingTableListener`, `LevelBorderWarningTask`) live in
-`plugin`'s `platforms.olf.challenge` package, wired via one
-`Multibinder.addBinding()` line each in `platforms.olf.ChallengeModule` and always enabled by
+`plugin`'s `challenge` package, wired via one
+`Multibinder.addBinding()` line each in `challenge.ChallengeModule` and always enabled by
 `SkyGridNgPlugin` through the `ChallengeFeature` `OlfFeature`. The shared `ChallengeAdminUseCase`
 port is a plain, always-present Guice binding now (no `OptionalBinder`), since there is no
 distribution where it would be absent.

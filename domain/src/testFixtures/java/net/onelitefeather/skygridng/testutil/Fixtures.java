@@ -1,15 +1,15 @@
 package net.onelitefeather.skygridng.testutil;
 
-import net.onelitefeather.skygridng.api.model.BlockId;
-import net.onelitefeather.skygridng.api.model.BlockWeight;
-import net.onelitefeather.skygridng.api.model.GeneratorConfig;
-import net.onelitefeather.skygridng.api.model.PresetCatalog;
-import net.onelitefeather.skygridng.api.model.SkyGridConfig;
-import net.onelitefeather.skygridng.core.algorithm.IndependentSkyGridAlgorithm;
-import net.onelitefeather.skygridng.core.algorithm.NoiseSkyGridAlgorithm;
-import net.onelitefeather.skygridng.core.service.PresetResolver;
-import net.onelitefeather.skygridng.ports.algorithm.AlgorithmFactory;
-import net.onelitefeather.skygridng.ports.out.PresetRepository;
+import net.onelitefeather.skygridng.generator.BlockId;
+import net.onelitefeather.skygridng.generator.BlockWeight;
+import net.onelitefeather.skygridng.generator.GeneratorConfig;
+import net.onelitefeather.skygridng.generator.PresetCatalog;
+import net.onelitefeather.skygridng.generator.SkyGridConfig;
+import net.onelitefeather.skygridng.generator.IndependentSkyGridAlgorithm;
+import net.onelitefeather.skygridng.generator.NoiseSkyGridAlgorithm;
+import net.onelitefeather.skygridng.generator.PresetResolver;
+import net.onelitefeather.skygridng.generator.AlgorithmFactory;
+import net.onelitefeather.skygridng.generator.PresetRepository;
 
 import java.util.List;
 import java.util.Map;

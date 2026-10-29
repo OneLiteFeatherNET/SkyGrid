@@ -26,16 +26,16 @@ them.
 
 ## Add a command subcommand
 
-Commands run on Incendo Cloud (`adapters.command`), annotation driven
+Commands run on Incendo Cloud (`command`), annotation driven
 (`org.incendo.cloud.annotations`), not a hand-rolled `CommandExecutor`/`TabCompleter` switch.
 
 1. Add an `@Command("skygrid <literal> ...")`/`@Permission("skygridng.admin")` annotated method to
-   an existing `adapters.command.handler` class (group by concern, e.g. `AlgorithmCommands`,
+   an existing `command` class (group by concern, e.g. `AlgorithmCommands`,
    `ChallengeCommands`), or create a new class implementing `CloudCommandHandler` if it's a new
    concern. The method's first parameter is always `CommandSource source` (the platform-neutral
    sender), never a Bukkit `CommandSender`; required syntax fragments are `<name>`, optional ones
    `[name]`, matching `@Argument` parameters (`@Nullable` for optional).
-2. If it's a new handler class, bind it in `platforms.common.injection.CommandModule`'s
+2. If it's a new handler class, bind it in `command.CommandModule`'s
    `Multibinder<CloudCommandHandler>` (one line). `CloudCommandRegistrar` parses the whole set
    automatically; existing handler classes need no change elsewhere.
 3. Delegate to a `RuleAdminUseCase`/`Presets`/`ChallengeAdminUseCase` method. If the operation is

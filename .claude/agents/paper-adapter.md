@@ -6,7 +6,7 @@ skills: hexagonal-architecture, generation-pipeline
 color: green
 ---
 
-You own `plugin` (with `adapters.spawn`), `plugin`, `plugin`, and
+You own `plugin` (with `generator`), `plugin`, `plugin`, and
 `plugin` in SkyGrid-ng: the layer that turns platform-neutral decisions from `core` into
 real Bukkit/Paper calls.
 

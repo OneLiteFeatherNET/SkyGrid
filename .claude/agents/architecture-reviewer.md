@@ -12,10 +12,11 @@ believe a fix is needed, describe it precisely enough that another agent (`core-
 
 What to check, in priority order:
 
-1. **Dependency direction**: `platforms -> adapters -> ports -> api`, and `core -> ports -> api`.
-   An adapter must never import `core`. Grep for `import net.onelitefeather.skygridng.core` inside
-   `adapters/` or `import net.onelitefeather.skygridng.adapters` inside `core/` as a first pass.
-2. **Platform-neutral core**: `api`, `ports`, `core` must never import `org.bukkit`, `io.papermc`,
+1. **Dependency direction**: `domain` never depends on the plugin module; `season` must not depend on `challenge`.
+   The `domain` module must never import a framework package (Bukkit, Guice, Jackson, JPA). Grep for
+   `import org.bukkit`, `import com.google.inject`, `import com.fasterxml` inside `domain/` as a first pass.
+   Season must not import `net.onelitefeather.skygridng.challenge`.
+2. **Platform-neutral domain**: `domain` must never import `org.bukkit`, `io.papermc`,
    `net.minecraft`, `com.google.gson`, `com.google.inject`, `jakarta.inject`, or
    `net.kyori.adventure.platform`. Plain `net.kyori.adventure` is explicitly allowed there, it is a
    cross-platform text API, don't flag it.

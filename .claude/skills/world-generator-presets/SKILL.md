@@ -56,15 +56,15 @@ Sibling method with the same id semantics, if per-world biomes ever need it:
 
 ## Where presets live in the code
 
-- `api.model.Preset`: one named preset; `extends` declares its parent(s); any
-  field left null is inherited. `api.model.PresetCatalog`: the presets map plus
+- `generator.Preset`: one named preset; `extends` declares its parent(s); any
+  field left null is inherited. `generator.PresetCatalog`: the presets map plus
   the default `active`. (`api`, framework-free.)
-- `core.service.PresetResolver`: flattens a preset's inheritance into a complete
+- `generator.PresetResolver`: flattens a preset's inheritance into a complete
   `GeneratorConfig`, rejecting cycles, unknown parents and missing essentials.
   Resolution is the core's job; the adapter never resolves.
-- `core.service.PresetService`: owns the live catalog, applies presets, and
+- `generator.PresetService`: owns the live catalog, applies presets, and
   absorbs reload/save from the admin service.
-- `adapters.config.ConfiguratePresetRepository`: maps the raw preset catalog to
+- `config.ConfiguratePresetRepository`: maps the raw preset catalog to
   and from YAML/HOCON (`generator.yaml` / `generator.conf`).
 - The bundled default ships `classic` (the base), `standard` and `nether`.
 
