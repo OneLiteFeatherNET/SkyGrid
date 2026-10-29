@@ -2,6 +2,7 @@ package net.onelitefeather.skygridng.adapters.season;
 
 import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.Persistence;
+import net.onelitefeather.skygridng.adapters.persistence.Database;
 import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
 import net.onelitefeather.skygridng.adapters.persistence.FreshTestDatabase;
 import net.onelitefeather.skygridng.api.model.SeasonId;
@@ -44,17 +45,19 @@ class PostgresSeasonRunRepositoryTest {
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
     private DatabaseConfig database;
+    private Database store;
     private PostgresSeasonRunRepository repository;
 
     @BeforeEach
     void startRepository() {
         database = FreshTestDatabase.create(POSTGRES);
-        repository = new PostgresSeasonRunRepository(() -> database, Clock.fixed(NOW, ZoneOffset.UTC));
+        store = new Database(() -> database);
+        repository = new PostgresSeasonRunRepository(store, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @AfterEach
     void stopRepository() {
-        repository.close();
+        store.close();
     }
 
     private static SeasonRun run(String id, SeasonPhase phase) {
@@ -136,7 +139,7 @@ class PostgresSeasonRunRepositoryTest {
     @Test
     void staleCopySaveFailsWithOptimisticLockException() {
         repository.save(run("s01", SeasonPhase.PREPARED));
-        var factory = Persistence.createEntityManagerFactory("season", Map.of(
+        var factory = Persistence.createEntityManagerFactory("skygrid", Map.of(
                 "jakarta.persistence.jdbc.url", jdbcUrl(),
                 "jakarta.persistence.jdbc.user", database.user(),
                 "jakarta.persistence.jdbc.password", database.password()));

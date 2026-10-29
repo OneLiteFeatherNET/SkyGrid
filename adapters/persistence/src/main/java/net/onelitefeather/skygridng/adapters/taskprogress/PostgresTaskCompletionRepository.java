@@ -1,7 +1,6 @@
 package net.onelitefeather.skygridng.adapters.taskprogress;
 
-import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
-import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
+import net.onelitefeather.skygridng.adapters.persistence.Database;
 import net.onelitefeather.skygridng.api.model.ProgressScope;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
@@ -9,29 +8,24 @@ import org.hibernate.exception.ConstraintViolationException;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
  * PostgreSQL-backed {@link TaskCompletionRepository}, persisted through Jakarta Persistence (JSR 338) via
- * Hibernate ORM. The bootstrap, Flyway migration and transaction plumbing is inherited from
- * {@link AbstractJpaRepository}. Schema ownership: {@code classpath:db/migration/task-progress} (V1, V2).
+ * Hibernate ORM on the shared {@link Database}. Schema ownership: the shared migrations in
+ * {@code classpath:db/migration} (V4 and V5 for this table).
  *
- * <p>Construction is cheap and side effect free, per {@link AbstractJpaRepository}'s contract.
+ * <p>Construction is cheap and side effect free: the database is bootstrapped lazily, per {@link Database}.
  */
-public final class PostgresTaskCompletionRepository extends AbstractJpaRepository
-        implements TaskCompletionRepository {
+public final class PostgresTaskCompletionRepository implements TaskCompletionRepository {
+
+    private final Database database;
 
     /**
-     * @param configSupplier supplies the connection settings on first use, normally
-     *                       {@code DatabaseConfig::fromEnvironment}.
+     * @param database the shared database this repository queries.
      */
-    public PostgresTaskCompletionRepository(Supplier<DatabaseConfig> configSupplier) {
-        super(
-                "task-progress",
-                "classpath:db/migration/task-progress",
-                "flyway_history_task_progress",
-                configSupplier);
+    public PostgresTaskCompletionRepository(Database database) {
+        this.database = database;
     }
 
     private static TaskCompletionId idOf(ProgressScope scope, String taskId) {
@@ -42,7 +36,7 @@ public final class PostgresTaskCompletionRepository extends AbstractJpaRepositor
     @Override
     public boolean isCompleted(ProgressScope scope, String taskId) {
         var id = idOf(scope, taskId);
-        return read(entityManager -> entityManager.find(TaskCompletionEntity.class, id) != null);
+        return database.read(entityManager -> entityManager.find(TaskCompletionEntity.class, id) != null);
     }
 
     /**
@@ -57,7 +51,7 @@ public final class PostgresTaskCompletionRepository extends AbstractJpaRepositor
 
     private boolean markCompletedAttempt(TaskCompletionId id, boolean allowInsertRetry) {
         try {
-            return inTransaction(entityManager -> {
+            return database.inTransaction(entityManager -> {
                 var entity = entityManager.find(TaskCompletionEntity.class, id);
                 if (entity != null) {
                     return false;
@@ -87,7 +81,7 @@ public final class PostgresTaskCompletionRepository extends AbstractJpaRepositor
     /** Named bulk delete of one season's completions; every other season is untouched. */
     @Override
     public void resetSeason(SeasonId season) {
-        inTransaction(entityManager -> entityManager
+        database.inTransaction(entityManager -> entityManager
                 .createNamedQuery("TaskCompletionEntity.deleteBySeason")
                 .setParameter("seasonId", season)
                 .executeUpdate());
@@ -96,7 +90,7 @@ public final class PostgresTaskCompletionRepository extends AbstractJpaRepositor
     /** Counts the player's completions per season, read through the {@code ofPlayer} named query. */
     @Override
     public Map<SeasonId, Long> completedCountBySeason(UUID playerId) {
-        return read(entityManager -> entityManager
+        return database.read(entityManager -> entityManager
                 .createNamedQuery("TaskCompletionEntity.ofPlayer", TaskCompletionEntity.class)
                 .setParameter("playerId", playerId)
                 .getResultList()

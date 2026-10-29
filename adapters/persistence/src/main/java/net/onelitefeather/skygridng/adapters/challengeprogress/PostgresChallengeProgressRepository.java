@@ -1,43 +1,37 @@
 package net.onelitefeather.skygridng.adapters.challengeprogress;
 
 import jakarta.persistence.LockModeType;
-import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
-import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
+import net.onelitefeather.skygridng.adapters.persistence.Database;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
 import org.hibernate.exception.ConstraintViolationException;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
  * PostgreSQL-backed {@link ChallengeProgressRepository}, persisted through Jakarta Persistence (JSR 338)
- * via Hibernate ORM. The bootstrap, Flyway migration and transaction plumbing is inherited from
- * {@link AbstractJpaRepository}; this class adds the season scoped queries of the {@code challenge_tier}
- * table. Schema ownership: {@code classpath:db/migration/challenge-progress} (V1 to V3).
+ * via Hibernate ORM on the shared {@link Database}. This class holds the season scoped queries of the
+ * {@code challenge_tier} table. Schema ownership: the shared migrations in {@code classpath:db/migration}
+ * (V1 to V3 for this table).
  *
- * <p>Construction is cheap and side effect free, per {@link AbstractJpaRepository}'s contract.
+ * <p>Construction is cheap and side effect free: the database is bootstrapped lazily, per {@link Database}.
  */
-public final class PostgresChallengeProgressRepository extends AbstractJpaRepository
-        implements ChallengeProgressRepository {
+public final class PostgresChallengeProgressRepository implements ChallengeProgressRepository {
+
+    private final Database database;
 
     /**
-     * @param configSupplier supplies the connection settings on first use, normally
-     *                       {@code DatabaseConfig::fromEnvironment}.
+     * @param database the shared database this repository queries.
      */
-    public PostgresChallengeProgressRepository(Supplier<DatabaseConfig> configSupplier) {
-        super(
-                "challenge-progress",
-                "classpath:db/migration/challenge-progress",
-                "flyway_history_challenge_progress",
-                configSupplier);
+    public PostgresChallengeProgressRepository(Database database) {
+        this.database = database;
     }
 
     @Override
     public int tierOf(SeasonId season, UUID playerId, String challengeId) {
-        return read(entityManager -> {
+        return database.read(entityManager -> {
             var entity = entityManager.find(ChallengeTierEntity.class, new ChallengeTierId(season, playerId, challengeId));
             return entity == null ? 0 : entity.getTier();
         });
@@ -63,7 +57,7 @@ public final class PostgresChallengeProgressRepository extends AbstractJpaReposi
      */
     private int recordCompletionAttempt(ChallengeTierId id, boolean allowInsertRetry) {
         try {
-            return inTransaction(entityManager -> {
+            return database.inTransaction(entityManager -> {
                 var entity = entityManager.find(ChallengeTierEntity.class, id, LockModeType.PESSIMISTIC_WRITE);
                 if (entity == null) {
                     entityManager.persist(new ChallengeTierEntity(id, 1));
@@ -94,7 +88,7 @@ public final class PostgresChallengeProgressRepository extends AbstractJpaReposi
     /** Named bulk delete of one season's tiers; every other season is untouched. */
     @Override
     public void resetSeason(SeasonId season) {
-        inTransaction(entityManager -> entityManager
+        database.inTransaction(entityManager -> entityManager
                 .createNamedQuery("ChallengeTierEntity.deleteBySeason")
                 .setParameter("seasonId", season)
                 .executeUpdate());
@@ -103,7 +97,7 @@ public final class PostgresChallengeProgressRepository extends AbstractJpaReposi
     /** The player's tier per season, read through the {@code historyOf} named query. */
     @Override
     public Map<SeasonId, Integer> history(UUID playerId) {
-        return read(entityManager -> entityManager
+        return database.read(entityManager -> entityManager
                 .createNamedQuery("ChallengeTierEntity.historyOf", ChallengeTierEntity.class)
                 .setParameter("playerId", playerId)
                 .getResultList()

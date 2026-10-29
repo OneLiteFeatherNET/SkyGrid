@@ -1,5 +1,6 @@
 package net.onelitefeather.skygridng.adapters.taskprogress;
 
+import net.onelitefeather.skygridng.adapters.persistence.Database;
 import net.onelitefeather.skygridng.adapters.persistence.FreshTestDatabase;
 import net.onelitefeather.skygridng.api.model.ProgressScope;
 import net.onelitefeather.skygridng.api.model.SeasonId;
@@ -35,17 +36,19 @@ class PostgresTaskCompletionRepositoryTest {
     @Container
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
+    private Database database;
     private PostgresTaskCompletionRepository repository;
 
     @BeforeEach
     void startRepository() {
         var config = FreshTestDatabase.create(POSTGRES);
-        repository = new PostgresTaskCompletionRepository(() -> config);
+        database = new Database(() -> config);
+        repository = new PostgresTaskCompletionRepository(database);
     }
 
     @AfterEach
     void stopRepository() {
-        repository.close();
+        database.close();
     }
 
     private static ProgressScope scope(SeasonId season, UUID playerId, String challengeId, int prestigeStep) {

@@ -19,16 +19,13 @@ import net.onelitefeather.skygridng.platforms.olf.ChallengeModule;
 import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
 import net.onelitefeather.skygridng.platforms.olf.OlfModule;
 import net.onelitefeather.skygridng.platforms.olf.season.SeasonModule;
-import net.onelitefeather.skygridng.adapters.persistence.AbstractJpaRepository;
+import net.onelitefeather.skygridng.adapters.persistence.Database;
 import net.onelitefeather.skygridng.api.SkyGridApi;
 import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.Presets;
 import net.onelitefeather.skygridng.ports.in.RuleAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.TerrainAlgorithms;
-import net.onelitefeather.skygridng.ports.out.ChallengeProgressRepository;
-import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;
-import net.onelitefeather.skygridng.ports.out.TaskCompletionRepository;
 import net.onelitefeather.skygridng.core.state.RuleState;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.ServicePriority;
@@ -136,7 +133,7 @@ public class SkyGridNgPlugin extends JavaPlugin {
         // Spread-spawn: first-join players are scattered onto their own platforms in our worlds.
         getServer().getPluginManager().registerEvents(injector.getInstance(SpreadSpawnListener.class), this);
 
-        warmUpDatabases();
+        warmUpDatabase();
 
         getLogger().info("SkyGrid-ng enabled. World generator: \"SkyGrid-ng\". Algorithm: " + algorithm + ".");
 
@@ -144,30 +141,20 @@ public class SkyGridNgPlugin extends JavaPlugin {
     }
 
     /**
-     * Runs the Flyway migrations and the Hibernate bootstrap of the Postgres backed repositories on an
-     * async thread. Left to the first command or task completion, that blocking work ran on the server
-     * main thread and tripped the watchdog. A failure is logged as one warning per database and never
-     * disables the plugin: the repository keeps retrying lazily on its first real use.
+     * Runs the Flyway migration and the Hibernate bootstrap of the shared database on an async thread. Left
+     * to the first command or task completion, that blocking work ran on the server main thread and tripped
+     * the watchdog. A failure is logged as one warning and never disables the plugin: the database keeps
+     * retrying lazily on its first real use.
      */
-    private void warmUpDatabases() {
-        List<Object> repositories = List.of(
-                injector.getInstance(ChallengeProgressRepository.class),
-                injector.getInstance(TaskCompletionRepository.class),
-                injector.getInstance(SeasonRunRepository.class));
+    private void warmUpDatabase() {
+        Database database = injector.getInstance(Database.class);
         DatabaseWarmUpGate gate = injector.getInstance(DatabaseWarmUpGate.class);
         getServer().getScheduler().runTaskAsynchronously(this, () -> {
             try {
-                for (Object repository : repositories) {
-                    if (repository instanceof AbstractJpaRepository database) {
-                        try {
-                            database.warmUp();
-                        } catch (RuntimeException e) {
-                            getLogger().log(Level.WARNING, "Database warm-up failed for "
-                                    + database.getClass().getSimpleName() + ", it will retry on first use: "
-                                    + e.getMessage(), e);
-                        }
-                    }
-                }
+                database.warmUp();
+            } catch (RuntimeException e) {
+                getLogger().log(Level.WARNING, "Database warm-up failed, it will retry on first use: "
+                        + e.getMessage(), e);
             } finally {
                 // The season ticker waits for this gate, whether the warm-up succeeded or failed.
                 gate.markWarmedUp();
@@ -180,26 +167,14 @@ public class SkyGridNgPlugin extends JavaPlugin {
         onExtensionDisable();
         i18n.unregister();
 
-        // The Postgres adapters lazily open a HikariCP pool on first use; whether or not they were ever used
-        // this run, close the bound singletons (Guice memoizes them, so this never reopens or duplicates
-        // anything), so a reload or server stop never leaks pooled connections or Hikari's housekeeping threads.
-        for (Object repository : databaseRepositories()) {
-            if (repository instanceof AutoCloseable closeable) {
-                try {
-                    closeable.close();
-                } catch (Exception e) {
-                    getLogger().log(Level.WARNING, "Failed to close " + repository.getClass().getSimpleName() + ".", e);
-                }
-            }
+        // The database lazily opens one HikariCP pool on first use. Whether or not it was used this run, close
+        // the bound singleton (Guice memoizes it, so this never reopens or duplicates anything), so a reload or
+        // server stop never leaks pooled connections or Hikari's housekeeping threads.
+        try {
+            injector.getInstance(Database.class).close();
+        } catch (RuntimeException e) {
+            getLogger().log(Level.WARNING, "Failed to close the database.", e);
         }
-    }
-
-    /** The database repositories this plugin owns and closes on disable. */
-    List<Object> databaseRepositories() {
-        return List.of(
-                injector.getInstance(ChallengeProgressRepository.class),
-                injector.getInstance(TaskCompletionRepository.class),
-                injector.getInstance(SeasonRunRepository.class));
     }
 
     /**
