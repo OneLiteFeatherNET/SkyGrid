@@ -79,7 +79,7 @@ Domain classes carry no injection annotations; swapping an implementation change
 the domain. `SkyGridNgPlugin` is extensible via `modules()`, `injector()`, and
 `onExtensionEnable()`/`onExtensionDisable()`. Shared build config lives in the
 `skygrid.java-conventions` plugin in `buildSrc`. The architecture rules are enforced by ArchUnit in
-`:verification`; new feature packages are covered by the slice rule automatically.
+`:verification`.
 
 Plugin lifecycle: `onLoad` builds the whole Guice graph eagerly (`Stage.PRODUCTION`, which loads
 config), `onEnable` registers i18n, the `SkyGridApi` Bukkit service, and the command;
