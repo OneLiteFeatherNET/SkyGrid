@@ -16,6 +16,9 @@ dependencies {
     // own compileOnly(libs.adventure.api). The platform (Paper) provides the real implementation at
     // runtime.
     compileOnly(libs.adventure.api)
+    // MiniMessage parses admin-authored season display names (MiniMessage tags) into components. Like the
+    // Adventure API, the platform (Paper) provides it at runtime.
+    compileOnly(libs.adventure.minimessage)
 
     // Cloud command framework: annotation processing and the platform-neutral command core.
     // Declared as `api` so it flows through platforms/common into the platforms/paper shaded jar,
@@ -30,4 +33,5 @@ dependencies {
     testImplementation(libs.mockito.core)
     testImplementation(libs.assertj.core)
     testImplementation(libs.adventure.api)
+    testImplementation(libs.adventure.minimessage)
 }

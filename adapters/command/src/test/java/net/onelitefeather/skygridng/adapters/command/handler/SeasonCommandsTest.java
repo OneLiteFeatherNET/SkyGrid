@@ -1,6 +1,8 @@
 package net.onelitefeather.skygridng.adapters.command.handler;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.onelitefeather.skygridng.adapters.command.Messages;
 import net.onelitefeather.skygridng.api.model.Season;
 import net.onelitefeather.skygridng.api.model.SeasonCatalog;
@@ -18,6 +20,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,6 +79,7 @@ class SeasonCommandsTest {
     @DisplayName("'season info' without a configured season says so")
     void infoWithoutSeasonSaysNoSeason() {
         when(current.season()).thenReturn(Optional.empty());
+        when(seasons.list()).thenReturn(SeasonCatalog.empty());
 
         subject.info(source);
 
@@ -93,21 +97,103 @@ class SeasonCommandsTest {
     }
 
     @Test
+    @DisplayName("'season list' renders the MiniMessage display name as a styled component, not raw tags")
+    void listRendersDisplayNameAsMiniMessage() {
+        Season gold = new Season(new SeasonId("s01"), "<gold>Season 1: Herbst</gold>", START,
+                Duration.ofDays(28), "standard", List.of(), null);
+        when(seasons.list()).thenReturn(new SeasonCatalog(List.of(gold)));
+
+        subject.list(source);
+
+        assertThat(source.messages()).hasSize(1);
+        assertThat(argumentsOf(source.messages().get(0)))
+                .as("the name is passed as the parsed MiniMessage component, so the tags are not shown raw")
+                .contains(MiniMessage.miniMessage().deserialize("<gold>Season 1: Herbst</gold>"));
+    }
+
+    @Test
+    @DisplayName("'season info' while legacy runs and a season is upcoming names that season and its start")
+    void infoWithUpcomingSeasonNamesItAndItsStart() {
+        Season upcoming = new Season(new SeasonId("s01_autumn"), "<gold>Autumn</gold>",
+                Instant.parse("2027-02-01T00:00:00Z"), Duration.ofDays(28), "standard", List.of(), null);
+        when(current.season()).thenReturn(Optional.empty());
+        when(seasons.list()).thenReturn(new SeasonCatalog(List.of(upcoming)));
+
+        subject.info(source);
+
+        assertThat(source.messages()).hasSize(1);
+        assertThat(argumentsOf(source.messages().get(0)))
+                .as("the upcoming season is named by its display name, parsed as MiniMessage")
+                .contains(MiniMessage.miniMessage().deserialize("<gold>Autumn</gold>"));
+    }
+
+    @Test
+    @DisplayName("'season info' parses the display name of the configured season as MiniMessage")
+    void infoRendersDisplayNameAsMiniMessage() {
+        Season gold = new Season(new SeasonId("s01"), "<gold>Season 1: Herbst</gold>", START,
+                Duration.ofDays(28), "standard", List.of(), null);
+        when(current.season()).thenReturn(Optional.of(gold));
+
+        subject.info(source);
+
+        assertThat(argumentsOf(source.messages().get(0)))
+                .as("the configured name is passed as the parsed MiniMessage component, not as raw tags")
+                .contains(MiniMessage.miniMessage().deserialize("<gold>Season 1: Herbst</gold>"));
+    }
+
+    @Test
+    @DisplayName("'season status' while legacy runs says the next season starts at its start, not that it ends")
+    void statusWithUpcomingSeasonSaysItStarts() {
+        Instant start = Instant.parse("2027-02-01T00:00:00Z");
+        when(seasons.status(NOW)).thenReturn(Optional.of(new SeasonStatus(SeasonId.LEGACY,
+                SeasonPhase.ACTIVE, new SeasonId("s01_autumn"), start)));
+
+        subject.status(source);
+
+        assertThat(source.messages()).containsExactly(Messages.seasonStatusUpcoming(SeasonId.LEGACY.value(), "ACTIVE",
+                "s01_autumn", Messages.seasonDate(start, source.locale())));
+        assertThat(keysOf(source.messages().get(0)))
+                .as("the upcoming wording is used, not the wording that says the season ends")
+                .contains("skygridng.command.season.status.upcoming")
+                .doesNotContain("skygridng.command.season.status");
+    }
+
+    /** Every translation key of the message tree, so the tests can tell which message was sent. */
+    private static List<String> keysOf(Component message) {
+        List<String> found = new ArrayList<>();
+        if (message instanceof TranslatableComponent translatable) {
+            found.add(translatable.key());
+        }
+        message.children().forEach(child -> found.addAll(keysOf(child)));
+        return found;
+    }
+
+    /** Every argument of every translatable component in the message tree, so the tests assert on components. */
+    private static List<Component> argumentsOf(Component message) {
+        List<Component> found = new ArrayList<>();
+        if (message instanceof TranslatableComponent translatable) {
+            found.addAll(translatable.args());
+        }
+        message.children().forEach(child -> found.addAll(argumentsOf(child)));
+        return found;
+    }
+
+    @Test
     @DisplayName("'season status' delegates to the use case and reports the active season")
     void statusDelegatesAndReports() {
-        when(seasons.status()).thenReturn(Optional.of(new SeasonStatus(new SeasonId("s01"),
+        when(seasons.status(NOW)).thenReturn(Optional.of(new SeasonStatus(new SeasonId("s01"),
                 SeasonPhase.ACTIVE, null, S01.end())));
 
         subject.status(source);
 
-        verify(seasons).status();
+        verify(seasons).status(NOW);
         assertThat(source.messages()).hasSize(1);
     }
 
     @Test
     @DisplayName("'season status' says no season is configured while the server runs the legacy season")
     void statusWithoutSeasonsSaysNoSeason() {
-        when(seasons.status()).thenReturn(Optional.of(new SeasonStatus(SeasonId.LEGACY,
+        when(seasons.status(NOW)).thenReturn(Optional.of(new SeasonStatus(SeasonId.LEGACY,
                 SeasonPhase.ACTIVE, null, null)));
 
         subject.status(source);
@@ -118,7 +204,7 @@ class SeasonCommandsTest {
     @Test
     @DisplayName("'season status' reports a refusal when the status cannot be read")
     void statusReportsRefusalWhenUnreadable() {
-        when(seasons.status()).thenReturn(Optional.empty());
+        when(seasons.status(NOW)).thenReturn(Optional.empty());
 
         subject.status(source);
 

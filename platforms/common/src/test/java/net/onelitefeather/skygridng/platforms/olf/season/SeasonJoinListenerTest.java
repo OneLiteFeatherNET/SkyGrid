@@ -195,6 +195,21 @@ class SeasonJoinListenerTest {
     }
 
     @Test
+    void finalWeekLineNamesTheSeasonByItsDisplayName() {
+        season = new Season(new SeasonId("s01"), "<gold>Season 1</gold>", START, Duration.ofDays(28), "standard",
+                List.of(), null);
+        PlayerMock player = server.addPlayer();
+
+        listener(END.minus(Duration.ofDays(3))).onJoin(new PlayerJoinEvent(player, Component.empty()));
+
+        String line = argumentsOf(player.nextComponentMessage());
+        assertThat(line)
+                .as("the final week line shows the display name parsed as MiniMessage, not the raw tags")
+                .contains("Season 1")
+                .doesNotContain("<gold>");
+    }
+
+    @Test
     void joinTenDaysBeforeTheSeasonEndSendsNoFinalWeekLine() {
         PlayerMock player = server.addPlayer();
 
