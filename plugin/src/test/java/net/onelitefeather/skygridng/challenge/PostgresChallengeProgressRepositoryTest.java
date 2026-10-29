@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.challenge;
 
-import net.onelitefeather.skygridng.adapters.persistence.Database;
-import net.onelitefeather.skygridng.adapters.persistence.FreshTestDatabase;
+import net.onelitefeather.skygridng.persistence.Database;
+import net.onelitefeather.skygridng.persistence.FreshTestDatabase;
 import net.onelitefeather.skygridng.season.SeasonId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.platforms.common;
+package net.onelitefeather.skygridng.persistence;
 
 /**
  * Records that the async database warm-up has finished or failed. Schedulers that touch the databases wait for it,

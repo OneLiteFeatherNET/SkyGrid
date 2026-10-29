@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.persistence;
+package net.onelitefeather.skygridng.persistence;
 
 import net.onelitefeather.skygridng.challenge.PostgresChallengeProgressRepository;
 import net.onelitefeather.skygridng.season.PostgresSeasonRunRepository;

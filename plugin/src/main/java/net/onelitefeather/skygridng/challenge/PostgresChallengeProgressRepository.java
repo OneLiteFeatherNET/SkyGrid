@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.challenge;
 
 import jakarta.persistence.LockModeType;
-import net.onelitefeather.skygridng.adapters.persistence.Database;
+import net.onelitefeather.skygridng.persistence.Database;
 import net.onelitefeather.skygridng.season.SeasonId;
 import org.hibernate.exception.ConstraintViolationException;
 

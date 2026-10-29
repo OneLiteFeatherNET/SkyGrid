@@ -3,7 +3,7 @@ package net.onelitefeather.skygridng.platforms.common.injection;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import jakarta.inject.Singleton;
-import net.onelitefeather.skygridng.platforms.common.DatabaseWarmUpGate;
+import net.onelitefeather.skygridng.persistence.DatabaseWarmUpGate;
 import net.onelitefeather.skygridng.generator.HexagonalChunkGenerator;
 import net.onelitefeather.skygridng.generator.SpreadSpawnListener;
 import net.onelitefeather.skygridng.generator.SpawnPoints;

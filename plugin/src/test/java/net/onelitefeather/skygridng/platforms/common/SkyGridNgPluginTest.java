@@ -8,7 +8,7 @@ import net.onelitefeather.skygridng.challenge.OneLifeListener;
 import net.onelitefeather.skygridng.season.SeasonId;
 import net.onelitefeather.skygridng.season.CurrentSeason;
 import net.onelitefeather.skygridng.season.SeasonAdminUseCase;
-import net.onelitefeather.skygridng.adapters.persistence.Database;
+import net.onelitefeather.skygridng.persistence.Database;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityRegainHealthEvent;

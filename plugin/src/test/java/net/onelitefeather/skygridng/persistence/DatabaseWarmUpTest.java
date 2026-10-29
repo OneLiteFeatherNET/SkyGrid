@@ -1,11 +1,10 @@
-package net.onelitefeather.skygridng.platforms.common;
+package net.onelitefeather.skygridng.persistence;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
-import net.onelitefeather.skygridng.adapters.persistence.Database;
-import net.onelitefeather.skygridng.adapters.persistence.DatabaseConfig;
 import net.onelitefeather.skygridng.platforms.common.injection.RepositoryModule;
+import net.onelitefeather.skygridng.platforms.common.SkyGridNgPlugin;
 import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.junit.jupiter.api.AfterEach;

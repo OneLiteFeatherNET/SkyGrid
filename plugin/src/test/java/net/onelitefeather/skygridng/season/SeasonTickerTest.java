@@ -1,6 +1,6 @@
 package net.onelitefeather.skygridng.season;
 
-import net.onelitefeather.skygridng.platforms.common.DatabaseWarmUpGate;
+import net.onelitefeather.skygridng.persistence.DatabaseWarmUpGate;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

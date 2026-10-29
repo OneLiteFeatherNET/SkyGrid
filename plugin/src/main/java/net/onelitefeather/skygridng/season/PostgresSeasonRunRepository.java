@@ -3,7 +3,7 @@ package net.onelitefeather.skygridng.season;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.OptimisticLockException;
-import net.onelitefeather.skygridng.adapters.persistence.Database;
+import net.onelitefeather.skygridng.persistence.Database;
 import org.hibernate.exception.ConstraintViolationException;
 
 import java.time.Clock;
