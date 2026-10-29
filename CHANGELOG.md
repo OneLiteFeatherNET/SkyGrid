@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.3](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.2.2...v0.2.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **deps:** update dependency jakarta.persistence:jakarta.persistence-api to v3.2.0 ([#20](https://github.com/OneLiteFeatherNET/SkyGrid/issues/20)) ([54d5404](https://github.com/OneLiteFeatherNET/SkyGrid/commit/54d5404744dffec205d18f5644c4bd6901c20049))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.13.2 ([#81](https://github.com/OneLiteFeatherNET/SkyGrid/issues/81)) ([1e986a9](https://github.com/OneLiteFeatherNET/SkyGrid/commit/1e986a93cd52ea5514c9e26ebab0c84a69a668c3))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.13.1 ([#82](https://github.com/OneLiteFeatherNET/SkyGrid/issues/82)) ([5bba08b](https://github.com/OneLiteFeatherNET/SkyGrid/commit/5bba08bb8bdb86b864fce135abceb3d3b429d810))
+* **deps:** update dependency org.mockito:mockito-core to v5.16.0 ([#58](https://github.com/OneLiteFeatherNET/SkyGrid/issues/58)) ([e820376](https://github.com/OneLiteFeatherNET/SkyGrid/commit/e820376bf3305c9943529948233186dbb90c16f8))
+* **deps:** update dependency org.postgresql:postgresql to v42.7.13 ([#78](https://github.com/OneLiteFeatherNET/SkyGrid/issues/78)) ([8de42f7](https://github.com/OneLiteFeatherNET/SkyGrid/commit/8de42f73f025bd215e497e1a078168bebdd2decf))
+* **persistence:** run the legacy history check through the flyway data source ([#88](https://github.com/OneLiteFeatherNET/SkyGrid/issues/88)) ([4bb8f96](https://github.com/OneLiteFeatherNET/SkyGrid/commit/4bb8f96464053ebf60bb0cc0070c4bf258a358b9))
+
 ## [0.2.2](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.2.1...v0.2.2) (2026-10-29)
 
 
