@@ -2,8 +2,8 @@ package net.onelitefeather.skygridng.adapters.persistence;
 
 import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.EntityManager;
-import net.onelitefeather.skygridng.adapters.challengeprogress.ChallengeTierEntity;
-import net.onelitefeather.skygridng.adapters.challengeprogress.ChallengeTierId;
+import net.onelitefeather.skygridng.challenge.ChallengeTierEntity;
+import net.onelitefeather.skygridng.challenge.ChallengeTierId;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.spi.SessionFactoryImplementor;

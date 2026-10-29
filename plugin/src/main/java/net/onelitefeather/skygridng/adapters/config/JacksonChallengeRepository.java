@@ -3,12 +3,12 @@ package net.onelitefeather.skygridng.adapters.config;
 import net.onelitefeather.skygridng.adapters.config.ChallengeDtos.ChallengeDto;
 import net.onelitefeather.skygridng.adapters.config.ChallengeDtos.RewardDto;
 import net.onelitefeather.skygridng.adapters.config.ChallengeDtos.TaskDto;
-import net.onelitefeather.skygridng.api.model.ChallengeCatalog;
-import net.onelitefeather.skygridng.api.model.ChallengeRule;
-import net.onelitefeather.skygridng.api.model.ItemId;
-import net.onelitefeather.skygridng.api.model.Reward;
-import net.onelitefeather.skygridng.api.model.Task;
-import net.onelitefeather.skygridng.ports.out.ChallengeRepository;
+import net.onelitefeather.skygridng.challenge.ChallengeCatalog;
+import net.onelitefeather.skygridng.challenge.ChallengeRule;
+import net.onelitefeather.skygridng.challenge.ItemId;
+import net.onelitefeather.skygridng.challenge.Reward;
+import net.onelitefeather.skygridng.challenge.Task;
+import net.onelitefeather.skygridng.challenge.ChallengeRepository;
 
 import java.io.IOException;
 import java.io.InputStream;

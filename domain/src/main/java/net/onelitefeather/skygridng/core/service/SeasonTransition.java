@@ -1,12 +1,12 @@
 package net.onelitefeather.skygridng.core.service;
 
-import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.challenge.ChallengeRule;
 import net.onelitefeather.skygridng.api.model.Season;
 import net.onelitefeather.skygridng.api.model.SeasonCatalog;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.SeasonPhase;
 import net.onelitefeather.skygridng.api.model.SeasonRun;
-import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.challenge.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.out.PlayerSeasonReset;
 import net.onelitefeather.skygridng.ports.out.SeasonAnnouncer;
 import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;

@@ -2,9 +2,9 @@ package net.onelitefeather.skygridng.platforms.common;
 
 import net.onelitefeather.skygridng.generator.SkyGridApi;
 import net.onelitefeather.skygridng.generator.HexagonalChunkGenerator;
-import net.onelitefeather.skygridng.platforms.olf.challenge.NoCraftingTableListener;
-import net.onelitefeather.skygridng.platforms.olf.challenge.NoNaturalRegenerationListener;
-import net.onelitefeather.skygridng.platforms.olf.challenge.OneLifeListener;
+import net.onelitefeather.skygridng.challenge.NoCraftingTableListener;
+import net.onelitefeather.skygridng.challenge.NoNaturalRegenerationListener;
+import net.onelitefeather.skygridng.challenge.OneLifeListener;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;

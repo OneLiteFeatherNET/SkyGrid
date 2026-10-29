@@ -1,6 +1,7 @@
 package net.onelitefeather.skygridng.api.model;
 
 import java.util.regex.Pattern;
+import net.onelitefeather.skygridng.challenge.ChallengeRule;
 
 /**
  * The id of a season, for example {@code s01_overgrowth}. It is referenced by season files, the season

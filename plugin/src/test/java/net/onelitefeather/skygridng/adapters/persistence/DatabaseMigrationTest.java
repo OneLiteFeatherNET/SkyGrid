@@ -1,9 +1,9 @@
 package net.onelitefeather.skygridng.adapters.persistence;
 
-import net.onelitefeather.skygridng.adapters.challengeprogress.PostgresChallengeProgressRepository;
+import net.onelitefeather.skygridng.challenge.PostgresChallengeProgressRepository;
 import net.onelitefeather.skygridng.adapters.season.PostgresSeasonRunRepository;
-import net.onelitefeather.skygridng.adapters.taskprogress.PostgresTaskCompletionRepository;
-import net.onelitefeather.skygridng.api.model.ProgressScope;
+import net.onelitefeather.skygridng.challenge.PostgresTaskCompletionRepository;
+import net.onelitefeather.skygridng.challenge.ProgressScope;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.SeasonPhase;
 import net.onelitefeather.skygridng.api.model.SeasonRun;

@@ -7,7 +7,7 @@ import net.onelitefeather.skygridng.api.model.SeasonPhase;
 import net.onelitefeather.skygridng.api.model.SeasonRun;
 import net.onelitefeather.skygridng.api.model.SeasonSettings;
 import net.onelitefeather.skygridng.api.model.SeasonStatus;
-import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.challenge.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
 import net.onelitefeather.skygridng.ports.out.PlayerSeasonReset;

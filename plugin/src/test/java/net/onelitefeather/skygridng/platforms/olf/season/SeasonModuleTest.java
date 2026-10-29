@@ -7,7 +7,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import net.onelitefeather.skygridng.generator.WorldGenerators;
-import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.challenge.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.generator.Presets;
 import net.onelitefeather.skygridng.ports.out.SeasonRepository;
 import net.onelitefeather.skygridng.ports.out.SeasonRunRepository;

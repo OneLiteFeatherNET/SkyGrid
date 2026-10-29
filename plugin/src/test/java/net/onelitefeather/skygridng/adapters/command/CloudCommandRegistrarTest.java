@@ -1,13 +1,13 @@
 package net.onelitefeather.skygridng.adapters.command;
 
 import net.onelitefeather.skygridng.generator.AlgorithmCommands;
-import net.onelitefeather.skygridng.adapters.command.handler.ChallengeCommands;
+import net.onelitefeather.skygridng.challenge.ChallengeCommands;
 import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
 import net.onelitefeather.skygridng.adapters.command.handler.HelpCommands;
 import net.onelitefeather.skygridng.generator.MaintenanceCommands;
 import net.onelitefeather.skygridng.generator.PresetCommands;
-import net.onelitefeather.skygridng.ports.in.ChallengeAdminUseCase;
-import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
+import net.onelitefeather.skygridng.challenge.ChallengeAdminUseCase;
+import net.onelitefeather.skygridng.challenge.ChallengeProgressUseCase;
 import net.onelitefeather.skygridng.generator.Presets;
 import net.onelitefeather.skygridng.generator.RuleAdminUseCase;
 import org.incendo.cloud.CommandManager;

@@ -25,8 +25,8 @@
 
     <persistence-unit name="skygrid" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-        <class>net.onelitefeather.skygridng.adapters.challengeprogress.ChallengeTierEntity</class>
-        <class>net.onelitefeather.skygridng.adapters.taskprogress.TaskCompletionEntity</class>
+        <class>net.onelitefeather.skygridng.challenge.ChallengeTierEntity</class>
+        <class>net.onelitefeather.skygridng.challenge.TaskCompletionEntity</class>
         <class>net.onelitefeather.skygridng.adapters.season.SeasonRunEntity</class>
         <class>net.onelitefeather.skygridng.adapters.persistence.SeasonIdConverter</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>

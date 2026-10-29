@@ -5,7 +5,7 @@ import net.onelitefeather.skygridng.adapters.command.Messages;
 import net.onelitefeather.skygridng.api.model.Season;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.SeasonStatus;
-import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
+import net.onelitefeather.skygridng.challenge.ChallengeProgressUseCase;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
 import org.incendo.cloud.annotations.Argument;

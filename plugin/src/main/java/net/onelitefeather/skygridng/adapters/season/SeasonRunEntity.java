@@ -9,7 +9,7 @@ import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
-import net.onelitefeather.skygridng.api.model.ChallengeRule;
+import net.onelitefeather.skygridng.challenge.ChallengeRule;
 import net.onelitefeather.skygridng.api.model.SeasonPhase;
 
 import java.time.Instant;

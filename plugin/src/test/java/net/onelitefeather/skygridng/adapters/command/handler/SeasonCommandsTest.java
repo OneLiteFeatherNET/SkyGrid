@@ -9,7 +9,7 @@ import net.onelitefeather.skygridng.api.model.SeasonCatalog;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.SeasonPhase;
 import net.onelitefeather.skygridng.api.model.SeasonStatus;
-import net.onelitefeather.skygridng.ports.in.ChallengeProgressUseCase;
+import net.onelitefeather.skygridng.challenge.ChallengeProgressUseCase;
 import net.onelitefeather.skygridng.ports.in.CurrentSeason;
 import net.onelitefeather.skygridng.ports.in.SeasonAdminUseCase;
 import org.junit.jupiter.api.BeforeEach;

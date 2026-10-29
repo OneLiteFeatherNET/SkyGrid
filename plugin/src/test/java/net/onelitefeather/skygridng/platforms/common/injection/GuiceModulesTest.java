@@ -10,7 +10,7 @@ import net.onelitefeather.skygridng.generator.TerrainAlgorithms;
 import net.onelitefeather.skygridng.generator.DefaultTerrainAlgorithms;
 import net.onelitefeather.skygridng.generator.RuleAdminService;
 import net.onelitefeather.skygridng.generator.RuleState;
-import net.onelitefeather.skygridng.platforms.olf.ChallengeModule;
+import net.onelitefeather.skygridng.challenge.ChallengeModule;
 import net.onelitefeather.skygridng.platforms.olf.season.SeasonModule;
 import net.onelitefeather.skygridng.generator.GeneratorModule;
 import org.junit.jupiter.api.AfterEach;

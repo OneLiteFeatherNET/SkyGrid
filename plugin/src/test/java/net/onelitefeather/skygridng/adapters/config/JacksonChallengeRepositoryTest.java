@@ -1,11 +1,11 @@
 package net.onelitefeather.skygridng.adapters.config;
 
-import net.onelitefeather.skygridng.api.model.ChallengeCatalog;
-import net.onelitefeather.skygridng.api.model.ChallengeRule;
-import net.onelitefeather.skygridng.api.model.ItemId;
-import net.onelitefeather.skygridng.api.model.Reward;
-import net.onelitefeather.skygridng.api.model.Task;
-import net.onelitefeather.skygridng.ports.out.ChallengeRepository;
+import net.onelitefeather.skygridng.challenge.ChallengeCatalog;
+import net.onelitefeather.skygridng.challenge.ChallengeRule;
+import net.onelitefeather.skygridng.challenge.ItemId;
+import net.onelitefeather.skygridng.challenge.Reward;
+import net.onelitefeather.skygridng.challenge.Task;
+import net.onelitefeather.skygridng.challenge.ChallengeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
