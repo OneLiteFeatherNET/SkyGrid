@@ -24,8 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Black-box tests for the Jackson rule adapter against the {@link JacksonRuleRepository} adapter: it seeds
  * the bundled default {@code rules/} directory (one file per block), reads a per-block rule with its
- * state, physics and optional placement, round-trips a saved catalog, and proves a rule written as
- * TOML maps to the same {@link Rule} as its YAML twin.
+ * state, physics and optional placement, and round-trips a saved catalog.
  */
 class JacksonRuleRepositoryTest {
 
@@ -111,26 +110,7 @@ class JacksonRuleRepositoryTest {
         assertThat(reloaded).isEqualTo(original);
     }
 
-    @Test
-    @DisplayName("a rule written as TOML maps to the same Rule as its YAML twin")
-    void tomlAgreesWithYaml(@TempDir Path dir) throws IOException {
-        JacksonRuleRepository repository = repository(dir);
-        RuleCatalog catalog = repository.load();
-
-        // Force sugar_cane to TOML, then let save write it back in that format.
-        Path rules = dir.resolve("rules");
-        Files.delete(rules.resolve("sugar_cane.yml"));
-        Files.createFile(rules.resolve("sugar_cane.toml"));
-
-        repository(dir).save(catalog);
-        assertThat(Files.exists(rules.resolve("sugar_cane.toml"))).isTrue();
-
-        RuleCatalog reloaded = repository(dir).load();
-        assertThat(reloaded.forBlock(BlockId.of("minecraft:sugar_cane")))
-                .isEqualTo(catalog.forBlock(BlockId.of("minecraft:sugar_cane")));
-    }
-
-    // ----- multi-layer structure round trip, one per supported format -----
+    // ----- multi-layer structure round trip -----
 
     private static final PlacementRule EXPECTED_PLACEMENT = new PlacementRule(
             new StructurePattern(
@@ -162,35 +142,6 @@ class JacksonRuleRepositoryTest {
     }
 
     @Test
-    @DisplayName("a multi-layer structure round trips through JSON")
-    void multiLayerStructureJson(@TempDir Path dir) throws IOException {
-        writeRule(dir, "test_plant.json", """
-                {
-                  "block": "minecraft:test_plant",
-                  "physics": "none",
-                  "placement": {
-                    "minHeight": 2,
-                    "maxHeight": 4,
-                    "probability": 0.1,
-                    "structure": {
-                      "filler": "minecraft:stone",
-                      "legend": {
-                        "A": {"block": "minecraft:dirt", "anchor": true},
-                        "B": {"block": "minecraft:water", "state": {"level": "0"}}
-                      },
-                      "layers": [
-                        ["###", "###"],
-                        ["AB#", " # "]
-                      ]
-                    }
-                  }
-                }
-                """);
-
-        assertLoadsExpectedPlacement(dir);
-    }
-
-    @Test
     @DisplayName("a multi-layer structure round trips through YAML")
     void multiLayerStructureYaml(@TempDir Path dir) throws IOException {
         writeRule(dir, "test_plant.yml", """
@@ -208,34 +159,6 @@ class JacksonRuleRepositoryTest {
                     layers:
                       - ["###", "###"]
                       - ["AB#", " # "]
-                """);
-
-        assertLoadsExpectedPlacement(dir);
-    }
-
-    @Test
-    @DisplayName("a multi-layer structure round trips through TOML")
-    void multiLayerStructureToml(@TempDir Path dir) throws IOException {
-        writeRule(dir, "test_plant.toml", """
-                block = "minecraft:test_plant"
-                physics = "none"
-
-                [placement]
-                minHeight = 2
-                maxHeight = 4
-                probability = 0.1
-
-                [placement.structure]
-                filler = "minecraft:stone"
-                layers = [["###", "###"], ["AB#", " # "]]
-
-                [placement.structure.legend.A]
-                block = "minecraft:dirt"
-                anchor = true
-
-                [placement.structure.legend.B]
-                block = "minecraft:water"
-                state = { level = "0" }
                 """);
 
         assertLoadsExpectedPlacement(dir);

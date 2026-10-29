@@ -25,7 +25,7 @@ import java.util.stream.Stream;
  * Out adapter: loads and saves the challenge catalog with Jackson, one file per challenge under the
  * {@code challenges/} directory ({@code challenges/no_crafting_table.yml}), sibling to {@code presets/}
  * and {@code rules/}. The id inside the file is authoritative; the file name is only there for humans.
- * The format is chosen per file from its extension (JSON, YAML or TOML). A fresh {@code challenges/}
+ * The format is chosen per file from its extension ({@code .yml} or {@code .yaml}). A fresh {@code challenges/}
  * directory is seeded from the bundled defaults. A challenge is a player/session facing switch, a
  * different axis from the per-block {@link net.onelitefeather.skygridng.generator.RuleCatalog}, so
  * the api/core never see Jackson here either.
@@ -41,7 +41,6 @@ public final class JacksonChallengeRepository implements ChallengeRepository {
 
     private final Path dataFolder;
     private final BundledDefaults defaults;
-    private final ConfigSchemas schemas = ConfigSchemas.shared();
 
     public JacksonChallengeRepository(Path dataFolder, BundledDefaults defaults) {
         this.dataFolder = dataFolder;
@@ -51,12 +50,12 @@ public final class JacksonChallengeRepository implements ChallengeRepository {
     @Override
     public ChallengeCatalog load() {
         try {
+            ConfigFormats.warnAboutUnsupportedFiles(dataFolder.resolve(CHALLENGES_DIR));
             seedDefaultsIfAbsent();
-            schemas.writeTo(dataFolder);
 
             Map<String, ChallengeRule> challenges = new LinkedHashMap<>();
             for (Path file : challengeFiles()) {
-                ChallengeDto dto = ConfigFormats.mapperFor(file)
+                ChallengeDto dto = ConfigFormats.mapper()
                         .readValue(Files.readAllBytes(file), ChallengeDto.class);
                 ChallengeRule rule = toRule(dto, file);
                 challenges.put(rule.id(), rule);
@@ -75,7 +74,7 @@ public final class JacksonChallengeRepository implements ChallengeRepository {
             Files.createDirectories(challengesDir);
             for (ChallengeRule rule : catalog.challenges().values()) {
                 Path file = challengeFileFor(challengesDir, rule.id());
-                byte[] bytes = ConfigFormats.mapperFor(file).writeValueAsBytes(toDto(rule));
+                byte[] bytes = ConfigFormats.mapper().writeValueAsBytes(toDto(rule));
                 Files.write(file, bytes);
             }
         } catch (IOException e) {

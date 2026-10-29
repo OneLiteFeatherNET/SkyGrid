@@ -39,8 +39,8 @@ import java.time.Clock;
  * The config is split three ways: a {@code config.<ext>} selector, a {@code presets/} directory (one
  * file per preset) and a {@code rules/} directory (one file per block). On first run the adapters seed
  * their defaults from the bundled resources they read through {@link BundledDefaults}, which here is
- * backed by the plugin jar ({@code JavaPlugin.getResource}) so the core never touches the jar. JSON,
- * YAML and TOML are all accepted; the format is chosen per file from its extension.
+ * backed by the plugin jar ({@code JavaPlugin.getResource}) so the core never touches the jar.
+ * YAML (.yml or .yaml) is the only config format.
  *
  * {@link ChallengeProgressRepository} is the project's first database backed out port: it is bound
  * here (repository bindings live in this module, not {@code ChallengeModule}), together with

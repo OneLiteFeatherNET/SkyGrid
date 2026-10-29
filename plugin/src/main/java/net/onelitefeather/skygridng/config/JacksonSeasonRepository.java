@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 /**
  * Out adapter: reads the season definitions and the optional {@code season} block of {@code config}. Each
  * season is one file under {@code seasons/} ({@code seasons/s01_overgrowth.yml}), and the format is chosen per
- * file from its extension (JSON, YAML or TOML). The id inside the file is authoritative. Files with any other
+ * file from its extension ({@code .yml} or {@code .yaml}). The id inside the file is authoritative. Files with any other
  * extension, such as {@code example.yml.disabled}, are not loaded. The adapter only maps the files to
  * {@link Season}; the core validates presets, challenges and overlaps. An absent or empty {@code seasons/}
  * directory yields no seasons, which the core reads as the implicit legacy season.
@@ -33,13 +33,12 @@ public final class JacksonSeasonRepository implements SeasonRepository {
 
     private static final String SEASONS_DIR = "seasons";
     private static final String CONFIG_BASE = "config";
-    private static final List<String> CONFIG_EXTENSIONS = List.of("json", "yml", "yaml", "toml");
+    private static final List<String> CONFIG_EXTENSIONS = List.of("yml", "yaml");
 
     private static final String EXAMPLE = "example.yml.disabled";
 
     private final Path dataFolder;
     private final BundledDefaults defaults;
-    private final ConfigSchemas schemas = ConfigSchemas.shared();
 
     public JacksonSeasonRepository(Path dataFolder) {
         this(dataFolder, path -> null);
@@ -57,12 +56,12 @@ public final class JacksonSeasonRepository implements SeasonRepository {
     @Override
     public SeasonCatalog load() {
         try {
-            schemas.writeTo(dataFolder);
+            ConfigFormats.warnAboutUnsupportedFiles(dataFolder.resolve(SEASONS_DIR));
             seedExampleIfAbsent();
 
             List<Season> seasons = new ArrayList<>();
             for (Path file : seasonFiles()) {
-                SeasonDto dto = ConfigFormats.mapperFor(file).readValue(Files.readAllBytes(file), SeasonDto.class);
+                SeasonDto dto = ConfigFormats.mapper().readValue(Files.readAllBytes(file), SeasonDto.class);
                 seasons.add(toSeason(dto, file));
             }
             return new SeasonCatalog(seasons);
@@ -79,7 +78,7 @@ public final class JacksonSeasonRepository implements SeasonRepository {
             if (configFile.isEmpty()) {
                 return defaults;
             }
-            ConfigDto config = ConfigFormats.mapperFor(configFile.get())
+            ConfigDto config = ConfigFormats.mapper()
                     .readValue(Files.readAllBytes(configFile.get()), ConfigDto.class);
             SeasonSettingsDto block = config.season();
             if (block == null) {

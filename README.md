@@ -1,7 +1,7 @@
 # SkyGrid-ng
 
 A chunk generator plugin for Paper 26.1 that revives the classic **SkyGrid**. Pure Java 25, hexagonal
-architecture, i18n through Adventure and MiniMessage, JSON/YAML/TOML configuration, switchable at
+architecture, i18n through Adventure and MiniMessage, YAML configuration, switchable at
 runtime via `/skygrid` (built on the Incendo Cloud command framework).
 
 ## Algorithms

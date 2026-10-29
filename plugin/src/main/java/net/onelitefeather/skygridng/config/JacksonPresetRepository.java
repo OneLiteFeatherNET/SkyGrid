@@ -30,7 +30,7 @@ import java.util.stream.Stream;
  * Out adapter: loads and saves the preset catalog with Jackson. The on-disk layout is split in two:
  * a {@code config.<ext>} selector that only names the active preset, and a {@code presets/} directory
  * with one file per preset (the preset name is the file base name). The format is chosen per file from
- * the extension: {@code .json} uses JSON, {@code .yml}/{@code .yaml} YAML, {@code .toml} TOML.
+ * the extension: {@code .yml} and {@code .yaml} are both YAML. JSON and TOML files are skipped with a warning.
  *
  * A preset file may {@code extends} another (a single id or a list) and override only the parts it
  * changes; inheritance is resolved in the core, not here. This adapter only maps the raw preset files
@@ -51,7 +51,6 @@ public final class JacksonPresetRepository implements PresetRepository {
 
     private final Path dataFolder;
     private final BundledDefaults defaults;
-    private final ConfigSchemas schemas = ConfigSchemas.shared();
 
     public JacksonPresetRepository(Path dataFolder, BundledDefaults defaults) {
         this.dataFolder = dataFolder;
@@ -61,17 +60,18 @@ public final class JacksonPresetRepository implements PresetRepository {
     @Override
     public PresetCatalog load() {
         try {
+            ConfigFormats.warnAboutUnsupportedFiles(dataFolder);
+            ConfigFormats.warnAboutUnsupportedFiles(dataFolder.resolve(PRESETS_DIR));
             seedDefaultsIfAbsent();
-            schemas.writeTo(dataFolder);
 
             Path configFile = configFile();
-            ConfigDto config = ConfigFormats.mapperFor(configFile).readValue(Files.readAllBytes(configFile), ConfigDto.class);
+            ConfigDto config = ConfigFormats.mapper().readValue(Files.readAllBytes(configFile), ConfigDto.class);
 
             Map<String, Preset> presets = new LinkedHashMap<>();
             for (Map.Entry<String, Path> entry : presetFiles().entrySet()) {
                 String name = entry.getKey();
                 Path file = entry.getValue();
-                PresetDto dto = ConfigFormats.mapperFor(file).readValue(Files.readAllBytes(file), PresetDto.class);
+                PresetDto dto = ConfigFormats.mapper().readValue(Files.readAllBytes(file), PresetDto.class);
                 presets.put(name, toPreset(name, dto));
             }
             if (presets.isEmpty()) {
@@ -135,7 +135,7 @@ public final class JacksonPresetRepository implements PresetRepository {
         if (file.isEmpty()) {
             return null;
         }
-        return ConfigFormats.mapperFor(file.get())
+        return ConfigFormats.mapper()
                 .readValue(Files.readAllBytes(file.get()), ConfigDto.class)
                 .season();
     }
@@ -146,7 +146,7 @@ public final class JacksonPresetRepository implements PresetRepository {
     }
 
     private Optional<Path> existingConfigFile() {
-        for (String ext : List.of("json", "yml", "yaml", "toml")) {
+        for (String ext : List.of("yml", "yaml")) {
             Path candidate = dataFolder.resolve(CONFIG_BASE + "." + ext);
             if (Files.exists(candidate)) {
                 return Optional.of(candidate);
@@ -191,7 +191,7 @@ public final class JacksonPresetRepository implements PresetRepository {
         if (file.getParent() != null) {
             Files.createDirectories(file.getParent());
         }
-        byte[] bytes = ConfigFormats.mapperFor(file).writeValueAsBytes(value);
+        byte[] bytes = ConfigFormats.mapper().writeValueAsBytes(value);
         Files.write(file, bytes);
     }
 

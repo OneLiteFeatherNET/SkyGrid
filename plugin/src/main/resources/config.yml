@@ -3,10 +3,10 @@
 # This file only selects the active preset. The presets themselves live one per file in the presets/
 # directory next to this one. A preset is a named generation profile that may 'extends' another and
 # override only the parts it changes (block palette, mobs, biomes, spawn, ...). Block, mob and loot
-# ids are namespaced (minecraft:stone), so the config is platform-neutral. JSON, YAML and TOML are all
-# accepted: name a file config.json, config.yaml or config.toml (and presets/<name>.json, .toml, ...)
-# and the matching format is used. Switch the active preset at runtime with /skygrid preset <name>
-# (editing in-game and saving rewrites these files; comments are not kept).
+# ids are namespaced (minecraft:stone), so the config is platform-neutral. Files are YAML: name them
+# .yml or .yaml (config.yml, presets/<name>.yml, ...). JSON and TOML are no longer read.
+# Switch the active preset at runtime with
+# /skygrid preset <name> (editing in-game and saving rewrites these files; comments are not kept).
 
 # The active preset. Must match a file name in presets/.
 active: classic

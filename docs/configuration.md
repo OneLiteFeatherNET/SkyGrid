@@ -19,7 +19,6 @@ plugins/SkyGrid-ng/
     cherry_leaves.yml
     sugar_cane.yml
     water.yml
-  schema/               # generated JSON Schema files (for editors)
 ```
 
 ### The `config.<ext>` selector
@@ -48,20 +47,13 @@ One file per block. The block id inside the file is authoritative; the file name
 humans (so `rules/oak_leaves.yml` and `rules/oak-leaves.yml` would both be read, and the `block:`
 field decides which block the rule governs). See [Per-block rules](rules.md) for the model.
 
-## The three formats
+## The file format
 
-JSON, YAML, and TOML are all supported. The format is chosen **per file from its extension**, so the
-loader never guesses: it reads the extension and picks the matching parser.
+Config files are YAML. Both `.yml` and `.yaml` are read and written; the two extensions are equivalent.
 
-| Extension        | Format |
-|------------------|--------|
-| `.json`          | JSON   |
-| `.yml`, `.yaml`  | YAML   |
-| `.toml`          | TOML   |
-
-Because the choice is per file, you can mix formats. A YAML preset can sit next to a TOML rule next
-to a JSON `config`. To convert a file, rename it to the new extension and rewrite its contents in
-that syntax (there is no auto-conversion of an existing file's contents on rename).
+JSON and TOML are no longer supported. A `.json` or `.toml` file in `presets/`, `rules/`, `challenges/`
+or `seasons/`, or a `config.json` or `config.toml`, is skipped, and the server logs one warning per file.
+To convert such a file, rewrite its contents as YAML and rename it to `.yml`.
 
 The parsers are configured leniently in three ways that matter in practice:
 
@@ -83,37 +75,3 @@ it keeps that file's format.
 these files. Note that a rewrite does not preserve comments, so if you keep explanatory comments in
 your files, prefer editing the files directly and reloading.
 
-## Schema, validation, and autocompletion
-
-The on-disk schema mirrors a set of internal data-transfer objects one to one, and SkyGrid-ng ships a
-JSON Schema (Draft 2020-12) generated from those types into the `schema/` directory. Two things use
-it:
-
-- The plugin can validate a loaded config against the schema, so a typo in a key or a wrong value
-  type is reported clearly instead of silently ignored.
-- Your editor can use the same schema files for **inline validation and autocompletion** while you
-  edit presets and rules.
-
-### Pointing an editor at the schema
-
-Most editors with a YAML/JSON language server (for example VS Code with the YAML and JSON
-extensions) let you associate a schema with a set of files by glob. Point the preset schema at
-`presets/*` and the rule schema at `rules/*`.
-
-A VS Code `settings.json` example (adjust the paths to your server's data folder):
-
-```jsonc
-{
-  "yaml.schemas": {
-    "plugins/SkyGrid-ng/schema/preset.schema.json": "plugins/SkyGrid-ng/presets/*.yml",
-    "plugins/SkyGrid-ng/schema/rule.schema.json": "plugins/SkyGrid-ng/rules/*.yml",
-    "plugins/SkyGrid-ng/schema/config.schema.json": "plugins/SkyGrid-ng/config.yml"
-  }
-}
-```
-
-For JSON files you can also add a `$schema` key at the top of the file pointing at the matching
-schema, and the editor will validate against it directly.
-
-Because the schema is generated from the same types the loader uses, autocompletion suggests exactly
-the keys the loader understands, and validation flags anything it would ignore.
