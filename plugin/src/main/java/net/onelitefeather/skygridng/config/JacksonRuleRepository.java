@@ -26,9 +26,9 @@ import java.util.stream.Stream;
 
 /**
  * Out adapter: loads and saves the per-block rule catalog with Jackson, one file per block under the
- * {@code rules/} directory ({@code rules/oak_leaves.yml}, {@code rules/sugar_cane.toml}, ...). The block
+ * {@code rules/} directory ({@code rules/oak_leaves.yml}, {@code rules/sugar_cane.yml}, ...). The block
  * id inside the file is authoritative; the file name is only there for humans. The format is chosen per
- * file from its extension (JSON, YAML or TOML). A fresh {@code rules/} directory is seeded from the
+ * file from its extension ({@code .yml} or {@code .yaml}). A fresh {@code rules/} directory is seeded from the
  * bundled defaults. Ids stay namespaced strings, so the files are platform-neutral and the api/core
  * never see Jackson.
  */
@@ -41,7 +41,6 @@ public final class JacksonRuleRepository {
 
     private final Path dataFolder;
     private final BundledDefaults defaults;
-    private final ConfigSchemas schemas = ConfigSchemas.shared();
 
     public JacksonRuleRepository(Path dataFolder, BundledDefaults defaults) {
         this.dataFolder = dataFolder;
@@ -50,12 +49,12 @@ public final class JacksonRuleRepository {
 
     public RuleCatalog load() {
         try {
+            ConfigFormats.warnAboutUnsupportedFiles(dataFolder.resolve(RULES_DIR));
             seedDefaultsIfAbsent();
-            schemas.writeTo(dataFolder);
 
             Map<BlockId, Rule> rules = new LinkedHashMap<>();
             for (Path file : ruleFiles()) {
-                RuleDto dto = ConfigFormats.mapperFor(file).readValue(Files.readAllBytes(file), RuleDto.class);
+                RuleDto dto = ConfigFormats.mapper().readValue(Files.readAllBytes(file), RuleDto.class);
                 Rule rule = toRule(dto, file);
                 rules.put(rule.block(), rule);
             }
@@ -71,7 +70,7 @@ public final class JacksonRuleRepository {
             Files.createDirectories(rulesDir);
             for (Rule rule : catalog.rules().values()) {
                 Path file = ruleFileFor(rulesDir, rule.block());
-                byte[] bytes = ConfigFormats.mapperFor(file).writeValueAsBytes(toDto(rule));
+                byte[] bytes = ConfigFormats.mapper().writeValueAsBytes(toDto(rule));
                 Files.write(file, bytes);
             }
         } catch (IOException e) {

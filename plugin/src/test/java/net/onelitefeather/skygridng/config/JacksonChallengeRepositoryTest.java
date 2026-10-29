@@ -81,28 +81,6 @@ class JacksonChallengeRepositoryTest {
     }
 
     @Test
-    @DisplayName("a challenge round trips through JSON")
-    void roundTripJson(@TempDir Path dir) throws IOException {
-        writeChallenge(dir, "no_crafting_table.json", """
-                {
-                  "id": "no_crafting_table",
-                  "description": "Crafting tables cannot be opened while this challenge is active.",
-                  "active": true
-                }
-                """);
-
-        ChallengeRepository repository = repository(dir);
-        ChallengeCatalog loaded = repository.load();
-        assertThat(loaded.forId(ID)).get().extracting(ChallengeRule::active).isEqualTo(true);
-
-        repository.save(loaded);
-        assertThat(Files.exists(dir.resolve("challenges/no_crafting_table.json"))).isTrue();
-
-        ChallengeCatalog reloaded = repository(dir).load();
-        assertThat(reloaded).isEqualTo(loaded);
-    }
-
-    @Test
     @DisplayName("a challenge round trips through YAML")
     void roundTripYaml(@TempDir Path dir) throws IOException {
         writeChallenge(dir, "no_crafting_table.yml", """
@@ -117,26 +95,6 @@ class JacksonChallengeRepositoryTest {
 
         repository.save(loaded);
         assertThat(Files.exists(dir.resolve("challenges/no_crafting_table.yml"))).isTrue();
-
-        ChallengeCatalog reloaded = repository(dir).load();
-        assertThat(reloaded).isEqualTo(loaded);
-    }
-
-    @Test
-    @DisplayName("a challenge round trips through TOML")
-    void roundTripToml(@TempDir Path dir) throws IOException {
-        writeChallenge(dir, "no_crafting_table.toml", """
-                id = "no_crafting_table"
-                description = "Crafting tables cannot be opened while this challenge is active."
-                active = true
-                """);
-
-        ChallengeRepository repository = repository(dir);
-        ChallengeCatalog loaded = repository.load();
-        assertThat(loaded.forId(ID)).get().extracting(ChallengeRule::active).isEqualTo(true);
-
-        repository.save(loaded);
-        assertThat(Files.exists(dir.resolve("challenges/no_crafting_table.toml"))).isTrue();
 
         ChallengeCatalog reloaded = repository(dir).load();
         assertThat(reloaded).isEqualTo(loaded);

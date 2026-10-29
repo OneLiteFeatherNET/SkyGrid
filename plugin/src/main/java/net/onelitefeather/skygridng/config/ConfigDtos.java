@@ -11,8 +11,8 @@ import java.util.List;
  * They exist so the api and core never see a Jackson annotation: block, biome, mob and loot ids stay
  * plain {@link String}s here (mapped to {@code BlockId}/{@code BiomeId} in {@link JacksonPresetRepository})
  * and every override field is boxed so a missing key round-trips as {@code null} ("inherit") instead of
- * a primitive default. The same records serialize to JSON, YAML and TOML unchanged. Keeping the key
- * names literal here also lets a later JSON Schema generator describe the config from these types.
+ * a primitive default. The same records serialize to YAML unchanged; the key names stay literal here so the on-disk
+ * shape is visible in the code.
  */
 final class ConfigDtos {
 

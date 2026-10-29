@@ -24,8 +24,7 @@ dependencyResolutionManagement {
             // ----- Versions (verify before the first build) -----
             version("paper", "26.1.2.build.74-stable")  // keep the build segment
             version("java", "25")               // Paper 26.1 requires Java 25
-            version("jackson", "2.22.4")        // config databinding: JSON/YAML/TOML (relocated in the shaded jar)
-            version("jsonSchemaGen", "4.38.0")  // victools; generates the editor schema (Jackson 2.x line)
+            version("jackson", "2.22.4")        // config databinding: YAML (relocated in the shaded jar)
             version("adventure", "4.26.1")      // platform-neutral text API; matches Paper 26.1's adventure-bom
             version("guice", "7.0.0")
             version("jakartaInject", "2.0.1")
@@ -57,9 +56,6 @@ dependencyResolutionManagement {
             library("paper-api", "io.papermc.paper", "paper-api").versionRef("paper")
             library("jackson-databind", "com.fasterxml.jackson.core", "jackson-databind").versionRef("jackson")
             library("jackson-yaml", "com.fasterxml.jackson.dataformat", "jackson-dataformat-yaml").versionRef("jackson")
-            library("jackson-toml", "com.fasterxml.jackson.dataformat", "jackson-dataformat-toml").versionRef("jackson")
-            library("jsonschema-generator", "com.github.victools", "jsonschema-generator").versionRef("jsonSchemaGen")
-            library("jsonschema-module-jackson", "com.github.victools", "jsonschema-module-jackson").versionRef("jsonSchemaGen")
             library("adventure-api", "net.kyori", "adventure-api").versionRef("adventure")
             library("adventure-minimessage", "net.kyori", "adventure-text-minimessage").versionRef("adventure")
             library("guice", "com.google.inject", "guice").versionRef("guice")

@@ -18,8 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Black-box tests for the Jackson preset adapter against the {@link PresetRepository} contract: it
  * seeds the bundled default split layout ({@code config.yml} plus one file per preset), reads the
  * catalog with inheritance overrides left raw for the core to resolve, round-trips a saved catalog,
- * and proves a preset written as JSON or TOML maps to the same {@link Preset} as its YAML twin.
- * Inheritance resolution itself is a core concern, tested there.
+ * accepts the {@code .yaml} extension as well as {@code .yml}, and skips a JSON file in {@code presets/}
+ * with a warning. Inheritance resolution itself is a core concern, tested there.
  */
 class JacksonPresetRepositoryTest {
 
@@ -76,30 +76,33 @@ class JacksonPresetRepositoryTest {
     }
 
     @Test
-    @DisplayName("a preset written as JSON or TOML maps to the same Preset as its YAML twin")
-    void multipleFormatsAgree(@TempDir Path dir) throws IOException {
-        PresetRepository repository = repository(dir);
-        PresetCatalog catalog = repository.load();     // seeds and reads the YAML defaults
-
-        // Force standard to JSON and nether to TOML by swapping the file extension, then let save write
-        // each preset back in the format of the file that already exists for it.
+    @DisplayName("a preset file with the .yaml extension loads like its .yml twin")
+    void yamlExtensionLoadsLikeYml(@TempDir Path dir) throws IOException {
+        PresetCatalog original = repository(dir).load();
         Path presets = dir.resolve("presets");
-        Files.delete(presets.resolve("standard.yml"));
-        Files.createFile(presets.resolve("standard.json"));
-        Files.delete(presets.resolve("nether.yml"));
-        Files.createFile(presets.resolve("nether.toml"));
-
-        repository(dir).save(catalog);
-
-        assertThat(Files.exists(presets.resolve("standard.json"))).isTrue();
-        assertThat(Files.exists(presets.resolve("nether.toml"))).isTrue();
-        assertThat(Files.exists(presets.resolve("classic.yml"))).isTrue();
+        Files.move(presets.resolve("standard.yml"), presets.resolve("standard.yaml"));
 
         PresetCatalog reloaded = repository(dir).load();
-        assertThat(reloaded.active()).isEqualTo("classic");
-        assertThat(reloaded.presets().get("standard")).isEqualTo(catalog.presets().get("standard"));
-        assertThat(reloaded.presets().get("nether")).isEqualTo(catalog.presets().get("nether"));
-        assertThat(reloaded).isEqualTo(catalog);
+
+        assertThat(reloaded).isEqualTo(original);
+    }
+
+    @Test
+    @DisplayName("a JSON preset file is skipped with one warning and the YAML presets still load")
+    void jsonPresetIsSkippedWithWarning(@TempDir Path dir) throws IOException {
+        PresetCatalog original = repository(dir).load();
+        Files.writeString(dir.resolve("presets/legacy.json"), "{\"algorithm\": \"skygrid\"}");
+
+        try (ConfigLogCapture log = new ConfigLogCapture()) {
+            PresetCatalog reloaded = repository(dir).load();
+
+            assertThat(reloaded.names()).doesNotContain("legacy");
+            assertThat(reloaded).isEqualTo(original);
+            assertThat(log.warnings()).as("one warning for the skipped JSON file").hasSize(1);
+            assertThat(log.warnings().getFirst())
+                    .contains("legacy.json")
+                    .contains("no longer supported");
+        }
     }
 
     @Test

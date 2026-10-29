@@ -24,13 +24,10 @@ dependencies {
     // MiniMessage parses admin-authored season display names (MiniMessage tags) into components.
     compileOnly(libs.adventure.minimessage)
 
-    // Configuration: Jackson (databind plus the YAML and TOML dataformats) and victools for the JSON
-    // schema written next to the config. Both are bundled and relocated in the shaded jar.
+    // Configuration: Jackson databind plus the YAML dataformat, the only config format. Bundled and
+    // relocated in the shaded jar.
     implementation(libs.jackson.databind)
     implementation(libs.jackson.yaml)
-    implementation(libs.jackson.toml)
-    implementation(libs.jsonschema.generator)
-    implementation(libs.jsonschema.module.jackson)
 
     // Persistence: Jakarta Persistence via Hibernate ORM, Hibernate's own Hikari pool, Flyway migrations
     // and the PostgreSQL driver. jakarta.persistence and org.hibernate types stay inside the adapters.
@@ -79,9 +76,7 @@ tasks {
         // the copies the server or another plugin ships. Bukkit bundles its own SnakeYAML.
         relocate("com.fasterxml.jackson", "net.onelitefeather.skygridng.libs.jackson")
         relocate("org.yaml.snakeyaml", "net.onelitefeather.skygridng.libs.snakeyaml")
-        // JSON Schema: victools (plus its classmate) generates the schema files for editors; relocate
-        // both so they cannot clash with the copies the server or another plugin ships.
-        relocate("com.github.victools", "net.onelitefeather.skygridng.libs.victools")
+        // Hibernate pulls in classmate transitively; relocate it so it cannot clash with another copy.
         relocate("com.fasterxml.classmate", "net.onelitefeather.skygridng.libs.classmate")
         // Incendo Cloud is a popular command framework other plugins may also shade; relocate it so
         // two differently-versioned copies on the same server cannot clash on the classpath.
@@ -120,7 +115,7 @@ bukkit {
     // World generators must exist before worlds are loaded, so enable at server startup.
     load = BukkitPluginDescription.PluginLoadOrder.STARTUP
     version = project.version.toString()
-    description = "SkyGrid and WFC chunk generator for Paper (Java 25, JSON/YAML/TOML config, in game admin, i18n)."
+    description = "SkyGrid and WFC chunk generator for Paper (Java 25, YAML config, in game admin, i18n)."
     authors = listOf("TheMeinerLP", "OneLiteFeatherNET")
     website = "https://github.com/OneLiteFeatherNET/SkyGrid-ng"
 

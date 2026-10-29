@@ -21,25 +21,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Black-box tests for the Jackson season adapter against the {@link SeasonRepository} contract: one
- * season per file under {@code seasons/}, the format chosen by the extension (JSON, YAML or TOML), the
+ * season per file under {@code seasons/}, the format chosen by the extension ({@code .yml} or {@code .yaml}), the
  * file's id is authoritative, unsupported files are ignored, and the optional {@code season} block of
  * {@code config} overrides the defaults.
  */
 class JacksonSeasonRepositoryTest {
 
     private static final Instant START = Instant.parse("2026-12-01T18:00:00Z");
-
-    private static final String JSON = """
-            {
-              "id": "s01_overgrowth",
-              "displayName": "Season 1: Overgrowth",
-              "start": "2026-12-01T18:00:00Z",
-              "duration": "P8W",
-              "preset": "standard",
-              "challenges": ["one_life", "no_crafting_table"],
-              "seed": 123456789
-            }
-            """;
 
     private static final String YAML = """
             id: s01_overgrowth
@@ -49,16 +37,6 @@ class JacksonSeasonRepositoryTest {
             preset: standard
             challenges: [one_life, no_crafting_table]
             seed: 123456789
-            """;
-
-    private static final String TOML = """
-            id = "s01_overgrowth"
-            displayName = "Season 1: Overgrowth"
-            start = 2026-12-01T18:00:00Z
-            duration = "P8W"
-            preset = "standard"
-            challenges = ["one_life", "no_crafting_table"]
-            seed = 123456789
             """;
 
     private static SeasonRepository repository(Path dir) {
@@ -86,31 +64,9 @@ class JacksonSeasonRepositoryTest {
     }
 
     @Test
-    @DisplayName("a JSON season file is loaded with every field, including a week based duration")
-    void jsonSeasonIsLoaded(@TempDir Path dir) throws IOException {
-        writeSeason(dir, "s01_overgrowth.json", JSON);
-
-        SeasonCatalog catalog = repository(dir).load();
-
-        assertThat(catalog.seasons()).hasSize(1);
-        assertSeasonS01(catalog.seasons().getFirst());
-    }
-
-    @Test
     @DisplayName("a YAML season file is loaded with every field")
     void yamlSeasonIsLoaded(@TempDir Path dir) throws IOException {
         writeSeason(dir, "s01_overgrowth.yml", YAML);
-
-        SeasonCatalog catalog = repository(dir).load();
-
-        assertThat(catalog.seasons()).hasSize(1);
-        assertSeasonS01(catalog.seasons().getFirst());
-    }
-
-    @Test
-    @DisplayName("a TOML season file is loaded with every field")
-    void tomlSeasonIsLoaded(@TempDir Path dir) throws IOException {
-        writeSeason(dir, "s01_overgrowth.toml", TOML);
 
         SeasonCatalog catalog = repository(dir).load();
 
