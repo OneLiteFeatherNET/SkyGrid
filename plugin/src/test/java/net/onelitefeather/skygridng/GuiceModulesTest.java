@@ -1,9 +1,8 @@
-package net.onelitefeather.skygridng.platforms.common.injection;
+package net.onelitefeather.skygridng;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Stage;
-import net.onelitefeather.skygridng.platforms.common.SkyGridNgPlugin;
 import net.onelitefeather.skygridng.generator.HexagonalChunkGenerator;
 import net.onelitefeather.skygridng.generator.RuleAdminUseCase;
 import net.onelitefeather.skygridng.generator.TerrainAlgorithms;

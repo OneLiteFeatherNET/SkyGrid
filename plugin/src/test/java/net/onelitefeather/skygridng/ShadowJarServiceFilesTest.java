@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.platforms.paper;
+package net.onelitefeather.skygridng;
 
 import org.junit.jupiter.api.Test;
 

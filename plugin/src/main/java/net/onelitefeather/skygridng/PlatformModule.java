@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.platforms.common.injection;
+package net.onelitefeather.skygridng;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;

@@ -15,7 +15,7 @@ import net.onelitefeather.skygridng.season.CurrentSeason;
 import net.onelitefeather.skygridng.generator.Presets;
 import net.onelitefeather.skygridng.generator.RuleAdminUseCase;
 import net.onelitefeather.skygridng.season.SeasonAdminUseCase;
-import net.onelitefeather.skygridng.platforms.common.injection.RepositoryModule;
+import net.onelitefeather.skygridng.RepositoryModule;
 
 import java.time.Clock;
 

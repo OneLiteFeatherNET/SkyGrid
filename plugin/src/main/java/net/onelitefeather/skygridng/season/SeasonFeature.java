@@ -2,7 +2,7 @@ package net.onelitefeather.skygridng.season;
 
 import jakarta.inject.Inject;
 import net.onelitefeather.skygridng.persistence.DatabaseWarmUpGate;
-import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
+import net.onelitefeather.skygridng.OlfFeature;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;

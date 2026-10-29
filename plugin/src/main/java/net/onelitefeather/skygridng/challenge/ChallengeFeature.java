@@ -5,7 +5,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Set;
 import java.util.stream.Collectors;
-import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
+import net.onelitefeather.skygridng.OlfFeature;
 
 /**
  * OLF-only feature: enables every bound {@link ChallengeBehavior} on enable and disables all of them

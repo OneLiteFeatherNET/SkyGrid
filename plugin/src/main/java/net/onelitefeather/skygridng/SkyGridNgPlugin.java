@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.platforms.common;
+package net.onelitefeather.skygridng;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -12,12 +12,8 @@ import net.onelitefeather.skygridng.command.CloudCommandManagerFactory;
 import net.onelitefeather.skygridng.command.CloudCommandRegistrar;
 import net.onelitefeather.skygridng.command.CommandModule;
 import net.onelitefeather.skygridng.generator.GeneratorModule;
-import net.onelitefeather.skygridng.platforms.common.injection.PlatformModule;
-import net.onelitefeather.skygridng.platforms.common.injection.RepositoryModule;
 import net.onelitefeather.skygridng.generator.SpreadSpawnListener;
 import net.onelitefeather.skygridng.challenge.ChallengeModule;
-import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
-import net.onelitefeather.skygridng.platforms.olf.OlfModule;
 import net.onelitefeather.skygridng.season.SeasonModule;
 import net.onelitefeather.skygridng.persistence.Database;
 import net.onelitefeather.skygridng.generator.SkyGridApi;

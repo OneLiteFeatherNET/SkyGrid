@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.challenge;
 
 import jakarta.inject.Inject;
-import net.onelitefeather.skygridng.platforms.olf.OlfFeature;
+import net.onelitefeather.skygridng.OlfFeature;
 
 /**
  * OLF-only feature: bridges {@code platforms.olf.scoreboard}'s {@link ChallengeSidebarListener}, a

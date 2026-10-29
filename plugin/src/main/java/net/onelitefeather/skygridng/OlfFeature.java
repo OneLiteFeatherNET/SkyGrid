@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.platforms.olf;
+package net.onelitefeather.skygridng;
 
 /**
  * A OneLiteFeather network only mechanic layered on top of the base SkyGrid-ng generator.

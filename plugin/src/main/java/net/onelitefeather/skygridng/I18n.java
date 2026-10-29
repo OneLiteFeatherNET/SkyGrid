@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.platforms.common;
+package net.onelitefeather.skygridng;
 
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.minimessage.translation.MiniMessageTranslationStore;

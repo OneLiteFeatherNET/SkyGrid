@@ -114,7 +114,7 @@ tasks {
 
 // Generates plugin.yml from the build (de.eldoria.plugin-yml.bukkit).
 bukkit {
-    main = "net.onelitefeather.skygridng.platforms.common.SkyGridNgPlugin"
+    main = "net.onelitefeather.skygridng.SkyGridNgPlugin"
     apiVersion = "1.21"
     name = "SkyGrid-ng"
     // World generators must exist before worlds are loaded, so enable at server startup.

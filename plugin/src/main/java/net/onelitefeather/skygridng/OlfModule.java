@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.platforms.olf;
+package net.onelitefeather.skygridng;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;

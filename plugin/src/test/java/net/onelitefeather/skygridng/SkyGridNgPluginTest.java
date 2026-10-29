@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.platforms.common;
+package net.onelitefeather.skygridng;
 
 import net.onelitefeather.skygridng.generator.SkyGridApi;
 import net.onelitefeather.skygridng.generator.HexagonalChunkGenerator;
