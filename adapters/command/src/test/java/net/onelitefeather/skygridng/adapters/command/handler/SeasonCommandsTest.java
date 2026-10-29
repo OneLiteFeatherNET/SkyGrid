@@ -97,6 +97,21 @@ class SeasonCommandsTest {
     }
 
     @Test
+    @DisplayName("'season list' renders the MiniMessage display name as a styled component, not raw tags")
+    void listRendersDisplayNameAsMiniMessage() {
+        Season gold = new Season(new SeasonId("s01"), "<gold>Season 1: Herbst</gold>", START,
+                Duration.ofDays(28), "standard", List.of(), null);
+        when(seasons.list()).thenReturn(new SeasonCatalog(List.of(gold)));
+
+        subject.list(source);
+
+        assertThat(source.messages()).hasSize(1);
+        assertThat(argumentsOf(source.messages().get(0)))
+                .as("the name is passed as the parsed MiniMessage component, so the tags are not shown raw")
+                .contains(MiniMessage.miniMessage().deserialize("<gold>Season 1: Herbst</gold>"));
+    }
+
+    @Test
     @DisplayName("'season info' while legacy runs and a season is upcoming names that season and its start")
     void infoWithUpcomingSeasonNamesItAndItsStart() {
         Season upcoming = new Season(new SeasonId("s01_autumn"), "<gold>Autumn</gold>",

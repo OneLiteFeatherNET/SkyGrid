@@ -248,7 +248,9 @@ public final class Messages {
     }
 
     public static Component seasonListEntry(String id, String name, String start, String end) {
-        return key("season.list.entry", id, name, start, end);
+        return prefix().append(Component.space()).append(Component.translatable("skygridng.command.season.list.entry",
+                Component.text(id), MINI_MESSAGE.deserialize(name),
+                Component.text(start), Component.text(end)));
     }
 
     /** The active season and its phase; {@code next} is {@code null} when no season follows. */
