@@ -6,8 +6,8 @@ import jakarta.persistence.Persistence;
 import jakarta.persistence.PersistenceException;
 import org.flywaydb.core.Flyway;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -95,9 +95,9 @@ public final class Database implements AutoCloseable {
     }
 
     private static void migrate(DatabaseConfig config) {
-        requireExpectedLegacyHistories(config);
+        Flyway flyway;
         try {
-            Flyway.configure()
+            flyway = Flyway.configure()
                     .dataSource(config.jdbcUrl(), config.user(), config.password())
                     .locations(MIGRATION_LOCATION)
                     // An existing database has the old tables but no flyway_schema_history yet. Baselining
@@ -105,8 +105,14 @@ public final class Database implements AutoCloseable {
                     // database is not baselined and runs V1 to V8.
                     .baselineOnMigrate(true)
                     .baselineVersion(LEGACY_BASELINE_VERSION)
-                    .load()
-                    .migrate();
+                    .load();
+        } catch (RuntimeException e) {
+            throw new PersistenceException("Failed to migrate the " + PERSISTENCE_UNIT + " schema", e);
+        }
+        // The check uses the same DataSource as the migration, so both reach the database the same way.
+        requireExpectedLegacyHistories(flyway.getConfiguration().getDataSource());
+        try {
+            flyway.migrate();
         } catch (RuntimeException e) {
             throw new PersistenceException("Failed to migrate the " + PERSISTENCE_UNIT + " schema", e);
         }
@@ -119,8 +125,8 @@ public final class Database implements AutoCloseable {
      *
      * @throws IllegalStateException if the old layout is only partly migrated
      */
-    private static void requireExpectedLegacyHistories(DatabaseConfig config) {
-        try (var connection = DriverManager.getConnection(config.jdbcUrl(), config.user(), config.password())) {
+    private static void requireExpectedLegacyHistories(DataSource dataSource) {
+        try (var connection = dataSource.getConnection()) {
             var present = LEGACY_HISTORY_VERSIONS.keySet().stream()
                     .filter(table -> tableExists(connection, table))
                     .toList();
