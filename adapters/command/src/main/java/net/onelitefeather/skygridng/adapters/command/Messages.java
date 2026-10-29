@@ -41,6 +41,19 @@ public final class Messages {
         return prefix().append(Component.space()).append(keyNoPrefix(key, args));
     }
 
+    /**
+     * A prefixed message whose first argument is a season display name, parsed as MiniMessage so its formatting applies;
+     * the remaining arguments are plain text.
+     */
+    private static Component namedKey(String key, String name, Object... rest) {
+        Component[] args = new Component[rest.length + 1];
+        args[0] = MINI_MESSAGE.deserialize(name);
+        for (int i = 0; i < rest.length; i++) {
+            args[i + 1] = Component.text(String.valueOf(rest[i]));
+        }
+        return prefix().append(Component.space()).append(Component.translatable("skygridng.command." + key, args));
+    }
+
     /** Unprefixed lookup, for continuation lines that are not a repeated brand line. */
     private static Component keyNoPrefix(String key) {
         return Component.translatable("skygridng.command." + key);
@@ -206,29 +219,29 @@ public final class Messages {
     }
 
     /** The season end announcement for the viewer, with the reset lines, sent as separate lines. */
-    public static List<Component> seasonAnnouncementUpcoming(String id, String endsOn, int pendingMailbox) {
+    public static List<Component> seasonAnnouncementUpcoming(String name, String endsOn, int pendingMailbox) {
         List<Component> lines = new ArrayList<>();
-        lines.add(key("season.announce.upcoming", id, endsOn));
+        lines.add(namedKey("season.announce.upcoming", name, endsOn));
         lines.addAll(seasonResetLines(pendingMailbox));
         return List.copyOf(lines);
     }
 
     /** The season start announcement for the viewer, with the reset lines, sent as separate lines. */
-    public static List<Component> seasonAnnouncementStarted(String id, int pendingMailbox) {
+    public static List<Component> seasonAnnouncementStarted(String name, int pendingMailbox) {
         List<Component> lines = new ArrayList<>();
-        lines.add(key("season.announce.started", id));
+        lines.add(namedKey("season.announce.started", name));
         lines.addAll(seasonResetLines(pendingMailbox));
         return List.copyOf(lines);
     }
 
-    public static Component seasonAnnouncementPostponed(String id, String endsOn) {
-        return key("season.announce.postponed", id, endsOn);
+    public static Component seasonAnnouncementPostponed(String name, String endsOn) {
+        return namedKey("season.announce.postponed", name, endsOn);
     }
 
     /** The chat line for a player who joins in the last seven days, with the reset lines. */
-    public static List<Component> seasonFinalWeekLine(String id, String endsOn, int pendingMailbox) {
+    public static List<Component> seasonFinalWeekLine(String name, String endsOn, int pendingMailbox) {
         List<Component> lines = new ArrayList<>();
-        lines.add(key("season.final_week.join", id, endsOn));
+        lines.add(namedKey("season.final_week.join", name, endsOn));
         lines.addAll(seasonResetLines(pendingMailbox));
         return List.copyOf(lines);
     }

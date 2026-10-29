@@ -1,6 +1,7 @@
 package net.onelitefeather.skygridng.platforms.olf.season;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import jakarta.inject.Singleton;
@@ -90,7 +91,8 @@ public final class SeasonModule extends AbstractModule {
 
     @Provides
     @Singleton
-    SeasonAnnouncer provideSeasonAnnouncer(JavaPlugin plugin) {
-        return new BukkitSeasonAnnouncer(plugin);
+    SeasonAnnouncer provideSeasonAnnouncer(JavaPlugin plugin, Provider<SeasonAdminUseCase> seasons) {
+        // Provider, not the injected use case: the service itself depends on this announcer.
+        return new BukkitSeasonAnnouncer(plugin, () -> seasons.get().list());
     }
 }

@@ -109,7 +109,7 @@ public final class SeasonJoinListener implements Listener {
         resets.reset(player.getUniqueId(), season.get().id());
         Duration left = Duration.between(clock.instant(), season.get().end());
         if (left.isPositive() && left.compareTo(FINAL_WEEK) <= 0) {
-            Messages.seasonFinalWeekLine(season.get().id().value(),
+            Messages.seasonFinalWeekLine(season.get().displayName(),
                     Messages.seasonDate(season.get().end(), player.locale()), 0)
                     .forEach(player::sendMessage);
         }

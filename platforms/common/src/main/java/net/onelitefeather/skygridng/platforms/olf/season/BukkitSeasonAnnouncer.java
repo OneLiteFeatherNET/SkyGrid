@@ -3,6 +3,8 @@ package net.onelitefeather.skygridng.platforms.olf.season;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.onelitefeather.skygridng.adapters.command.Messages;
+import net.onelitefeather.skygridng.api.model.Season;
+import net.onelitefeather.skygridng.api.model.SeasonCatalog;
 import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.ports.out.SeasonAnnouncer;
 import org.bukkit.entity.Player;
@@ -12,6 +14,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * The Bukkit implementation of {@link SeasonAnnouncer}. Every player announcement is sent to each online player on the
@@ -23,25 +26,31 @@ public final class BukkitSeasonAnnouncer implements SeasonAnnouncer {
     private static final String ADMIN_PERMISSION = "skygridng.admin";
 
     private final Plugin plugin;
+    private final Supplier<SeasonCatalog> catalog;
 
-    public BukkitSeasonAnnouncer(Plugin plugin) {
+    /** {@code catalog} supplies the configured seasons, so a notice can name a season by its display name. */
+    public BukkitSeasonAnnouncer(Plugin plugin, Supplier<SeasonCatalog> catalog) {
         this.plugin = plugin;
+        this.catalog = catalog;
     }
 
     @Override
     public void upcoming(SeasonId season, Duration remaining, Instant boundary) {
-        sendToOnline(player -> Messages.seasonAnnouncementUpcoming(season.value(),
+        String name = displayName(season);
+        sendToOnline(player -> Messages.seasonAnnouncementUpcoming(name,
                 Messages.seasonDate(boundary, player.locale()), pendingMailbox(player)));
     }
 
     @Override
     public void started(SeasonId season) {
-        sendToOnline(player -> Messages.seasonAnnouncementStarted(season.value(), pendingMailbox(player)));
+        String name = displayName(season);
+        sendToOnline(player -> Messages.seasonAnnouncementStarted(name, pendingMailbox(player)));
     }
 
     @Override
     public void postponed(SeasonId season, Instant newEnd) {
-        sendToOnline(player -> List.of(Messages.seasonAnnouncementPostponed(season.value(),
+        String name = displayName(season);
+        sendToOnline(player -> List.of(Messages.seasonAnnouncementPostponed(name,
                 Messages.seasonDate(newEnd, player.locale()))));
     }
 
@@ -50,6 +59,15 @@ public final class BukkitSeasonAnnouncer implements SeasonAnnouncer {
         plugin.getLogger().warning(message);
         Component alert = Component.text("[SkyGrid] " + message, NamedTextColor.RED);
         MainThread.run(plugin, () -> plugin.getServer().broadcast(alert, ADMIN_PERMISSION));
+    }
+
+    /** The display name of a configured season, or its id when the season is not in the catalog (such as the legacy one). */
+    private String displayName(SeasonId season) {
+        return catalog.get().seasons().stream()
+                .filter(configured -> configured.id().equals(season))
+                .findFirst()
+                .map(Season::displayName)
+                .orElse(season.value());
     }
 
     /** Sends the lines built for each online player, so the lines carry that player's own locale and mailbox count. */
