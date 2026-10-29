@@ -142,16 +142,30 @@ class SeasonCommandsTest {
     }
 
     @Test
-    @DisplayName("'season status' while legacy runs names the upcoming season and its start")
-    void statusWithUpcomingSeasonNamesIt() {
+    @DisplayName("'season status' while legacy runs says the next season starts at its start, not that it ends")
+    void statusWithUpcomingSeasonSaysItStarts() {
         Instant start = Instant.parse("2027-02-01T00:00:00Z");
         when(seasons.status(NOW)).thenReturn(Optional.of(new SeasonStatus(SeasonId.LEGACY,
                 SeasonPhase.ACTIVE, new SeasonId("s01_autumn"), start)));
 
         subject.status(source);
 
-        assertThat(source.messages()).containsExactly(Messages.seasonStatus(SeasonId.LEGACY.value(), "ACTIVE",
+        assertThat(source.messages()).containsExactly(Messages.seasonStatusUpcoming(SeasonId.LEGACY.value(), "ACTIVE",
                 "s01_autumn", Messages.seasonDate(start, source.locale())));
+        assertThat(keysOf(source.messages().get(0)))
+                .as("the upcoming wording is used, not the wording that says the season ends")
+                .contains("skygridng.command.season.status.upcoming")
+                .doesNotContain("skygridng.command.season.status");
+    }
+
+    /** Every translation key of the message tree, so the tests can tell which message was sent. */
+    private static List<String> keysOf(Component message) {
+        List<String> found = new ArrayList<>();
+        if (message instanceof TranslatableComponent translatable) {
+            found.add(translatable.key());
+        }
+        message.children().forEach(child -> found.addAll(keysOf(child)));
+        return found;
     }
 
     /** Every argument of every translatable component in the message tree, so the tests assert on components. */

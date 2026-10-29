@@ -94,8 +94,13 @@ public final class SeasonCommands implements CloudCommandHandler {
             return;
         }
         String next = value.nextSeason() == null ? null : value.nextSeason().value();
-        String endsAt = value.nextActionAt() == null ? "-" : Messages.seasonDate(value.nextActionAt(), source.locale());
-        source.sendMessage(Messages.seasonStatus(value.activeSeason().value(), value.phase().name(), next, endsAt));
+        String date = value.nextActionAt() == null ? "-" : Messages.seasonDate(value.nextActionAt(), source.locale());
+        if (value.activeSeason().equals(SeasonId.LEGACY)) {
+            source.sendMessage(Messages.seasonStatusUpcoming(value.activeSeason().value(), value.phase().name(), next,
+                    date));
+            return;
+        }
+        source.sendMessage(Messages.seasonStatus(value.activeSeason().value(), value.phase().name(), next, date));
     }
 
     /**

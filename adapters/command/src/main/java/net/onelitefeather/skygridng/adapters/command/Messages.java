@@ -260,6 +260,11 @@ public final class Messages {
                 ? key("season.status.last", active, phase, endsAt)
                 : key("season.status", active, phase, next, endsAt);
     }
+
+    /** The legacy season runs and {@code next} starts at {@code startsAt}. */
+    public static Component seasonStatusUpcoming(String active, String phase, String next, String startsAt) {
+        return key("season.status.upcoming", active, phase, next, startsAt);
+    }
     public static Component seasonRefused() {
         return key("season.refused");
     }
