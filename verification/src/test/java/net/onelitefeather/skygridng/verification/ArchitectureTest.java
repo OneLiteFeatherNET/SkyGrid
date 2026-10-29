@@ -169,6 +169,16 @@ class ArchitectureTest {
                     .should().resideInAPackage(ADAPTERS)
                     .because("@Entity classes are persistence mapping, which only the adapters own");
 
+    private static final String JAVA_SQL_DRIVER_MANAGER = "java.sql.DriverManager";
+
+    @ArchTest
+    static final ArchRule noProductionClassUsesDriverManager =
+            noClasses().should().dependOnClassesThat().haveFullyQualifiedName(JAVA_SQL_DRIVER_MANAGER)
+                    .because("DriverManager only sees JDBC drivers registered with the class loader of its caller, and "
+                            + "inside the shaded Paper plugin jar the PostgreSQL driver lives in the plugin class loader, "
+                            + "so DriverManager.getConnection fails with 'No suitable driver found'; open connections "
+                            + "through the DataSource that Flyway and Hikari already use");
+
     @ArchTest
     static final ArchRule noNativeQueryWithoutResultType =
             noClasses().should().callMethod(EntityManager.class, "createNativeQuery", String.class)
