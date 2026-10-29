@@ -84,7 +84,7 @@ dependencyResolutionManagement {
             library("hibernate-jpamodelgen", "org.hibernate.orm", "hibernate-jpamodelgen").versionRef("hibernate")
 
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit")
-            library("junit-launcher", "org.junit.platform", "junit-platform-launcher").version("1.13.1")
+            library("junit-launcher", "org.junit.platform", "junit-platform-launcher").version("1.13.2")
             library("mockbukkit", "org.mockbukkit.mockbukkit", "mockbukkit-v26.1.2").versionRef("mockbukkit")
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito")
             library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj")
