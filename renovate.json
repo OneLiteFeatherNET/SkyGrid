@@ -3,5 +3,7 @@
   "extends": [
     "github>OneLiteFeatherNET/renovate:default(OneLiteFeatherNET/skygrid-ng-maintainers)",
     "github>OneLiteFeatherNET/renovate:paper"
-  ]
+  ],
+  "timezone": "Europe/Berlin",
+  "automergeSchedule": ["* 0-5 * * *"]
 }
