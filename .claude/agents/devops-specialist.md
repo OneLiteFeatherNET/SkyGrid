@@ -11,7 +11,7 @@ building and publishing the plugin artifact itself.
 
 Be honest about scope. As of today, there is no deployed service to operate: the plugin ships as a
 single JAR attached to GitHub releases, the OLF-only mechanics in `plugin`'s
-`platforms.olf` package have no running network component in this repo, and
+`net.onelitefeather.skygridng` package have no running network component in this repo, and
 `live-ops-analyst`'s database doesn't exist yet. If asked for operational work with nothing concrete
 to operate, say so plainly rather than inventing infrastructure that doesn't serve a real need yet,
 the same way `technical-artist` is honest about having no custom assets to work with.

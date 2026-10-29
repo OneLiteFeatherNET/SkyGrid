@@ -22,7 +22,7 @@ The build is grouped under category folders (see the `hexagonal-architecture` sk
 responsibilities and the dependency arrows):
 
 - `api`, `ports`, `core`: framework-free `java-library` modules, no platform plugins.
-- `plugin` (including `adapters.spawn`), `plugin`, `plugin`: the
+- `plugin` (including `generator`), `plugin`, `plugin`: the
   Bukkit/Jackson adapter libraries.
 - `plugin`: shared Jakarta Persistence (Hibernate ORM) infrastructure, no Bukkit, and
   the challenge and task progress repositories.
@@ -32,7 +32,7 @@ responsibilities and the dependency arrows):
 - `verification`: ArchUnit architecture tests only (no production code). Depends on every production
   module and enforces the hexagonal rules at build time. See the `hexagonal-architecture` skill.
 
-`plugin` depends on `plugin`, which also holds the `platforms.olf` package
+`plugin` depends on `plugin`, which also holds the `net.onelitefeather.skygridng` package
 (OneLiteFeather-specific mechanics like challenges, a naming convention now rather than a separate
 distribution; see the `hexagonal-architecture` skill).
 
@@ -79,8 +79,8 @@ load = BukkitPluginDescription.PluginLoadOrder.STARTUP
 The `bukkit { }` block declares the `skygridng.admin` permission, but not the `skygrid` command
 itself: Incendo Cloud registers it at runtime (its own guidance is not to also declare a command it
 owns in `plugin.yml`, see `hexagonal-architecture`). The main class is
-`...platforms.common.SkyGridNgPlugin` (display name `SkyGrid-ng`), which always wires and enables
-the OLF-only mechanics in its `platforms.olf` package too (there is no separate distribution without
+`...net.onelitefeather.skygridng.SkyGridNgPlugin` (display name `SkyGrid-ng`), which always wires and enables
+the OLF-only mechanics in its `net.onelitefeather.skygridng` package too (there is no separate distribution without
 them). The `bukkit { }` block keeps `load = STARTUP`. The distribution is not published to any
 public plugin registry; the project is OneLiteFeather-internal.
 

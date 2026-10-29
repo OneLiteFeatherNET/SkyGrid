@@ -64,7 +64,7 @@ Strategy (`TerrainAlgorithm`), Factory (`AlgorithmFactory`, the config repositor
 (`RuleRepository`, `PresetRepository`), Flyweight (shared immutable `BlockWeight`), Observer
 (`RuleState` listeners for cache invalidation and algorithm rebuild), Memento (immutable
 `GeneratorConfig` plus undo stack), Command (Incendo Cloud `@Command` handlers in
-`adapters.command.handler`). The Wave Function
+`command`). The Wave Function
 Collapse era added a second Strategy pair (`EntropyHeuristic`, `CollapseStrategy`) and a Flyweight
 (`TileType`); both were removed with the `wfc` algorithm.
 

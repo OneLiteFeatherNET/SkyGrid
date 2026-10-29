@@ -74,20 +74,20 @@ The `core/solver` package (`WfcSolver`, `EntropyHeuristic`, `CollapseStrategy`,
 The `GenerateRegionUseCase` port (the WFC region solver's in port) was removed with the `wfc`
 algorithm. There is no replacement; the two remaining algorithms need no region solving step.
 
-- `ports.in.RuleAdminUseCase`: `current():GeneratorConfig`, `algorithm():String`,
+- `generator.RuleAdminUseCase`: `current():GeneratorConfig`, `algorithm():String`,
   `setAlgorithm(String):boolean`, `reload()`, `save()`, `setSkyGridWeight(String,double):boolean`,
   `undo():boolean`. The WFC tile admin methods (`tileIds`, `tile`, `setWeight`, `allow`, `disallow`)
   are gone; there is no tile concept left to administer.
-- `ports.in.TerrainAlgorithms`: `current():TerrainAlgorithm`, `isKnown(String):boolean`,
+- `generator.TerrainAlgorithms`: `current():TerrainAlgorithm`, `isKnown(String):boolean`,
   `ids():Set<String>`. Named after the catalog it exposes, not `TerrainAlgorithmProvider`.
-- `ports.algorithm.AlgorithmFactory` (`@FunctionalInterface`): `TerrainAlgorithm create(GeneratorConfig)`.
+- `generator.AlgorithmFactory` (`@FunctionalInterface`): `TerrainAlgorithm create(GeneratorConfig)`.
   A Factory Method, one registered per algorithm id via a Guice `MapBinder` in the composition root.
-- `ports.out.RuleRepository`: `RuleCatalog load()` (creates the bundled defaults if `rules/` is
+- `generator.RuleRepository`: `RuleCatalog load()` (creates the bundled defaults if `rules/` is
   empty); `void save(RuleCatalog)`.
-- `ports.out.PresetRepository`: `PresetCatalog load()` (creates defaults if missing);
+- `generator.PresetRepository`: `PresetCatalog load()` (creates defaults if missing);
   `void save(PresetCatalog)`.
-- `ports.out.ChallengeRepository`, `ports.in.Presets`, `ports.in.Biomes`, `ports.in.SkyGridDecorations`,
-  `ports.in.SpawnPoints`, `ports.in.ChallengeAdminUseCase`: the preset/rules, biome, spawn, and
+- `challenge.ChallengeRepository`, `generator.Presets`, `generator.Biomes`, `generator.SkyGridDecorations`,
+  `generator.SpawnPoints`, `challenge.ChallengeAdminUseCase`: the preset/rules, biome, spawn, and
   challenge ports; the domain of the `config-schema-and-rules` (presets/rules) and
   `challenge-season-system` (challenges) skills, not detailed here.
 
@@ -108,31 +108,31 @@ The former `RegionGenerationService` (implemented `GenerateRegionUseCase` with a
 
 ## Adapters
 
-- `adapters.generator.HexagonalChunkGenerator(TerrainAlgorithms, SkyGridDecorations, Biomes,
+- `generator.HexagonalChunkGenerator(TerrainAlgorithms, SkyGridDecorations, Biomes,
   RuleCatalog)` extends `ChunkGenerator`, `@Inject`. Builds a `RuleResolver(ruleCatalog,
   Material.STONE)` field and a `BiomeResolver(Biome.PLAINS)`. `generateSurface` reads
   `worldInfo.getSeed()` and `chunkData.getMinHeight()/getMaxHeight()`, then delegates per column to
   the active algorithm. All `shouldGenerate*` return false (fully custom), `isParallelCapable()`
   true. `getDefaultBiomeProvider` returns a `SkyGridBiomeProvider(biomes, biomeResolver)`.
-- `adapters.command.CloudCommandManagerFactory.create(JavaPlugin)` builds an Incendo Cloud
+- `command.CloudCommandManagerFactory.create(JavaPlugin)` builds an Incendo Cloud
   `PaperCommandManager<CommandSource>` via `SenderMapper.create(PaperCommandSource::new,
   PaperCommandSource::stack)`, so the command tree never touches a raw Paper `CommandSourceStack`.
-  `adapters.command.CloudCommandRegistrar.register(manager, presets, admin, challenges,
+  `command.CloudCommandRegistrar.register(manager, presets, admin, challenges,
   Set<CloudCommandHandler>)` registers the dynamic suggestion providers (`preset-names`,
   `algorithm-ids`, `material-ids`, `challenge-ids`), a `NoPermissionException` handler that renders
   `Messages.noPermission()`, and parses every handler in the set via `AnnotationParser`.
-- `adapters.command.handler` (Bukkit/Paper/cloud-paper/cloud-brigadier free, ArchUnit enforced):
+- `command` (Bukkit/Paper/cloud-paper/cloud-brigadier free, ArchUnit enforced):
   `CommandSource` (`sendMessage(Component)`, `hasPermission(String)`), `CloudCommandHandler` (marker,
-  bound in `platforms.common.injection.CommandModule`'s `Multibinder`), and the five
+  bound in `command.CommandModule`'s `Multibinder`), and the five
   `@Command`/`@Argument`/`@Permission`-annotated handler classes: `PresetCommands` (`preset`,
   `presets`, `worlds`), `AlgorithmCommands` (`algorithm`, `skyweight`), `MaintenanceCommands`
   (`reload`, `reload confirm`, `save`, `undo`), `ChallengeCommands` (`challenge list`,
   `challenge toggle`), `HelpCommands` (bare `skygrid`, `skygrid help`, `skygrid help <subcommand>`).
-- `adapters.config.JacksonPresetRepository(Path dataFolder, BundledDefaults)` implements
-  `PresetRepository`; `adapters.config.JacksonRuleRepository(Path dataFolder, BundledDefaults)`
+- `config.JacksonPresetRepository(Path dataFolder, BundledDefaults)` implements
+  `PresetRepository`; `config.JacksonRuleRepository(Path dataFolder, BundledDefaults)`
   implements `RuleRepository`. Both read/write the split `config.<ext>`/`presets/`/`rules/` layout
   (JSON, YAML, or TOML per file, chosen by extension) via Jackson; see `config-schema-and-rules` for
-  the full format. `adapters.config.JacksonChallengeRepository` implements `ChallengeRepository` the
+  the full format. `config.JacksonChallengeRepository` implements `ChallengeRepository` the
   same way for `challenges/`.
 
 ## Bootstrap and Guice modules (`bootstrap`)
@@ -149,5 +149,5 @@ The former `RegionGenerationService` (implemented `GenerateRegionUseCase` with a
   bundled resources via `JavaPlugin.getResource`).
 - `injection/GeneratorModule` provides the core services and binds each in port to its service. The
   core stays annotation free; this module is the only place the core is constructed.
-- `injection/CommandModule` binds every `adapters.command.handler.CloudCommandHandler` into a Guice
+- `injection/CommandModule` binds every `command.CloudCommandHandler` into a Guice
   set binder, parsed as a whole by `CloudCommandRegistrar` (see the Adapters section above).

@@ -30,7 +30,7 @@ So: a chest or spawner placed in stage 1 is always bare. To give it content you 
 
 Populators are concurrent: be thread-safe, touch only the `LimitedRegion` (never `region.getWorld()`
 - it deadlocks), guard positions with `isInRegion(...)`, and use only the passed `Random` (plus
-`core.util`/`api.util.Seeds`) so results stay deterministic and order-independent.
+`generator`/`generator.Seeds`) so results stay deterministic and order-independent.
 
 ## Hexagonal split (do not break it)
 
@@ -69,7 +69,7 @@ types and calls the API. No `org.bukkit` type, loot-table enum, or `EntityType` 
 
 ## Decorations as a query port, not a discriminated union
 
-Richer-than-a-block placement is decided through `ports.in.SkyGridDecorations`, a plain query
+Richer-than-a-block placement is decided through `generator.SkyGridDecorations`, a plain query
 interface, not a sealed type. It has one deterministic method per decoration kind:
 `lootTableAt(seed,x,y,z)` and `spawnerMobAt(seed,x,y,z)` (both `Optional<BlockId>`, one per chest or
 spawner block the classic populator finds already placed) and `plantAt(seed,x,y,z)`

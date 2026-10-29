@@ -18,7 +18,7 @@ Non-negotiable rules (ArchUnit enforces these at build time, do not fight them):
   Resolving a `BlockId` to a native type happens only in an adapter.
 - Dependencies point inward: `core -> ports -> api`. Never the reverse.
 - Value types are immutable records, validated in compact constructors.
-- Generation must stay deterministic from the world seed (`api.util.Seeds`).
+- Generation must stay deterministic from the world seed (`generator.Seeds`).
 - English everywhere (code, comments, identifiers), no em dashes anywhere.
 
 Workflow:
