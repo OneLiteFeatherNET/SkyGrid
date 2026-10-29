@@ -130,7 +130,7 @@ changes, so that I don't lose in-game edits by accident.
 As a **server admin**, I want to enable individual BastiGHG-style challenge rules (e.g. "no
 crafting table"), so that I can offer a harder, more focused survival experience without editing
 code.
-- Challenge rules are defined in config (`challenges/`, one file per rule, JSON/YAML/TOML).
+- Challenge rules are defined in config (`challenges/`, one YAML file per rule).
 - `/skygrid challenge list|toggle <id>` lists and toggles rules; toggling persists immediately.
 - Enforced by an `OlfFeature` in `plugin`'s `platforms.olf` package (a naming convention
   marking OneLiteFeather-server-specific mechanics, not a separate distribution).

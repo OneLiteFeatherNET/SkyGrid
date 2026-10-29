@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # SkyGrid-ng
 
 A Paper 26.1 chunk generator plugin in pure Java 25 with a hexagonal architecture. It ships two
-generation algorithms (`skygrid`, `noise_skygrid`), a JSON config, an in game `/skygrid`
+generation algorithms (`skygrid`, `noise_skygrid`), a YAML config, an in game `/skygrid`
 admin command, and i18n. Maintained by OneLiteFeather (OLF).
 
 This file is the always on context for every session. The deeper, task specific knowledge lives in
@@ -63,7 +63,7 @@ Feature packages:
   the season repository and entity, the season commands.
 - `persistence`: shared database plumbing (`Database`, `DatabaseConfig`, the database warm-up gate).
 - `command`: shared command plumbing (Cloud wiring, `CommandSource`, the help command, `Messages`).
-- `config`: shared Jackson file-format loading (JSON, YAML, TOML, DTOs, schemas, the file repositories).
+- `config`: shared Jackson YAML loading (DTOs, the file repositories).
 
 Dependency rules:
 
@@ -97,7 +97,7 @@ at runtime via `/skygrid algorithm <id>`.
   read `.claude/skills/build-and-release/SKILL.md`.
 - Working on what the plugin generates or its config and gameplay behavior:
   read `.claude/skills/skygrid-domain/SKILL.md`.
-- Editing the config files, presets/ or rules/ layout, the JSON/YAML/TOML formats, the JSON Schemas,
+- Editing the config files, presets/ or rules/ layout, the YAML format,
   or the per-block state/physics/placement rules: read `.claude/skills/config-schema-and-rules/SKILL.md`.
 - Planning or reviewing a feature against its requirements:
   read `.claude/skills/user-stories/SKILL.md`.

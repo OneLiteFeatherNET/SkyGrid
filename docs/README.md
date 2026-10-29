@@ -13,16 +13,14 @@ The configuration is split into three concerns:
 - A **`rules/`** directory with one file per block. A rule pins a block's data state, its physics
   behavior, and, for decorations like sugar cane, its placement conditions.
 
-JSON, YAML, and TOML are all accepted. The format is chosen per file from its extension, so you can
-mix formats freely (a YAML preset next to a TOML rule).
+Config files are YAML (`.yml` or `.yaml`).
 
 Everything is deterministic: the same world seed always produces the same world, so a config change
 only changes newly generated chunks, never the seed-to-world mapping.
 
 ## Pages
 
-- [Configuration layout and formats](configuration.md): the split file layout, the three formats,
-  the `schema/` directory, and editor validation/autocompletion.
+- [Configuration layout and formats](configuration.md): the split file layout and the YAML file format.
 - [Presets](presets.md): the preset schema (algorithm, palette, loot, mobs, biomes, spawn),
   inheritance (`extends`), the three shipped presets (`classic`, `standard`, `nether`), and
   selecting a preset per world.
@@ -43,7 +41,6 @@ plugins/SkyGrid-ng/
     cherry_leaves.yml
     sugar_cane.yml
     water.yml
-  schema/               # generated JSON Schema files for editor validation
 ```
 
 On first run the data folder is empty, so SkyGrid-ng seeds it with the bundled defaults shown above.

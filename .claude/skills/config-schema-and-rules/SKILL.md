@@ -2,10 +2,10 @@
 name: config-schema-and-rules
 description: >-
   Explains the SkyGrid-ng on-disk configuration system and the per-block rule model: the split layout
-  (a config selector, one file per preset under presets/, one file per block under rules/, generated
-  JSON Schemas under schema/), the JSON/YAML/TOML per-file format choice, the Jackson DTO to neutral
+  (a config selector, one file per preset under presets/, one file per block under rules/), the YAML
+  file format, the Jackson DTO to neutral
   record mapping in plugin, and the state/physics/placement rule shape. Use when editing
-  config.yml/json/toml, a presets/<name> or rules/<block> file, ConfigDtos, RuleDtos,
+  config.yml, a presets/<name> or rules/<block> file, ConfigDtos, RuleDtos,
   ConfigFormats, JacksonPresetRepository or JacksonRuleRepository; when adding a config format,
   preset field or rule field; when working on block state, PhysicsMode, PlacementRule,
   StructurePattern/LegendEntry or RuleResolver; or when answering water/waterlogged, leaf decay,
@@ -49,22 +49,17 @@ from the bundled defaults under `plugin/src/main/resources/`.
 - `rules/` (one file per block, **the `block:` id inside the file is authoritative**; the file name
   is only for humans). `oak_leaves.yml`, `cherry_leaves.yml`, `sugar_cane.yml`, `water.yml`. Mapped by
   `RuleDtos.RuleDto`. Seeded from the matching resources.
-- `schema/` (generated JSON Schemas, Draft 2020-12, for editor validation only). These validate the
-  config in an IDE and are not read at runtime. Treat them as generated output, not a hand-edited
-  source of truth.
 
 The two out adapters are `JacksonPresetRepository` (config selector + presets) and
 `JacksonRuleRepository` (rules). Both seed defaults if absent, load every supported file in the
 directory, and on save keep an existing file's format or default to `.yml`. Editing in game and
 saving rewrites these files and does not keep comments.
 
-## Formats: one per file, chosen by extension
+## Format: YAML only
 
-JSON, YAML and TOML are all accepted and can be mixed. The format is chosen **per file from its
-extension** in `ConfigFormats.mapperFor(Path)`: `.json` -> `JsonMapper`, `.toml` -> `TomlMapper`,
-anything else (`.yml`/`.yaml`) -> `YAMLMapper`. Supported extensions: `json`, `yml`, `yaml`, `toml`.
-So `config.toml` with `presets/classic.json` and `rules/water.yaml` all coexist and round-trip
-through the same DTOs.
+Config files are YAML. `.yml` and `.yaml` are both read and written, and `ConfigFormats.mapper()`
+returns the one `YAMLMapper` used for every file. JSON and TOML are no longer read: a `.json` or `.toml`
+file in a config directory is skipped with one WARN per file (`ConfigFormats.warnAboutUnsupportedFiles`).
 
 Every mapper is configured identically in `ConfigFormats.configure`:
 
@@ -172,8 +167,6 @@ and its `tiles`/`features` model were removed entirely, and `Plant` is now a sta
 section above), not part of any discriminated union. A new kind of grown decoration is a per-block
 rule field, not a preset-tile concern; follow "Adding a rule field" above.
 
-Regenerate the `schema/` files after any DTO change so editor validation matches the code.
-
 ## A rule applies everywhere its block is generated
 
 `RuleCatalog` is shared by every preset: a rule for `minecraft:oak_leaves` applies wherever that block
@@ -188,12 +181,11 @@ the grid offers an eligible cell. An empty `RuleCatalog` reproduces plain block 
 
 ## Where to look
 
-Detailed operator docs and the generated schemas:
+Detailed operator docs:
 
 - `docs/configuration.md`: the split layout and format matrix for server operators.
 - `docs/presets.md`: writing and extending presets (pairs with `world-generator-presets`).
 - `docs/rules.md`: the per-block rule reference (state/physics/placement recipes).
-- `schema/`: the generated Draft 2020-12 JSON Schemas for editor validation.
 
 Shipped defaults to read for real examples:
 

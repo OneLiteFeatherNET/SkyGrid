@@ -131,7 +131,7 @@ The former `RegionGenerationService` (implemented `GenerateRegionUseCase` with a
 - `config.JacksonPresetRepository(Path dataFolder, BundledDefaults)` implements
   `PresetRepository`; `config.JacksonRuleRepository(Path dataFolder, BundledDefaults)`
   implements `RuleRepository`. Both read/write the split `config.<ext>`/`presets/`/`rules/` layout
-  (JSON, YAML, or TOML per file, chosen by extension) via Jackson; see `config-schema-and-rules` for
+  (YAML, `.yml` or `.yaml`) via Jackson; see `config-schema-and-rules` for
   the full format. `config.JacksonChallengeRepository` implements `ChallengeRepository` the
   same way for `challenges/`.
 

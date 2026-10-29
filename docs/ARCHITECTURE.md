@@ -114,7 +114,7 @@ only; they depend on `ports` + `api`, never on `core`.
   `ChallengeAdminUseCase`; `Messages` builds translatable components (MiniMessage, not
   `java.text.MessageFormat`).
 - `adapters.config` `JacksonPresetRepository`/`JacksonRuleRepository`/`JacksonChallengeRepository`
-  (Factory: JSON/YAML/TOML to domain, format chosen per file by extension) implement
+  (Factory: YAML to domain) implement
   `PresetRepository`/`RuleRepository`/`ChallengeRepository` via Jackson, mapped through
   `ConfigDtos`/`RuleDtos`/`ChallengeDtos`, and own the bundled default `presets/`, `rules/`, and
   `challenges/` resources. `adapters.spawn` `SpreadSpawnListener`/`SafeLocationFinder` place new

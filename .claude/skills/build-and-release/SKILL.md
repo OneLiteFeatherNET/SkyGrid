@@ -58,7 +58,7 @@ versions current using the OLF presets in `renovate.json`.
 Shadow is applied in the distribution module only (`plugin`). The shaded jar relocates
 every bundled library that could clash with the server or another plugin, under
 `net.onelitefeather.skygridng.libs.*`: Jackson (databind, plus the SnakeYAML its YAML backend pulls
-in), victools (JSON Schema generation) and its classmate dependency, and `org.incendo.cloud` (the
+in), Hibernate's classmate, and `org.incendo.cloud` (the
 Cloud command framework, a popular library other plugins may also shade). Keep any newly bundled
 library relocated the same way. `plugin` depends on `plugin`, which exposes the
 whole object graph (adapters, core, ports, api, Guice, Jackson, Cloud) with the `api` configuration,

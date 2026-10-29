@@ -46,14 +46,16 @@ shape (void vs solid), so recreate the world after switching rather than mixing 
 ## Configuration reference
 
 The config lives in `plugins/SkyGrid-ng/`, split into a `config.<ext>` selector, one file per preset
-under `presets/`, and one file per block under `rules/` (JSON, YAML, or TOML, chosen per file by
-extension). See [docs/README.md](README.md) for the full reference:
+under `presets/`, and one file per block under `rules/` (YAML, `.yml` or `.yaml`). See [docs/README.md](README.md) for the full reference:
 
-- [Configuration layout and formats](configuration.md): the split layout, the three formats, and
-  the generated editor `schema/`.
+- [Configuration layout and formats](configuration.md): the split layout and the file format.
 - [Presets](presets.md): the preset schema (`algorithm`, `spacing`/`minY`/`maxY`/`noiseScale`, the
   weighted block table, chest loot and spawner mob tables, biomes, spawn), preset inheritance
   (`extends`), and the shipped presets (`classic`, `standard`, `nether`).
+
+Upgrading from a version that supported JSON or TOML, or that wrote a `schema/` folder: JSON and TOML
+config files are no longer read and are skipped with a warning, so convert them to YAML. The old
+`plugins/SkyGrid-ng/schema/` folder is no longer written or read and can be deleted.
 - [Per-block rules](rules.md): the per-block `state`/`physics`/`placement` rule model.
 
 Block ids are platform-neutral namespaced ids (`minecraft:stone`), not Bukkit `Material` enum names;
@@ -104,7 +106,7 @@ season.
    suffix means it is not loaded.
 2. Copy it to `seasons/<id>.yml`, for example `seasons/s01_overgrowth.yml`, and edit the copy. The file
    name is for humans; the `id` inside the file is what counts. Supported extensions are `.yml`,
-   `.yaml`, `.json` and `.toml`.
+   `.yml` or `.yaml`.
 
 | Field | Meaning |
 |-------|---------|
