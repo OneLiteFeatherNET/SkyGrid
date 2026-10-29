@@ -50,7 +50,7 @@ dependencyResolutionManagement {
             version("shadow", "9.4.3")
             version("runPaper", "3.0.2")
             version("pluginYml", "0.9.0")
-            version("cyclonedx", "3.2.4")
+            version("cyclonedx", "3.3.0")
 
             // Testing
             version("junit", "5.11.4")
