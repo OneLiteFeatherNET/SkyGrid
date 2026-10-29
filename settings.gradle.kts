@@ -68,6 +68,7 @@ dependencyResolutionManagement {
             library("jsonschema-generator", "com.github.victools", "jsonschema-generator").versionRef("jsonSchemaGen")
             library("jsonschema-module-jackson", "com.github.victools", "jsonschema-module-jackson").versionRef("jsonSchemaGen")
             library("adventure-api", "net.kyori", "adventure-api").versionRef("adventure")
+            library("adventure-minimessage", "net.kyori", "adventure-text-minimessage").versionRef("adventure")
             library("guice", "com.google.inject", "guice").versionRef("guice")
             library("jakarta-inject", "jakarta.inject", "jakarta.inject-api").versionRef("jakartaInject")
             library("cloud-paper", "org.incendo", "cloud-paper").versionRef("cloudPaper")

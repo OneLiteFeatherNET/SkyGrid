@@ -1,6 +1,7 @@
 package net.onelitefeather.skygridng.core.service;
 
 import net.onelitefeather.skygridng.api.model.SeasonCatalog;
+import net.onelitefeather.skygridng.api.model.SeasonId;
 import net.onelitefeather.skygridng.api.model.SeasonRun;
 import net.onelitefeather.skygridng.api.model.SeasonSettings;
 import net.onelitefeather.skygridng.ports.out.SeasonTransitionListener;
@@ -103,12 +104,40 @@ class SeasonServiceTest {
         SeasonService service = service(Set.of(), run("s01", ACTIVE));
         service.tick(JAN.plus(Duration.ofDays(1)));
 
-        assertThat(service.status())
+        assertThat(service.status(JAN.plus(Duration.ofDays(1))))
                 .as("status reads the active season and its phase, and names the season that follows")
                 .hasValueSatisfying(status -> {
                     assertThat(status.activeSeason().value()).isEqualTo("s01");
                     assertThat(status.phase()).isEqualTo(ACTIVE);
                     assertThat(status.nextSeason().value()).isEqualTo("s02");
+                });
+    }
+
+    @Test
+    void legacyWithAnUpcomingSeasonNamesThatSeasonAsNextAndItsStartAsNextAction() {
+        SeasonService service = service(Set.of());
+
+        assertThat(service.status(JAN.minus(Duration.ofDays(1))))
+                .as("while the legacy season runs, the first season that has not ended is the next one, starting at its start")
+                .hasValueSatisfying(status -> {
+                    assertThat(status.activeSeason()).isEqualTo(SeasonId.LEGACY);
+                    assertThat(status.nextSeason().value()).isEqualTo("s01");
+                    assertThat(status.nextActionAt()).isEqualTo(JAN);
+                });
+    }
+
+    @Test
+    void legacyWithoutAnySeasonHasNoNextSeason() {
+        runs = new Runs(journal);
+        SeasonService service = new SeasonService(SeasonCatalog.empty(), SeasonSettings.defaults(), runs, worlds,
+                challenges, announcer, new Resets(journal), Set.of(), () -> 99L, SeasonCatalog::empty);
+
+        assertThat(service.status(JAN.minus(Duration.ofDays(1))))
+                .as("with no configured season the status names no next season and no next action")
+                .hasValueSatisfying(status -> {
+                    assertThat(status.activeSeason()).isEqualTo(SeasonId.LEGACY);
+                    assertThat(status.nextSeason()).isNull();
+                    assertThat(status.nextActionAt()).isNull();
                 });
     }
 

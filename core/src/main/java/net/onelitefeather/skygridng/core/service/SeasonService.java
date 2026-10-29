@@ -100,9 +100,15 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
     }
 
     @Override
-    public Optional<SeasonStatus> status() {
+    public Optional<SeasonStatus> status(Instant now) {
         try {
             SeasonPhase phase = runs.active().map(SeasonRun::phase).orElse(SeasonPhase.ACTIVE);
+            if (activeId.equals(SeasonId.LEGACY)) {
+                Optional<Season> upcoming = catalog.seasons().stream()
+                        .filter(season -> season.end().isAfter(now)).findFirst();
+                return Optional.of(new SeasonStatus(activeId, phase,
+                        upcoming.map(Season::id).orElse(null), upcoming.map(Season::start).orElse(null)));
+            }
             return Optional.of(new SeasonStatus(activeId, phase,
                     catalog.next(activeId).map(Season::id).orElse(null),
                     season(activeId).map(Season::end).orElse(null)));

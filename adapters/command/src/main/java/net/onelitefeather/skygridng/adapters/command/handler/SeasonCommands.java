@@ -50,7 +50,14 @@ public final class SeasonCommands implements CloudCommandHandler {
     public void info(CommandSource source) {
         Optional<Season> season = current.season();
         if (season.isEmpty()) {
-            source.sendMessage(Messages.seasonNone());
+            Optional<Season> upcoming = seasons.list().seasons().stream()
+                    .filter(next -> next.end().isAfter(clock.instant())).findFirst();
+            if (upcoming.isEmpty()) {
+                source.sendMessage(Messages.seasonNone());
+                return;
+            }
+            source.sendMessage(Messages.seasonUpcoming(upcoming.get().displayName(),
+                    Messages.seasonDate(upcoming.get().start(), source.locale())));
             return;
         }
         String end = Messages.seasonDate(season.get().end(), source.locale());
@@ -76,7 +83,7 @@ public final class SeasonCommands implements CloudCommandHandler {
     @Command("skygrid season status")
     @Permission(ADMIN)
     public void status(CommandSource source) {
-        Optional<SeasonStatus> status = seasons.status();
+        Optional<SeasonStatus> status = seasons.status(clock.instant());
         if (status.isEmpty()) {
             source.sendMessage(Messages.seasonRefused());
             return;

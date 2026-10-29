@@ -1,6 +1,7 @@
 package net.onelitefeather.skygridng.adapters.command;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -21,6 +22,8 @@ import java.util.Locale;
  * was widened; no key, argument, or message text changed.
  */
 public final class Messages {
+
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private Messages() {
     }
@@ -231,6 +234,13 @@ public final class Messages {
 
     public static Component seasonNone() {
         return key("season.none");
+    }
+
+    /** The upcoming season while the legacy season runs: its display name (MiniMessage) and its start date. */
+    public static Component seasonUpcoming(String name, String start) {
+        Component displayName = MINI_MESSAGE.deserialize(name);
+        return prefix().append(Component.space()).append(Component.translatable(
+                "skygridng.command.season.upcoming", displayName, Component.text(start)));
     }
 
     public static Component seasonListEmpty() {

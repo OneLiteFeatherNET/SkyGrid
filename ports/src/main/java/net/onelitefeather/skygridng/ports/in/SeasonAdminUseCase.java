@@ -17,8 +17,12 @@ public interface SeasonAdminUseCase {
     /** The configured seasons, including any postponement applied since the last load. */
     SeasonCatalog list();
 
-    /** The active season, its phase and the season that follows. Empty when the database cannot be read. */
-    Optional<SeasonStatus> status();
+    /**
+     * The active season, its phase and the season that follows. While the implicit legacy season runs, the next season
+     * is the first one that has not ended at {@code now}, and the next action is its start. Empty when the database
+     * cannot be read.
+     */
+    Optional<SeasonStatus> status(Instant now);
 
     /**
      * Reloads the season definitions from {@code seasons/}. The active season keeps its current window, so only the
