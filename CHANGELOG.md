@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.2](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.2.1...v0.2.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.13.0 ([#72](https://github.com/OneLiteFeatherNET/SkyGrid/issues/72)) ([ef5d3c7](https://github.com/OneLiteFeatherNET/SkyGrid/commit/ef5d3c76de3edc1c84020e8b9500fa9114f61f57))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.13.1 ([#80](https://github.com/OneLiteFeatherNET/SkyGrid/issues/80)) ([2aa70a3](https://github.com/OneLiteFeatherNET/SkyGrid/commit/2aa70a35e76656073081d146861b94248d6d2c93))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.13.0 ([#73](https://github.com/OneLiteFeatherNET/SkyGrid/issues/73)) ([e0b1384](https://github.com/OneLiteFeatherNET/SkyGrid/commit/e0b1384d779d88b5c52b08585a17436def74b0ad))
+* **deps:** update dependency org.postgresql:postgresql to v42.7.11 ([#70](https://github.com/OneLiteFeatherNET/SkyGrid/issues/70)) ([f63f5ae](https://github.com/OneLiteFeatherNET/SkyGrid/commit/f63f5ae923c4a878475df833e0483fa812d8d4cc))
+* **deps:** update dependency org.postgresql:postgresql to v42.7.12 ([#75](https://github.com/OneLiteFeatherNET/SkyGrid/issues/75)) ([b766489](https://github.com/OneLiteFeatherNET/SkyGrid/commit/b7664896561d6710c5f6cdc81674b32c6256c846))
+* **deps:** update flyway to v11.9.2 ([#68](https://github.com/OneLiteFeatherNET/SkyGrid/issues/68)) ([512d039](https://github.com/OneLiteFeatherNET/SkyGrid/commit/512d039d8d227589a09f9415ed4ace006ef061b2))
+* **deps:** update hibernate to v6.6.58.final ([#62](https://github.com/OneLiteFeatherNET/SkyGrid/issues/62)) ([d71bcfc](https://github.com/OneLiteFeatherNET/SkyGrid/commit/d71bcfca6b4dae5afdeb48b79300101ef3860d2b))
+* **deps:** update hibernate to v6.6.59.final ([#76](https://github.com/OneLiteFeatherNET/SkyGrid/issues/76)) ([24d7c4f](https://github.com/OneLiteFeatherNET/SkyGrid/commit/24d7c4fe37e98201521a642d4a71e1e4cbcc5796))
+
 ## [0.2.1](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.2.0...v0.2.1) (2026-10-29)
 
 
