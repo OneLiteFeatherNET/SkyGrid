@@ -1,7 +1,6 @@
-package net.onelitefeather.skygridng.platforms.common.command;
+package net.onelitefeather.skygridng.command;
 
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.incendo.cloud.SenderMapper;
 import org.incendo.cloud.execution.ExecutionCoordinator;

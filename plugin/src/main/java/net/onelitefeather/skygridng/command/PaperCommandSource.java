@@ -1,8 +1,7 @@
-package net.onelitefeather.skygridng.platforms.common.command;
+package net.onelitefeather.skygridng.command;
 
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
-import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;

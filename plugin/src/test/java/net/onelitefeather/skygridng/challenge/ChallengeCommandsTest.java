@@ -1,7 +1,7 @@
 package net.onelitefeather.skygridng.challenge;
 
-import net.onelitefeather.skygridng.adapters.command.Messages;
-import net.onelitefeather.skygridng.adapters.command.handler.RecordingCommandSource;
+import net.onelitefeather.skygridng.command.Messages;
+import net.onelitefeather.skygridng.command.RecordingCommandSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

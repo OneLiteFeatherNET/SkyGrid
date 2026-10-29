@@ -1,6 +1,5 @@
-package net.onelitefeather.skygridng.adapters.command.handler;
+package net.onelitefeather.skygridng.command;
 
-import net.onelitefeather.skygridng.adapters.command.Messages;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.command;
+package net.onelitefeather.skygridng.command;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;

@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.platforms.common.injection;
+package net.onelitefeather.skygridng.command;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -6,8 +6,6 @@ import com.google.inject.multibindings.Multibinder;
 import jakarta.inject.Singleton;
 import net.onelitefeather.skygridng.generator.AlgorithmCommands;
 import net.onelitefeather.skygridng.challenge.ChallengeCommands;
-import net.onelitefeather.skygridng.adapters.command.handler.CloudCommandHandler;
-import net.onelitefeather.skygridng.adapters.command.handler.HelpCommands;
 import net.onelitefeather.skygridng.generator.MaintenanceCommands;
 import net.onelitefeather.skygridng.generator.PresetCommands;
 import net.onelitefeather.skygridng.season.SeasonCommands;
@@ -17,6 +15,7 @@ import net.onelitefeather.skygridng.season.CurrentSeason;
 import net.onelitefeather.skygridng.generator.Presets;
 import net.onelitefeather.skygridng.generator.RuleAdminUseCase;
 import net.onelitefeather.skygridng.season.SeasonAdminUseCase;
+import net.onelitefeather.skygridng.platforms.common.injection.RepositoryModule;
 
 import java.time.Clock;
 

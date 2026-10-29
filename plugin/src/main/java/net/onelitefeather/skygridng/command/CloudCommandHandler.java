@@ -1,4 +1,4 @@
-package net.onelitefeather.skygridng.adapters.command.handler;
+package net.onelitefeather.skygridng.command;
 
 /**
  * Marker for a class whose methods are Cloud {@code @Command}-annotated subcommand handlers.

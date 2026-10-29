@@ -1,9 +1,7 @@
-package net.onelitefeather.skygridng.adapters.command;
+package net.onelitefeather.skygridng.command;
 
 import net.onelitefeather.skygridng.generator.AlgorithmCommands;
 import net.onelitefeather.skygridng.challenge.ChallengeCommands;
-import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
-import net.onelitefeather.skygridng.adapters.command.handler.HelpCommands;
 import net.onelitefeather.skygridng.generator.MaintenanceCommands;
 import net.onelitefeather.skygridng.generator.PresetCommands;
 import net.onelitefeather.skygridng.challenge.ChallengeAdminUseCase;

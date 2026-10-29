@@ -2,7 +2,7 @@ package net.onelitefeather.skygridng.season;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.onelitefeather.skygridng.adapters.command.Messages;
+import net.onelitefeather.skygridng.command.Messages;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 

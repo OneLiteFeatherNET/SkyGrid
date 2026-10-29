@@ -1,8 +1,5 @@
-package net.onelitefeather.skygridng.platforms.common.command;
+package net.onelitefeather.skygridng.command;
 
-import net.onelitefeather.skygridng.adapters.command.Messages;
-import net.onelitefeather.skygridng.adapters.command.handler.CloudCommandHandler;
-import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
 import net.onelitefeather.skygridng.challenge.ChallengeRule;
 import net.onelitefeather.skygridng.season.Season;
 import net.onelitefeather.skygridng.challenge.ChallengeAdminUseCase;

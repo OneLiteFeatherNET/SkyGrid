@@ -1,6 +1,5 @@
-package net.onelitefeather.skygridng.adapters.command.handler;
+package net.onelitefeather.skygridng.command;
 
-import net.onelitefeather.skygridng.adapters.command.Messages;
 import org.incendo.cloud.annotations.Argument;
 import org.incendo.cloud.annotations.Command;
 import org.incendo.cloud.annotations.Permission;

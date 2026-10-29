@@ -1,6 +1,6 @@
 package net.onelitefeather.skygridng.season;
 
-import net.onelitefeather.skygridng.adapters.command.Messages;
+import net.onelitefeather.skygridng.command.Messages;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.Player;

@@ -1,10 +1,10 @@
 package net.onelitefeather.skygridng.season;
 
 import net.kyori.adventure.text.Component;
-import net.onelitefeather.skygridng.adapters.command.Messages;
+import net.onelitefeather.skygridng.command.Messages;
 import net.onelitefeather.skygridng.challenge.ChallengeProgressUseCase;
-import net.onelitefeather.skygridng.adapters.command.handler.CloudCommandHandler;
-import net.onelitefeather.skygridng.adapters.command.handler.CommandSource;
+import net.onelitefeather.skygridng.command.CloudCommandHandler;
+import net.onelitefeather.skygridng.command.CommandSource;
 import org.incendo.cloud.annotations.Argument;
 import org.incendo.cloud.annotations.Command;
 import org.incendo.cloud.annotations.Permission;
