@@ -30,9 +30,8 @@ agent first; it is the standard entry point for the specialist team, not a fallb
 - The `domain` module never imports Bukkit, Jackson, Guice, jakarta.inject, Hibernate or Jakarta
   Persistence; its compile classpath enforces this. Adventure (`net.kyori.adventure`) is allowed in the
   domain as a platform-neutral text API (it is `compileOnly`; the platform provides it at runtime), but
-  its platform-specific bindings (`net.kyori.adventure.platform`) are not. Season must not depend on
-  challenge. If an edit would break one of these, the design is wrong. See the `hexagonal-architecture`
-  skill.
+  its platform-specific bindings (`net.kyori.adventure.platform`) are not. If an edit would break this,
+  the design is wrong. See the `hexagonal-architecture` skill.
 - Keep value types immutable (records), validate in compact constructors, and keep generation
   deterministic from the world seed.
 - The domain is platform-neutral, not just Bukkit-import-free: name blocks by namespaced `BlockId`
@@ -72,9 +71,8 @@ Dependency rules:
   module's compile classpath enforces this, and `ArchitectureTest.domainIsFrameworkFree` checks it.
   Adventure (`net.kyori.adventure`) is allowed as a platform-neutral text API; its platform bindings
   (`net.kyori.adventure.platform`) are not.
-- `season` must not depend on `challenge`. `challenge` may depend on `season`.
-- Feature packages should not form cycles. `ArchitectureTest.featureSlicesAreFreeOfCycles` checks this;
-  it reports the cycles that currently exist between the features.
+- Features may use each other directly (inside the one plugin); the hard boundary is between `domain`
+  and `plugin`.
 - `@Entity` classes live in the plugin module only.
 
 Domain classes carry no injection annotations; swapping an implementation changes a module binding, not

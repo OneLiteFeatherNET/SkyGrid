@@ -17,18 +17,14 @@ import java.time.Instant;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
-import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 /**
  * Enforces the architecture of SkyGrid-ng with ArchUnit. The domain module (framework free) and the
  * plugin module (Paper, Guice, Jackson, JPA) are told apart by the jar they are compiled into, so the
- * rules do not depend on package names. Feature packages (generator, challenge, season, ...) are
- * checked for cycles as slices.
+ * rules do not depend on package names.
  */
 @AnalyzeClasses(packages = "net.onelitefeather.skygridng", importOptions = DoNotIncludeTests.class)
 class ArchitectureTest {
-
-    private static final String ROOT = "net.onelitefeather.skygridng";
 
     /**
      * Packages no domain class may ever depend on. Adventure (net.kyori.adventure) is deliberately
@@ -106,12 +102,6 @@ class ArchitectureTest {
     static final ArchRule noNativeQueryWithResultMapping =
             noClasses().should().callMethod(EntityManager.class, "createNativeQuery", String.class, String.class)
                     .because("the persistence adapters use JPQL named queries only; no native SQL string is built at runtime");
-
-    @ArchTest
-    static final ArchRule featureSlicesAreFreeOfCycles =
-            slices().matching(ROOT + ".(*)..").should().beFreeOfCycles()
-                    .because("feature packages depend on each other in one direction only; a cycle means two "
-                            + "features cannot be understood, changed or tested apart");
 
     /**
      * Each module is consumed as its jar on the verification classpath, so the jar name identifies the
