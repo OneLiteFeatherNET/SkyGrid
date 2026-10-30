@@ -194,6 +194,7 @@ class SeasonServiceTest {
     @Test
     void secondTickDuringTransitionIsANoOp() {
         List<Boolean> nested = new ArrayList<>();
+        worlds.loaded.add(ENDING_KEY);
         SeasonService service = service(Set.of(), run("s01", ACTIVE));
         worlds.beforePrepare = () -> nested.add(service.tick(BEFORE_PREPARE));
 
@@ -210,6 +211,7 @@ class SeasonServiceTest {
     @Test
     void advanceAndRetryNeverRunTwoTransitionsAtOnce() {
         List<Boolean> nested = new ArrayList<>();
+        worlds.loaded.add(ENDING_KEY);
         SeasonService service = service(Set.of(), run("s01", ACTIVE));
         worlds.beforePrepare = () -> {
             nested.add(service.advance("admin", BEFORE_PREPARE));
@@ -324,6 +326,32 @@ class SeasonServiceTest {
         assertThat(runs.get("s01").phase())
                 .as("nothing switches before the boundary")
                 .isEqualTo(ACTIVE);
+    }
+
+    @Test
+    void activeSeasonWorldIsLoadedAgainAfterARestart() {
+        SeasonService service = service(Set.of(), run("s01", ACTIVE));
+
+        service.tick(JAN.plus(Duration.ofDays(1)));
+
+        assertThat(worlds.isLoaded(ENDING_KEY))
+                .as("the active season world is loaded again after a restart, so players are not left in the lobby")
+                .isTrue();
+        assertThat(journal.entries())
+                .as("it is loaded with the seed and preset stored for the season")
+                .contains("prepare:" + ENDING_KEY + ":7:standard");
+    }
+
+    @Test
+    void activeSeasonWorldThatIsStillLoadedIsNotLoadedAgain() {
+        worlds.loaded.add(ENDING_KEY);
+        SeasonService service = service(Set.of(), run("s01", ACTIVE));
+
+        service.tick(JAN.plus(Duration.ofDays(1)));
+
+        assertThat(journal.count("prepare:" + ENDING_KEY))
+                .as("a world that is already loaded is left alone on every tick")
+                .isZero();
     }
 
     @Test
