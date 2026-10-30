@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.3.0](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.2.3...v0.3.0) (2026-10-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* **config:** Only YAML config files are read; JSON and TOML files and the generated schema folder are no longer supported.
+
+### Bug Fixes
+
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.13.3 ([#89](https://github.com/OneLiteFeatherNET/SkyGrid/issues/89)) ([5357c27](https://github.com/OneLiteFeatherNET/SkyGrid/commit/5357c27c8cb7c09307abcd41afec7a0314b1729b))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.13.4 ([#92](https://github.com/OneLiteFeatherNET/SkyGrid/issues/92)) ([ab5f554](https://github.com/OneLiteFeatherNET/SkyGrid/commit/ab5f5547f4597fd0f56756d8952b598af1da7b18))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.14.0 ([#98](https://github.com/OneLiteFeatherNET/SkyGrid/issues/98)) ([b1c7b1b](https://github.com/OneLiteFeatherNET/SkyGrid/commit/b1c7b1b7114dd253c416fe088a2bb930da8cf003))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.13.2 ([#90](https://github.com/OneLiteFeatherNET/SkyGrid/issues/90)) ([c41db4f](https://github.com/OneLiteFeatherNET/SkyGrid/commit/c41db4f38bba166a1460284df557f66cb064bc60))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.13.3 ([#95](https://github.com/OneLiteFeatherNET/SkyGrid/issues/95)) ([fae0354](https://github.com/OneLiteFeatherNET/SkyGrid/commit/fae0354f9a2ae8b80ab757006dc96a470dbecb8b))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.13.4 ([#96](https://github.com/OneLiteFeatherNET/SkyGrid/issues/96)) ([690e8bc](https://github.com/OneLiteFeatherNET/SkyGrid/commit/690e8bcdf7ef3b1237ef5337d92cc7dd84c1a12e))
+* **deps:** update dependency org.mockito:mockito-core to v5.16.1 ([#85](https://github.com/OneLiteFeatherNET/SkyGrid/issues/85)) ([7a5e9de](https://github.com/OneLiteFeatherNET/SkyGrid/commit/7a5e9def36e808653804c05ee748ada86f453a8d))
+* **deps:** update dependency org.postgresql:postgresql to v42.7.14 ([#84](https://github.com/OneLiteFeatherNET/SkyGrid/issues/84)) ([92c236d](https://github.com/OneLiteFeatherNET/SkyGrid/commit/92c236dfd5ce382fc54f4d35d21a0a13104549d4))
+* **deps:** update flyway to v11.10.0 ([#86](https://github.com/OneLiteFeatherNET/SkyGrid/issues/86)) ([18f427e](https://github.com/OneLiteFeatherNET/SkyGrid/commit/18f427e3137ac9c9f6413531e6268e5c13e4bc96))
+* **deps:** update flyway to v11.10.1 ([#94](https://github.com/OneLiteFeatherNET/SkyGrid/issues/94)) ([0f71c52](https://github.com/OneLiteFeatherNET/SkyGrid/commit/0f71c523c005d89449ac458ed1fb4f6e0372d477))
+* **deps:** update flyway to v11.10.2 ([#97](https://github.com/OneLiteFeatherNET/SkyGrid/issues/97)) ([c557d33](https://github.com/OneLiteFeatherNET/SkyGrid/commit/c557d33bd8b63cf8d9830f12f9cc83870bebc92a))
+* **deps:** update flyway to v11.10.3 ([#100](https://github.com/OneLiteFeatherNET/SkyGrid/issues/100)) ([61321e2](https://github.com/OneLiteFeatherNET/SkyGrid/commit/61321e25e171d0159910e14bd1c309cb5e7f55a3))
+
+
+### Code Refactoring
+
+* **config:** read only YAML config files ([#104](https://github.com/OneLiteFeatherNET/SkyGrid/issues/104)) ([f6c60f6](https://github.com/OneLiteFeatherNET/SkyGrid/commit/f6c60f680429a37a2777c1a8694922ff625649c1))
+
 ## [0.2.3](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.2.2...v0.2.3) (2026-10-29)
 
 
