@@ -1,5 +1,6 @@
 package net.onelitefeather.skygridng.season;
 
+import net.onelitefeather.skygridng.generator.SpawnPoints;
 import net.onelitefeather.skygridng.generator.WorldGenerators;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
@@ -21,6 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Black-box tests for the Bukkit season world adapter on MockBukkit's server. The season folder and the archive
@@ -58,7 +60,10 @@ class BukkitSeasonWorldsTest {
     }
 
     private BukkitSeasonWorlds worlds() {
-        return new BukkitSeasonWorlds(plugin, mock(WorldGenerators.class), this::level, this::archive);
+        SpawnPoints spawnPoints = mock(SpawnPoints.class);
+        when(spawnPoints.searchRadius()).thenReturn(4);
+        when(spawnPoints.maxAttempts()).thenReturn(8);
+        return new BukkitSeasonWorlds(plugin, mock(WorldGenerators.class), spawnPoints, this::level, this::archive);
     }
 
     /** The folder a season world is stored in, as the adapter resolves it: dimensions/namespace/key. */

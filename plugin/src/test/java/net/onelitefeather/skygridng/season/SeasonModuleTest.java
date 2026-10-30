@@ -6,6 +6,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import net.onelitefeather.skygridng.generator.SpawnPoints;
 import net.onelitefeather.skygridng.generator.WorldGenerators;
 import net.onelitefeather.skygridng.challenge.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.generator.Presets;
@@ -60,6 +61,7 @@ class SeasonModuleTest {
                 bind(ChallengeAdminUseCase.class).toInstance(mock(ChallengeAdminUseCase.class));
                 bind(Presets.class).toInstance(mock(Presets.class));
                 bind(WorldGenerators.class).toInstance(mock(WorldGenerators.class));
+                bind(SpawnPoints.class).toInstance(mock(SpawnPoints.class));
                 bind(LongSupplier.class).toInstance(mock(LongSupplier.class));
                 bind(Clock.class).toInstance(Clock.systemUTC());
             }

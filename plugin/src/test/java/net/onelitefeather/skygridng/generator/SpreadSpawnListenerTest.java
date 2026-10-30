@@ -157,4 +157,16 @@ class SpreadSpawnListenerTest {
         verify(spawnPoints).at(1);
         verify(spawnPoints).at(2);
     }
+
+    @Test
+    @DisplayName("the safe spawn search lands on the solid floor above the ground, never in mid-air")
+    void safeSpawnLandsOnTheSolidFloor() {
+        World world = uniformFloorWorld();
+
+        Location spawn = SpreadSpawnListener.safeSpawn(world, 0, 0, spawnPoints(false));
+
+        assertThat(spawn.getBlockY())
+                .as("the spawn sits on the first open block above the solid floor")
+                .isEqualTo(GROUND_Y + 1);
+    }
 }
