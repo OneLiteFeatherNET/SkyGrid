@@ -1,7 +1,8 @@
 package net.onelitefeather.skygridng.season;
 
+import net.onelitefeather.skygridng.generator.SpawnPoints;
+import net.onelitefeather.skygridng.generator.SpreadSpawnListener;
 import net.onelitefeather.skygridng.generator.WorldGenerators;
-import io.papermc.paper.math.Position;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
@@ -33,13 +34,15 @@ public final class BukkitSeasonWorlds implements SeasonWorlds {
 
     private final Plugin plugin;
     private final WorldGenerators generators;
+    private final SpawnPoints spawnPoints;
     private final Supplier<Path> levelFolder;
     private final Supplier<Path> archiveDirectory;
 
-    public BukkitSeasonWorlds(Plugin plugin, WorldGenerators generators, Supplier<Path> levelFolder,
-                              Supplier<Path> archiveDirectory) {
+    public BukkitSeasonWorlds(Plugin plugin, WorldGenerators generators, SpawnPoints spawnPoints,
+                              Supplier<Path> levelFolder, Supplier<Path> archiveDirectory) {
         this.plugin = plugin;
         this.generators = generators;
+        this.spawnPoints = spawnPoints;
         this.levelFolder = levelFolder;
         this.archiveDirectory = archiveDirectory;
     }
@@ -50,11 +53,12 @@ public final class BukkitSeasonWorlds implements SeasonWorlds {
             World world = Bukkit.createWorld(WorldCreator.ofKey(key(worldKey))
                     .seed(seed)
                     .generator(generators.forWorld(worldKey, preset))
-                    .environment(World.Environment.NORMAL)
-                    .forcedSpawnPosition(Position.block(0, 100, 0), 0f, 0f));
+                    .environment(World.Environment.NORMAL));
             if (world == null) {
                 throw new IllegalStateException("the server did not create the season world " + worldKey);
             }
+            // The spawn is a safe block found once here, so every caller of getSpawnLocation() lands on ground.
+            world.setSpawnLocation(SpreadSpawnListener.safeSpawn(world, 0, 0, spawnPoints));
             return null;
         });
     }

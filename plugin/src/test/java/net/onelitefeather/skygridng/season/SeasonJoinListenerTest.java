@@ -8,6 +8,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.mockito.Mockito;
 import org.bukkit.plugin.Plugin;
@@ -147,6 +148,48 @@ class SeasonJoinListenerTest {
         assertThat(resets)
                 .as("a player who left is not reset or moved by the waiting routine")
                 .isEmpty();
+    }
+
+    @Test
+    void respawnWithoutBedOrAnchorIsMovedIntoTheActiveSeasonWorld() {
+        PlayerMock player = server.addPlayer();
+        World lobby = server.addSimpleWorld("lobby");
+        var event = new PlayerRespawnEvent(player, lobby.getSpawnLocation(), false, false);
+
+        listener(START.plus(Duration.ofDays(1))).onRespawn(event);
+
+        assertThat(event.getRespawnLocation().getWorld())
+                .as("a player with no bed or anchor respawns in the active season world, not in the empty lobby")
+                .isEqualTo(activeWorld);
+    }
+
+    @Test
+    void bedRespawnKeepsItsBedLocation() {
+        PlayerMock player = server.addPlayer();
+        World lobby = server.addSimpleWorld("lobby");
+        Location bed = lobby.getSpawnLocation();
+        var event = new PlayerRespawnEvent(player, bed, true, false);
+
+        listener(START.plus(Duration.ofDays(1))).onRespawn(event);
+
+        assertThat(event.getRespawnLocation())
+                .as("a player respawning at their bed keeps the bed location")
+                .isEqualTo(bed);
+    }
+
+    @Test
+    void respawnIsLeftAloneWhileNoSeasonIsActive() {
+        known = false;
+        PlayerMock player = server.addPlayer();
+        World lobby = server.addSimpleWorld("lobby");
+        Location spawn = lobby.getSpawnLocation();
+        var event = new PlayerRespawnEvent(player, spawn, false, false);
+
+        listener(START.plus(Duration.ofDays(1))).onRespawn(event);
+
+        assertThat(event.getRespawnLocation())
+                .as("without a known active season there is no season spawn to respawn at")
+                .isEqualTo(spawn);
     }
 
     @Test

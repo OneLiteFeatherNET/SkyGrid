@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -57,6 +58,26 @@ public final class SeasonJoinListener implements Listener {
         if (active != null && !active.equals(event.getSpawnLocation().getWorld())) {
             event.setSpawnLocation(active.getSpawnLocation());
         }
+    }
+
+    /**
+     * A player without a bed or anchor respawns at the world spawn of the default lobby, which is empty. Such a player is
+     * sent to the active season world instead, so the season is not left behind after a death.
+     */
+    @EventHandler
+    public void onRespawn(PlayerRespawnEvent event) {
+        if (event.isBedSpawn() || event.isAnchorSpawn()) {
+            return;
+        }
+        Optional<Season> season = current.season();
+        if (season.isEmpty()) {
+            return;
+        }
+        World active = activeWorld(season.get());
+        if (active == null || active.equals(event.getRespawnLocation().getWorld())) {
+            return;
+        }
+        event.setRespawnLocation(active.getSpawnLocation());
     }
 
     @EventHandler

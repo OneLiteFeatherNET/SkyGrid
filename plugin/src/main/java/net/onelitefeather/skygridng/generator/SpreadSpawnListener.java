@@ -57,20 +57,21 @@ public final class SpreadSpawnListener implements Listener {
 
         int ordinal = nextOrdinal(world);
         SpawnPoint slot = spawnPoints.at(ordinal);
-        RandomGenerator rng = Seeds.rng(Seeds.mix(world.getSeed(), slot.x(), slot.z()));
-        BukkitGroundReader ground = new BukkitGroundReader(world);
-        Optional<SafeLocationFinder.Spot> spot = SafeLocationFinder.find(
-                ground, slot.x(), slot.z(), spawnPoints.searchRadius(), spawnPoints.maxAttempts(), rng);
-        Location location = spot
-                .map(s -> new Location(world, s.x() + 0.5, s.y(), s.z() + 0.5))
-                .orElseGet(() -> fallback(world, slot));
         playerData.set(ordinalKey, PersistentDataType.INTEGER, ordinal);
-        event.setSpawnLocation(location);
+        event.setSpawnLocation(safeSpawn(world, slot.x(), slot.z(), spawnPoints));
     }
 
-    /** A fixed high point above the slot center; used only when every safe-block probe fails. */
-    private Location fallback(World world, SpawnPoint slot) {
-        return new Location(world, slot.x() + 0.5, world.getMaxHeight() - 1.0, slot.z() + 0.5);
+    /**
+     * The safe, standable location the spawn search picks near {@code (x, z)}, deterministic from the world seed. Used
+     * for first-join slots and for the season world spawn; falls back to a fixed high point only when every probe fails.
+     */
+    public static Location safeSpawn(World world, int x, int z, SpawnPoints spawnPoints) {
+        RandomGenerator rng = Seeds.rng(Seeds.mix(world.getSeed(), x, z));
+        Optional<SafeLocationFinder.Spot> spot = SafeLocationFinder.find(
+                new BukkitGroundReader(world), x, z, spawnPoints.searchRadius(), spawnPoints.maxAttempts(), rng);
+        return spot
+                .map(s -> new Location(world, s.x() + 0.5, s.y(), s.z() + 0.5))
+                .orElseGet(() -> new Location(world, x + 0.5, world.getMaxHeight() - 1.0, z + 0.5));
     }
 
     /** Reads and advances the per-world join counter kept in the world's persistent data. */

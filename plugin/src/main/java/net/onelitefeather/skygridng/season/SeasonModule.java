@@ -6,6 +6,7 @@ import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import jakarta.inject.Singleton;
 import net.onelitefeather.skygridng.challenge.ChallengeRule;
+import net.onelitefeather.skygridng.generator.SpawnPoints;
 import net.onelitefeather.skygridng.generator.WorldGenerators;
 import net.onelitefeather.skygridng.challenge.ChallengeAdminUseCase;
 import net.onelitefeather.skygridng.generator.Presets;
@@ -64,9 +65,10 @@ public final class SeasonModule extends AbstractModule {
 
     @Provides
     @Singleton
-    SeasonWorlds provideSeasonWorlds(JavaPlugin plugin, WorldGenerators generators, SeasonRepository repository) {
+    SeasonWorlds provideSeasonWorlds(JavaPlugin plugin, WorldGenerators generators, SpawnPoints spawnPoints,
+                                     SeasonRepository repository) {
         // Both paths are resolved on use, not here: the server is not ready for them while the graph is built.
-        return new BukkitSeasonWorlds(plugin, generators,
+        return new BukkitSeasonWorlds(plugin, generators, spawnPoints,
                 () -> plugin.getServer().getWorlds().get(0).getWorldFolder().toPath(),
                 () -> plugin.getServer().getWorldContainer().toPath()
                         .resolve(repository.settings().archiveDirectory()));

@@ -123,6 +123,7 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
     public boolean tick(Instant now) {
         return guarded("tick", () -> {
             Optional<SeasonRun> active = reconcile();
+            loadActiveWorldIfMissing(active);
             List<SeasonRun> known = knownRuns(active);
             SeasonAction action = known.stream()
                     .filter(run -> run.phase() == SeasonPhase.PREPARED && !worlds.isLoaded(run.worldKey()))
@@ -273,6 +274,28 @@ public final class SeasonService implements SeasonAdminUseCase, CurrentSeason {
                 .filter(season -> !season.end().equals(run.endsAt()))
                 .ifPresent(season -> shift(season, run.endsAt())));
         return active;
+    }
+
+    /**
+     * A restart leaves the active season world unloaded, and nothing else loads it. It is loaded again here with its
+     * stored seed, which also sets its safe spawn. A failure is logged, and the tick carries on.
+     */
+    private void loadActiveWorldIfMissing(Optional<SeasonRun> active) {
+        if (active.isEmpty() || active.get().phase() != SeasonPhase.ACTIVE
+                || worlds.isLoaded(active.get().worldKey())) {
+            return;
+        }
+        SeasonRun run = active.get();
+        try {
+            String preset = season(run.seasonId())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "season " + run.seasonId().value() + " is not configured"))
+                    .preset();
+            worlds.prepare(run.worldKey(), run.seed(), preset);
+        } catch (RuntimeException failure) {
+            LOGGER.log(Level.WARNING, "could not load the active season world " + run.worldKey() + ": "
+                    + failure.getMessage(), failure);
+        }
     }
 
     private List<SeasonRun> knownRuns(Optional<SeasonRun> active) {
