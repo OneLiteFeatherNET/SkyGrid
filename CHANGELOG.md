@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.3.0...v0.3.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* **season:** spawn and respawn players safely in the season world ([#108](https://github.com/OneLiteFeatherNET/SkyGrid/issues/108)) ([6e5ee74](https://github.com/OneLiteFeatherNET/SkyGrid/commit/6e5ee742472d3b179861369638b643ba5c325839))
+
 ## [0.3.0](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.2.3...v0.3.0) (2026-10-30)
 
 
