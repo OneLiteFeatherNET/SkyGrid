@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.2](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.3.1...v0.3.2) (2026-10-31)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.14.1 ([#106](https://github.com/OneLiteFeatherNET/SkyGrid/issues/106)) ([54972d7](https://github.com/OneLiteFeatherNET/SkyGrid/commit/54972d7d19e2bf4ee27cc644061004c21d15f68c))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.14.0 ([#101](https://github.com/OneLiteFeatherNET/SkyGrid/issues/101)) ([385b73b](https://github.com/OneLiteFeatherNET/SkyGrid/commit/385b73b24f96b66d65cf1e9cf59891d3d2eae901))
+* **deps:** update dependency org.mockito:mockito-core to v5.17.0 ([#93](https://github.com/OneLiteFeatherNET/SkyGrid/issues/93)) ([8e53adc](https://github.com/OneLiteFeatherNET/SkyGrid/commit/8e53adcf5df94b12a537d9bd6df23534db90f45f))
+* **deps:** update flyway to v11.10.4 ([#105](https://github.com/OneLiteFeatherNET/SkyGrid/issues/105)) ([b6fc39a](https://github.com/OneLiteFeatherNET/SkyGrid/commit/b6fc39a918a9773be126db143a8ad85adb9802e1))
+
 ## [0.3.1](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.3.0...v0.3.1) (2026-10-30)
 
 
