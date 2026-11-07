@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.3.2](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.3.1...v0.3.2) (2026-11-07)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.14.1 ([#106](https://github.com/OneLiteFeatherNET/SkyGrid/issues/106)) ([54972d7](https://github.com/OneLiteFeatherNET/SkyGrid/commit/54972d7d19e2bf4ee27cc644061004c21d15f68c))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.14.2 ([#111](https://github.com/OneLiteFeatherNET/SkyGrid/issues/111)) ([19d109a](https://github.com/OneLiteFeatherNET/SkyGrid/commit/19d109a27d7c384eae33b6424b8edd7abcaded01))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.14.3 ([#115](https://github.com/OneLiteFeatherNET/SkyGrid/issues/115)) ([8714911](https://github.com/OneLiteFeatherNET/SkyGrid/commit/87149116990633d3b3a53f0ff85895fd929ef617))
+* **deps:** update dependency org.junit.jupiter:junit-jupiter to v5.14.4 ([#120](https://github.com/OneLiteFeatherNET/SkyGrid/issues/120)) ([7b67dd4](https://github.com/OneLiteFeatherNET/SkyGrid/commit/7b67dd44fadb0022d472d55caa03bddfd59e4dcf))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.14.0 ([#101](https://github.com/OneLiteFeatherNET/SkyGrid/issues/101)) ([385b73b](https://github.com/OneLiteFeatherNET/SkyGrid/commit/385b73b24f96b66d65cf1e9cf59891d3d2eae901))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.14.1 ([#113](https://github.com/OneLiteFeatherNET/SkyGrid/issues/113)) ([d38da5b](https://github.com/OneLiteFeatherNET/SkyGrid/commit/d38da5b72afce7030ec03a4c225a7475479fd10c))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.14.2 ([#116](https://github.com/OneLiteFeatherNET/SkyGrid/issues/116)) ([d35b7de](https://github.com/OneLiteFeatherNET/SkyGrid/commit/d35b7de09bf2fa06caca9aefb271cec9c5c2b72e))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.14.3 ([#121](https://github.com/OneLiteFeatherNET/SkyGrid/issues/121)) ([315df31](https://github.com/OneLiteFeatherNET/SkyGrid/commit/315df31a9ce3452327b382fe3d0968a15c299cbe))
+* **deps:** update dependency org.junit.platform:junit-platform-launcher to v1.14.4 ([#124](https://github.com/OneLiteFeatherNET/SkyGrid/issues/124)) ([6a30fd2](https://github.com/OneLiteFeatherNET/SkyGrid/commit/6a30fd2e1dd8d63ec315e6f88dbe6c0347940714))
+* **deps:** update dependency org.mockito:mockito-core to v5.17.0 ([#93](https://github.com/OneLiteFeatherNET/SkyGrid/issues/93)) ([8e53adc](https://github.com/OneLiteFeatherNET/SkyGrid/commit/8e53adcf5df94b12a537d9bd6df23534db90f45f))
+* **deps:** update dependency org.mockito:mockito-core to v5.18.0 ([#114](https://github.com/OneLiteFeatherNET/SkyGrid/issues/114)) ([fc6322d](https://github.com/OneLiteFeatherNET/SkyGrid/commit/fc6322d4597cdaa0318597a5913e8e8fc4ea70cd))
+* **deps:** update dependency org.mockito:mockito-core to v5.19.0 ([#117](https://github.com/OneLiteFeatherNET/SkyGrid/issues/117)) ([078ac1c](https://github.com/OneLiteFeatherNET/SkyGrid/commit/078ac1c860d8c95ee5b1b83db351d8e3fa31b904))
+* **deps:** update dependency org.mockito:mockito-core to v5.20.0 ([#122](https://github.com/OneLiteFeatherNET/SkyGrid/issues/122)) ([61e7894](https://github.com/OneLiteFeatherNET/SkyGrid/commit/61e789436b19d5e25e53464d7f4b5ba4dc3599b0))
+* **deps:** update dependency org.mockito:mockito-core to v5.21.0 ([#126](https://github.com/OneLiteFeatherNET/SkyGrid/issues/126)) ([0d7c7e5](https://github.com/OneLiteFeatherNET/SkyGrid/commit/0d7c7e5f7aa5c438b1725cec8566889b67e9c101))
+* **deps:** update flyway to v11.10.4 ([#105](https://github.com/OneLiteFeatherNET/SkyGrid/issues/105)) ([b6fc39a](https://github.com/OneLiteFeatherNET/SkyGrid/commit/b6fc39a918a9773be126db143a8ad85adb9802e1))
+* **deps:** update flyway to v11.10.5 ([#112](https://github.com/OneLiteFeatherNET/SkyGrid/issues/112)) ([f463423](https://github.com/OneLiteFeatherNET/SkyGrid/commit/f463423864d1083ff307df8fea18e65026b806ed))
+* **deps:** update flyway to v11.11.0 ([#118](https://github.com/OneLiteFeatherNET/SkyGrid/issues/118)) ([59fa780](https://github.com/OneLiteFeatherNET/SkyGrid/commit/59fa780add86e3b881f701da1e9c60006d788056))
+* **deps:** update flyway to v11.11.1 ([#123](https://github.com/OneLiteFeatherNET/SkyGrid/issues/123)) ([680febf](https://github.com/OneLiteFeatherNET/SkyGrid/commit/680febfa4e4c203839fc7dbd851814a240431210))
+* **deps:** update flyway to v11.11.2 ([#125](https://github.com/OneLiteFeatherNET/SkyGrid/issues/125)) ([c9f9332](https://github.com/OneLiteFeatherNET/SkyGrid/commit/c9f93323598a744e6ab7286afa1dc549e08ed8ce))
+
 ## [0.3.1](https://github.com/OneLiteFeatherNET/SkyGrid/compare/v0.3.0...v0.3.1) (2026-10-30)
 
 
