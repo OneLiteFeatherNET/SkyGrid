@@ -110,6 +110,8 @@ jobs:
     with:
       project-name: "SkyGrid-ng"
       project-version: ${{ needs.release-please.outputs.version }}
+      parent-uuid: "64ac1753-b7f6-46f6-9456-a0b79408c6f7"
+      is-latest: true
       project-tags: "paper,plugin"
       artifact-name: "sbom"
       sbom-path: "bom.xml"
