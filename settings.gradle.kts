@@ -25,7 +25,7 @@ dependencyResolutionManagement {
             version("paper", "26.1.2.build.74-stable")  // keep the build segment
             version("java", "25")               // Paper 26.1 requires Java 25
             version("jackson", "2.22.4")        // config databinding: YAML (relocated in the shaded jar)
-            version("adventure", "4.26.1")      // platform-neutral text API; matches Paper 26.1's adventure-bom
+            version("adventure", "5.0.0")      // platform-neutral text API; matches Paper 26.1's adventure-bom
             version("guice", "7.0.0")
             version("jakartaInject", "2.0.1")
             version("cloudPaper", "2.0.1") // Incendo Cloud command framework, Paper module
